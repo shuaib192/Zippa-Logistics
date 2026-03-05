@@ -19,7 +19,6 @@
 
 const bcrypt = require('bcryptjs');      // For hashing passwords
 const jwt = require('jsonwebtoken');      // For creating JWT tokens
-const { v4: uuidv4 } = require('uuid');  // For generating unique IDs
 const db = require('../config/database');
 
 // ============================================

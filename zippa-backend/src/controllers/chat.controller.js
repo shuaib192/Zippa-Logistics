@@ -238,7 +238,7 @@ Respond as ZipBot:`;
 // HELPER: Fallback responses when Gemini isn't configured
 // Basic keyword-matching for common questions
 // ============================================
-const getFallbackResponse = (message, role) => {
+const getFallbackResponse = (message, _role) => {
     const msg = message.toLowerCase();
 
     if (msg.includes('track') || msg.includes('where is')) {
@@ -254,10 +254,10 @@ const getFallbackResponse = (message, role) => {
         return '🆘 Need help? You can reach our support team via the "Support" tab, or call us directly. We\'re here for you!';
     }
     if (msg.includes('hello') || msg.includes('hi') || msg.includes('hey')) {
-        return `👋 Hello! I'm ZipBot, your Zippa Logistics assistant. How can I help you today? I can assist with tracking, pricing, wallet questions, and more!`;
+        return '👋 Hello! I\'m ZipBot, your Zippa Logistics assistant. How can I help you today? I can assist with tracking, pricing, wallet questions, and more!';
     }
 
-    return `🤖 I'm ZipBot! I can help you with tracking orders, pricing questions, wallet management, and navigating the app. What would you like to know?`;
+    return '🤖 I\'m ZipBot! I can help you with tracking orders, pricing questions, wallet management, and navigating the app. What would you like to know?';
 };
 
 // ============================================

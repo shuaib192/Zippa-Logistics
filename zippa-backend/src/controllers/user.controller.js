@@ -124,7 +124,7 @@ const updateProfile = async (req, res) => {
                 values.push(avatarUrl);
             }
 
-            updates.push(`updated_at = CURRENT_TIMESTAMP`);
+            updates.push('updated_at = CURRENT_TIMESTAMP');
             values.push(req.user.id);
 
             await db.query(
@@ -159,7 +159,7 @@ const updateProfile = async (req, res) => {
         }
 
         if (profileUpdates.length > 0) {
-            profileUpdates.push(`updated_at = CURRENT_TIMESTAMP`);
+            profileUpdates.push('updated_at = CURRENT_TIMESTAMP');
             profileValues.push(req.user.id);
 
             await db.query(
