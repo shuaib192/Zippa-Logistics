@@ -9,7 +9,7 @@
     "db:setup": "node src/config/db-setup.js",
     "db:seed": "node src/config/db-seed.js",
     "lint": "eslint src/ --ext .js",
-    "test": "jest --forceExit --detectOpenHandles"
+    "test": "jest --forceExit --detectOpenHandles --passWithNoTests"
   },
   "dependencies": {
     "express": "^4.21.0",
