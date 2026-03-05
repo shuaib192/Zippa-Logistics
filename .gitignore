@@ -1,0 +1,43 @@
+# ============================================
+# 🎓 WHAT IS .gitignore?
+# This file tells Git which files/folders to IGNORE
+# (not upload to GitHub). We ignore things like:
+# - node_modules/ (huge folder of downloaded packages)
+# - .env (contains secret passwords/keys)
+# - build files (can be regenerated)
+# ============================================
+
+# === Node.js (Backend) ===
+node_modules/           # Downloaded packages - too big for GitHub
+.env                    # Secret environment variables (passwords, API keys)
+.env.local             
+.env.production        
+npm-debug.log*         # Error logs from npm
+yarn-debug.log*
+yarn-error.log*
+dist/                  # Compiled/built code
+coverage/              # Test coverage reports
+
+# === Flutter (Mobile App) ===
+# These are auto-generated files that Flutter creates
+zippa-app/.dart_tool/
+zippa-app/.packages
+zippa-app/build/
+zippa-app/.flutter-plugins
+zippa-app/.flutter-plugins-dependencies
+zippa-app/pubspec.lock
+
+# === IDE Files (editor settings - personal preference) ===
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store              # macOS creates this hidden file in every folder
+
+# === Logs ===
+logs/
+*.log
+
+# === PRD and design files (keep these tracked) ===
+# We DO want to track PRD.txt and logo images

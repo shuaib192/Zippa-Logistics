@@ -1,0 +1,56 @@
+# ============================================
+# 🎓 WHAT IS pubspec.yaml?
+# This is Flutter's project config file (like package.json for Node.js).
+# It defines:
+# - App name, version, description
+# - Dependencies (packages your app needs)
+# - Assets (images, fonts)
+# - Platform settings
+# ============================================
+
+name: zippa_app
+description: "Zippa Logistics — Fast, Easy and Safe delivery app"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.1
+
+# ============================================
+# DEPENDENCIES — packages our app needs
+# Each package adds specific functionality
+# ============================================
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # --- HTTP & Networking ---
+  http: ^1.2.0               # Makes HTTP requests to our backend API
+  
+  # --- State Management ---
+  provider: ^6.1.0            # Manages app state (who's logged in, current data, etc.)
+  
+  # --- Local Storage ---
+  shared_preferences: ^2.3.0  # Stores small data locally (tokens, settings)
+  
+  # --- UI & Animations ---
+  google_fonts: ^6.2.0        # Beautiful fonts from Google (Poppins)
+  smooth_page_indicator: ^1.2.0 # Dots indicator for onboarding pages
+  pinput: ^5.0.0              # Beautiful OTP input boxes
+  flutter_animate: ^4.5.0     # Easy micro-animations
+  
+  # --- Navigation ---
+  go_router: ^14.0.0          # Advanced routing/navigation
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  
+  # Register our asset files so Flutter can find them
+  assets:
+    - assets/images/

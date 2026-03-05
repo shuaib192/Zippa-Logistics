@@ -1,0 +1,176 @@
+Technical Framework: Zippa Logistics Unified Mobile App
+Document Version: 1.0
+Date: 3rd March, 2026
+Target Platform: Minimum Viable Product (MVP) for Phase 2 Launch.
+1.0 Executive Summary
+This document defines the technical architecture for the Zippa Logistics unified mobile application. Instead of separate apps, a single app will serve all user types, Customers, Riders, and Vendors, through role-based interfaces. After authentication, the app dynamically presents the appropriate dashboard and features based on the user's role. This approach simplifies development, reduces maintenance costs, and provides a consistent user experience.
+The system also incorporates Know Your Customer (KYC) verification for all user roles to ensure trust, safety, and regulatory compliance. The platform will digitise the manual MVP processes, enabling scalability, transparency, and data-driven operations.
+2.0 System Architecture Overview
+The platform remains a client-server architecture with a central backend, a web-based admin panel, and a single mobile application for all end users.
+3.0 Unified Mobile App: Role-Based Interfaces
+The app will have a single codebase (using Flutter/React Native) with a modular architecture. Upon first launch, the user selects their role: Customer, Rider, or Vendor. After registration and KYC verification, the user logs in and is taken to their role-specific home screen. The app remembers the role and can allow switching if a user has multiple roles (e.g., a vendor who also sends personal packages). This can be implemented via a profile menu option to "Switch Role".
+3.1 Common Features Across Roles
+Authentication: Phone number/email + OTP verification.
+Profile Management: Update personal details, view KYC status, manage payment methods (wallet, cards).
+Notifications: In-app and push notifications for relevant events.
+Support: Access to FAQs, live chat, or call support.
+Security: Biometric login (fingerprint/face) option, session management.
+4.0 Role-Specific Functional Requirements
+4.1 Customer Mode (Individual Users)
+Dashboard: Shows recent orders, quick actions (Send a Package), promotions, and tracking for active deliveries.
+Key Features:
+Order Placement:
+Enter pickup and drop-off addresses (with map picker and saved addresses).
+Package details (size, type, value).
+Real-time fare estimate.
+Schedule pickup for later.
+Payment:
+Cash on delivery, card, bank transfer, or wallet.
+Tracking:
+Live map with rider location after assignment.
+Status updates and push notifications.
+History & Ratings:
+Order history with receipts.
+Rate completed deliveries (1-5 stars).
+KYC Verification (for high-value or frequent users):
+Upload government ID (NIN, Driver’s License, Voter’s Card).
+Face verification (liveness check).
+Verification status displayed (Pending, Verified, Rejected).
+4.2 Rider Mode (Delivery Partners)
+Dashboard: Displays today’s earnings, total deliveries, acceptance rate, and a toggle to go Online/Offline. Quick stats (ratings, completed orders).
+Key Features:
+Order Management:
+Receive new delivery requests with pickup/drop-off, distance, and estimated earnings.
+Accept/Decline with reason (optional).
+In-app navigation to pickup and drop-off.
+Status updates: Arrived at Pickup, Picked Up, Arrived at Drop-off, Delivered.
+Earnings & Wallet:
+Real-time earnings tracker (today, week, month).
+Wallet balance with transaction history.
+Withdrawal request to bank or mobile money.
+Performance Stats:
+Customer rating, on-time delivery rate, total deliveries.
+Leaderboard or badges for top performers.
+KYC Verification (mandatory):
+Upload valid ID (NIN, Driver’s License).
+Provide guarantor’s contact details (as per Phase 1).
+Passport photograph.
+Face verification.
+Background check status (integrated with third-party service).
+Training & Resources:
+View "Rider Code of Conduct".
+Access training videos or documents.
+Receive safety alerts.
+4.3 Vendor Mode (Business Owners / SME Partners)
+Dashboard: Overview of today’s orders (pending, in-transit, delivered), total sales, and quick actions to create new deliveries.
+Key Features:
+Order Management:
+Create single or bulk orders (upload CSV or manual entry).
+Schedule recurring deliveries.
+View live status of all active orders on a map.
+Assign orders to preferred riders (if enabled).
+Business Profile:
+Business details (name, address, contact).
+Upload business registration documents for KYC.
+Set default pickup address.
+Billing & Analytics:
+View monthly statements and delivery volume.
+Track spending and average delivery time.
+Access to subscription plan management (for Phase 3).
+Customer Management:
+View and manage their end customers’ orders (if integrated with their POS).
+KYC Verification (mandatory for onboarding):
+Business registration certificate.
+Tax ID (if applicable).
+Owner/manager ID verification.
+Utility bill for address verification.
+5.0 KYC Verification System
+The KYC process is critical for building trust and meeting regulatory requirements. It will be implemented as a multi-step flow within the app.
+5.1 KYC Workflow
+Initiation: User submits required documents via app (camera upload).
+Verification:
+Automated Checks: Use third-party APIs (e.g., Verify.ng, YouVerify, or local providers) to validate ID authenticity, face match, and watchlist screening.
+Manual Review: For edge cases, flagged items go to Admin Panel for manual review.
+Status Update: User receives notification of verification status (Pending, Verified, Rejected with reason).
+Re-upload: If rejected, user can resubmit corrected documents.
+Tiered Access:
+Unverified users: Limited functionality (e.g., order value caps, no withdrawals for riders).
+Verified users: Full access.
+5.2 Admin KYC Management
+Dashboard to view all pending verifications.
+Ability to view submitted documents, run manual checks, and approve/reject.
+Audit log of all KYC actions.
+6.0 The "Earn as You Ride" System (Backend Logic)
+This remains as previously defined but now integrated with the unified app.
+Order Completion: Rider marks order Delivered.
+Fare Calculation: System confirms final fare.
+Customer Payment:
+Online/Wallet: Full fare deducted from customer and held in Zippa account.
+Cash: Rider collects cash.
+Commission Splitting:
+System calculates Zippa’s 40% and Rider’s 60%.
+Rider Wallet Update:
+Rider’s wallet credited with 60%.
+Zippa Revenue Logging:
+Zippa’s 40% recorded as revenue.
+Payouts:
+Rider requests payout; admin processes manually or automated based on thresholds.
+7.0 Admin Panel (Web Dashboard)
+The Admin Panel remains a web-based application for the Zippa team. It must support:
+User Management: View and manage all customers, riders, vendors. Approve KYC.
+Rider Management: Approve applications, monitor performance, manage payouts.
+Vendor Management: Onboard businesses, set custom pricing, view reports.
+Order Management: Live map view, manual dispatch override, order monitoring.
+Financial Reconciliation: Track commissions, revenue, payment gateway logs.
+Analytics & Reporting: Real-time KPIs and custom reports.
+Content Management: Manage in-app notifications, FAQs, help content.
+KYC Review Interface: List pending verifications with document preview and approval/reject buttons.
+8.0 Key Technical Features for Developer Implementation
+Role-Based Access Control (RBAC): All API endpoints must enforce permissions based on user role. The mobile app should hide UI elements not relevant to the role.
+KYC Integration: Use a reliable identity verification API with support for Nigerian IDs (NIN, Driver’s License, Voter’s Card, BVN). Ensure secure storage of sensitive documents (encryption at rest and in transit).
+Real-time Tracking & Communication: Implement WebSockets or Firebase Realtime Database for live location updates and in-app chat.
+Push Notifications: Firebase Cloud Messaging (FCM) for Android, APNS for iOS.
+Offline Capability: Cache essential data (e.g., order history, wallet balance) and sync when online. Rider app must queue status updates when offline.
+Wallet System: Secure database transactions with audit logs. Use double-entry accounting principles.
+Scalable Backend: Use microservices or serverless functions for compute-intensive tasks (dispatch algorithm, fare calculation).
+9.0 Technology Stack Recommendations (MVP)
+Component
+Recommendation
+Backend
+Node.js + Express (or Firebase with Cloud Functions)
+Database
+PostgreSQL (relational) + Firebase Realtime DB (for live tracking)
+Mobile App
+Flutter (single codebase for iOS & Android)
+Admin Panel
+React.js with Material-UI or Ant Design
+Cloud Infrastructure
+Google Cloud Platform (GCP) or AWS
+Maps & Location
+Google Maps SDK for mobile, Google Maps API for backend
+Payments
+Paystack/Flutterwave API
+KYC Verification
+YouVerify, Prembly (formerly IdentityPass), or Dojah
+Push Notifications
+Firebase Cloud Messaging
+
+
+10.0 Phased Development Roadmap (for the Developer)
+Sprint 1-2: Backend setup, database schema, user authentication (with role selection). Basic admin panel login.
+Sprint 3-4: Customer mode: order placement (cash-only), fare estimate, basic tracking (polling).
+Sprint 5-6: Rider mode: receive orders, accept, update status, simple earnings display.
+Sprint 7: Integration of payment gateway (Paystack) for online payments and wallet funding.
+Sprint 8: KYC module: document upload, integration with verification API, admin review interface.
+Sprint 9: Vendor mode: bulk order creation, order dashboard.
+Sprint 10: Real-time tracking (WebSockets/Firebase), push notifications, offline support.
+Sprint 11: Complete admin panel features: user management, financial reconciliation, reports.
+Sprint 12: Testing, bug fixing, soft launch with existing Phase 1 users.
+11.0 Security & Compliance Considerations
+Data Encryption: All sensitive data encrypted at rest (database) and in transit (TLS).
+GDPR / NDPR Compliance: For Nigerian users, comply with Nigeria Data Protection Regulation. Obtain consent for data collection.
+KYC Data Handling: Store documents in secure cloud storage with restricted access. Retain only as long as necessary.
+Payment Security: PCI-DSS compliance via Paystack/Flutterwave; never store raw card details.
+Role-Based Access: Strict permissions on API endpoints; validate user role for every request.
+12.0 Conclusion
+This unified mobile app framework for Zippa Logistics integrates all user types into one seamless application while maintaining distinct experiences for customers, riders, and vendors. The inclusion of KYC verification at all levels ensures trust and regulatory readiness. The phased development plan allows for rapid MVP delivery while building a scalable, secure, and feature-rich platform ready for expansion.

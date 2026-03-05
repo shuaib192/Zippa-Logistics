@@ -1,0 +1,97 @@
+# ============================================
+# 🎓 WHAT IS THIS FILE?
+# This is a GitHub Actions "workflow" file.
+# GitHub Actions is a CI/CD service built into GitHub.
+# 
+# CI = Continuous Integration: automatically run tests
+#      every time someone pushes code
+# CD = Continuous Deployment: automatically deploy after
+#      tests pass (we'll add this when you have hosting)
+#
+# HOW IT WORKS:
+# 1. You push code to GitHub
+# 2. GitHub sees this .yml file
+# 3. GitHub creates a virtual computer (Ubuntu)
+# 4. It runs the steps you define below
+# 5. If tests fail, you see a ❌ on GitHub
+# 6. If tests pass, you see a ✅ on GitHub
+# ============================================
+
+name: Backend CI  # Name shown in GitHub Actions tab
+
+# WHEN should this run?
+on:
+  push:
+    branches: [main]        # Run when code is pushed to main branch
+    paths:
+      - 'zippa-backend/**'  # ONLY run if backend files changed
+  pull_request:
+    branches: [main]        # Also run on Pull Requests to main
+    paths:
+      - 'zippa-backend/**'
+
+# WHAT should it do?
+jobs:
+  test:
+    name: Lint & Test Backend
+    runs-on: ubuntu-latest  # Use a free Ubuntu virtual machine
+
+    # Set up PostgreSQL for testing
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: zippa_test
+          POSTGRES_PASSWORD: zippa_test_pass
+          POSTGRES_DB: zippa_test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    # Environment variables for the test
+    env:
+      NODE_ENV: test
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: zippa_test
+      DB_PASSWORD: zippa_test_pass
+      DB_NAME: zippa_test_db
+      JWT_SECRET: test-secret-key-do-not-use-in-production
+      JWT_REFRESH_SECRET: test-refresh-secret-key
+
+    steps:
+      # Step 1: Download the code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Install Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: zippa-backend/package-lock.json
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        working-directory: zippa-backend
+        run: npm ci  # 'ci' is faster than 'install' for CI environments
+
+      # Step 4: Run linting (code style check)
+      - name: Run linter
+        working-directory: zippa-backend
+        run: npm run lint
+
+      # Step 5: Set up database tables
+      - name: Setup test database
+        working-directory: zippa-backend
+        run: npm run db:setup
+
+      # Step 6: Run tests
+      - name: Run tests
+        working-directory: zippa-backend
+        run: npm test

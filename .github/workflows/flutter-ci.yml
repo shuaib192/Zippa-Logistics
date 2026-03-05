@@ -1,0 +1,83 @@
+# ============================================
+# 🎓 FLUTTER CI WORKFLOW
+# This runs every time Flutter app code is pushed.
+# It checks code quality, runs tests, and builds
+# an APK (Android app file) that you can download.
+# ============================================
+
+name: Flutter CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'zippa-app/**'    # Only trigger when app files change
+  pull_request:
+    branches: [main]
+    paths:
+      - 'zippa-app/**'
+
+jobs:
+  test:
+    name: Analyze & Test Flutter App
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Install Flutter on the CI machine
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.4'
+          channel: 'stable'
+          cache: true  # Cache Flutter SDK between runs (faster)
+
+      # Download all Flutter packages
+      - name: Install dependencies
+        working-directory: zippa-app
+        run: flutter pub get
+
+      # Static analysis - catches bugs before they happen
+      - name: Analyze code
+        working-directory: zippa-app
+        run: flutter analyze
+
+      # Run unit and widget tests
+      - name: Run tests
+        working-directory: zippa-app
+        run: flutter test
+
+  # Separate job for building the APK
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    needs: test  # Only build if tests pass
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.4'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        working-directory: zippa-app
+        run: flutter pub get
+
+      # Build the APK (Android app installer)
+      - name: Build APK
+        working-directory: zippa-app
+        run: flutter build apk --release
+
+      # Upload the APK so you can download it from GitHub
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zippa-release-apk
+          path: zippa-app/build/app/outputs/flutter-apk/app-release.apk
