@@ -34,6 +34,7 @@ const rateLimit = require('express-rate-limit'); // Rate limiting
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const chatRoutes = require('./routes/chat.routes');
+const orderRoutes = require('./routes/order.routes');
 
 // Create the Express application
 const app = express();
@@ -97,21 +98,17 @@ app.use('/api/', limiter); // Apply to all API routes
 app.get('/api/health', (_req, res) => {
     res.status(200).json({
         success: true,
-        message: 'Zippa Logistics API is running! 🚀',
+        message: 'Zippa Logistics API is running',
         version: '1.0.0',
         timestamp: new Date().toISOString(),
     });
 });
 
 // Mount route modules
-// All auth routes start with /api/auth (e.g., /api/auth/register)
 app.use('/api/auth', authRoutes);
-
-// All user routes start with /api/users (e.g., /api/users/profile)
 app.use('/api/users', userRoutes);
-
-// All chat routes start with /api/chat (e.g., /api/chat/message)
 app.use('/api/chat', chatRoutes);
+app.use('/api/orders', orderRoutes);
 
 // ============================================
 // ERROR HANDLING
@@ -128,7 +125,7 @@ app.use((_req, res) => {
 // Global Error Handler — Catches all unhandled errors
 // Express requires exactly 4 parameters to recognize this as error middleware
 app.use((err, _req, res, _next) => {
-    console.error('💥 Server Error:', err.message);
+    console.error('Server Error:', err.message);
 
     // Don't leak error details in production
     const isDev = process.env.NODE_ENV === 'development';
@@ -149,13 +146,13 @@ const PORT = process.env.PORT || 3000;
 // Only start listening if this file is run directly (not imported for testing)
 if (process.env.NODE_ENV !== 'test') {
     app.listen(PORT, () => {
-        console.log('\n============================================');
-        console.log('🚀 Zippa Logistics API Server');
         console.log('============================================');
-        console.log(`📡 Server running on: http://localhost:${PORT}`);
-        console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
-        console.log(`💚 Health check: http://localhost:${PORT}/api/health`);
-        console.log('============================================\n');
+        console.log('  Zippa Logistics API Server');
+        console.log('============================================');
+        console.log(`  Server: http://localhost:${PORT}`);
+        console.log(`  Health: http://localhost:${PORT}/api/health`);
+        console.log(`  Env:    ${process.env.NODE_ENV || 'development'}`);
+        console.log('============================================');
     });
 }
 

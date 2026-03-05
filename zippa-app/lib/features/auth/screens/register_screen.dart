@@ -1,12 +1,5 @@
 // ============================================
-// 🎓 REGISTER SCREEN (register_screen.dart)
-//
-// New users create an account here.
-// The role (customer/rider/vendor) is passed from
-// the Role Selection screen.
-//
-// Fields: Full Name, Phone, Email (optional), Password
-// On success → Navigate to dashboard
+// REGISTER SCREEN — Professional, no emojis
 // ============================================
 
 import 'package:flutter/material.dart';
@@ -17,52 +10,49 @@ import 'package:zippa_app/features/auth/providers/auth_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
-
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _emailController = TextEditingController();
+  final _nameController     = TextEditingController();
+  final _phoneController    = TextEditingController();
+  final _emailController    = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-  
+  final _confirmController  = TextEditingController();
+
   bool _obscurePassword = true;
-  bool _obscureConfirm = true;
-  bool _agreeToTerms = false;
-  
+  bool _obscureConfirm  = true;
+  bool _agreeToTerms    = false;
+
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _confirmPasswordController.dispose();
+    _confirmController.dispose();
     super.dispose();
   }
 
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
-    
     if (!_agreeToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please agree to the Terms & Conditions'),
+          content: const Text('Please agree to the Terms and Conditions to continue.'),
           backgroundColor: ZippaColors.warning,
           behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
       return;
     }
-    
-    // Get the role passed from Role Selection screen
+
     final role = ModalRoute.of(context)?.settings.arguments as String? ?? 'customer';
-    
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     final success = await authProvider.register(
       fullName: _nameController.text.trim(),
       phone: _phoneController.text.trim(),
@@ -70,26 +60,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
       password: _passwordController.text,
       role: role,
     );
-    
+
     if (!mounted) return;
-    
+
     if (success) {
       String route;
       switch (role) {
-        case 'rider':
-          route = '/rider-home';
-          break;
-        case 'vendor':
-          route = '/vendor-home';
-          break;
-        default:
-          route = '/customer-home';
+        case 'rider':  route = '/rider-home'; break;
+        case 'vendor': route = '/vendor-home'; break;
+        default:       route = '/customer-home';
       }
-      Navigator.pushNamedAndRemoveUntil(context, route, (route) => false);
+      Navigator.pushNamedAndRemoveUntil(context, route, (r) => false);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authProvider.error ?? 'Registration failed'),
+          content: Text(authProvider.error ?? 'Registration failed. Please try again.'),
           backgroundColor: ZippaColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -101,172 +86,165 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final role = ModalRoute.of(context)?.settings.arguments as String? ?? 'customer';
-    
-    // Role-specific UI elements
-    final roleLabels = {
-      'customer': {'title': 'Create Your\nAccount ✨', 'subtitle': 'Start sending packages today'},
-      'rider': {'title': 'Join Our\nRider Team 🏍️', 'subtitle': 'Start earning with every delivery'},
-      'vendor': {'title': 'Register Your\nBusiness 🏪', 'subtitle': 'Manage deliveries like a pro'},
+
+    final roleTitles = {
+      'customer': 'Create Your Account',
+      'rider': 'Join as a Rider',
+      'vendor': 'Register Your Business',
     };
-    
-    final roleInfo = roleLabels[role] ?? roleLabels['customer']!;
+    final roleSubs = {
+      'customer': 'Start sending packages today',
+      'rider': 'Start delivering and earning',
+      'vendor': 'Manage business deliveries at scale',
+    };
 
     return Scaffold(
       backgroundColor: ZippaColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
+      appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header with role-specific text
-                Text(
-                  roleInfo['title']!,
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: ZippaColors.textPrimary,
-                    height: 1.2,
-                  ),
-                ).animate().fadeIn(duration: 400.ms),
-                
+                Image.asset('assets/images/logo.png', height: 44, width: 44)
+                    .animate().fadeIn(duration: 400.ms),
+
+                const SizedBox(height: 20),
+
+                Text(roleTitles[role]!,
+                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary))
+                    .animate().fadeIn(duration: 400.ms),
+
+                const SizedBox(height: 4),
+
+                Text(roleSubs[role]!,
+                    style: const TextStyle(fontSize: 14, color: ZippaColors.textSecondary))
+                    .animate().fadeIn(delay: 100.ms),
+
                 const SizedBox(height: 8),
-                Text(
-                  roleInfo['subtitle']!,
-                  style: TextStyle(fontSize: 16, color: ZippaColors.textSecondary),
-                ).animate().fadeIn(delay: 200.ms),
-                
+
                 // Role badge
-                const SizedBox(height: 16),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
                   decoration: BoxDecoration(
                     color: ZippaColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    'Registering as ${role[0].toUpperCase()}${role.substring(1)}',
-                    style: TextStyle(
-                      color: ZippaColors.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
+                    '${role[0].toUpperCase()}${role.substring(1)} Account',
+                    style: const TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.w600, fontSize: 12),
                   ),
-                ).animate().fadeIn(delay: 300.ms),
-                
-                const SizedBox(height: 32),
-                
+                ).animate().fadeIn(delay: 150.ms),
+
+                const SizedBox(height: 28),
+
                 // Full Name
                 TextFormField(
                   controller: _nameController,
                   textCapitalization: TextCapitalization.words,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Full Name',
                     hintText: 'Enter your full name',
-                    prefixIcon: Icon(Icons.person_rounded, color: ZippaColors.primary),
+                    prefixIcon: Icon(Icons.person_outline_rounded, color: ZippaColors.primary),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return 'Name is required';
-                    if (value.length < 3) return 'Name must be at least 3 characters';
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Full name is required';
+                    if (v.length < 3) return 'Name must be at least 3 characters';
                     return null;
                   },
-                ).animate().fadeIn(delay: 350.ms).slideY(begin: 0.05, end: 0),
-                
-                const SizedBox(height: 16),
-                
+                ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.05, end: 0),
+
+                const SizedBox(height: 14),
+
                 // Phone
                 TextFormField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Phone Number',
                     hintText: '08012345678',
-                    prefixIcon: Icon(Icons.phone_rounded, color: ZippaColors.primary),
+                    prefixIcon: Icon(Icons.phone_outlined, color: ZippaColors.primary),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return 'Phone number is required';
-                    if (value.length < 10) return 'Enter a valid phone number';
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Phone number is required';
+                    if (v.length < 10) return 'Enter a valid phone number';
                     return null;
                   },
-                ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.05, end: 0),
-                
-                const SizedBox(height: 16),
-                
+                ).animate().fadeIn(delay: 250.ms).slideY(begin: 0.05, end: 0),
+
+                const SizedBox(height: 14),
+
                 // Email (optional)
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    labelText: 'Email (Optional)',
+                  decoration: const InputDecoration(
+                    labelText: 'Email Address (Optional)',
                     hintText: 'your@email.com',
-                    prefixIcon: Icon(Icons.email_rounded, color: ZippaColors.primary),
+                    prefixIcon: Icon(Icons.email_outlined, color: ZippaColors.primary),
                   ),
-                ).animate().fadeIn(delay: 450.ms).slideY(begin: 0.05, end: 0),
-                
-                const SizedBox(height: 16),
-                
+                ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.05, end: 0),
+
+                const SizedBox(height: 14),
+
                 // Password
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
                     labelText: 'Password',
-                    hintText: 'Min 8 characters',
-                    prefixIcon: Icon(Icons.lock_rounded, color: ZippaColors.primary),
+                    hintText: 'Minimum 8 characters',
+                    prefixIcon: const Icon(Icons.lock_outline_rounded, color: ZippaColors.primary),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                         color: ZippaColors.textLight,
                       ),
                       onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return 'Password is required';
-                    if (value.length < 8) return 'Must be at least 8 characters';
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Password is required';
+                    if (v.length < 8) return 'Must be at least 8 characters';
                     return null;
                   },
-                ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.05, end: 0),
-                
-                const SizedBox(height: 16),
-                
+                ).animate().fadeIn(delay: 350.ms).slideY(begin: 0.05, end: 0),
+
+                const SizedBox(height: 14),
+
                 // Confirm Password
                 TextFormField(
-                  controller: _confirmPasswordController,
+                  controller: _confirmController,
                   obscureText: _obscureConfirm,
                   decoration: InputDecoration(
                     labelText: 'Confirm Password',
                     hintText: 'Re-enter your password',
-                    prefixIcon: Icon(Icons.lock_outline_rounded, color: ZippaColors.primary),
+                    prefixIcon: const Icon(Icons.lock_outline_rounded, color: ZippaColors.primary),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscureConfirm ? Icons.visibility_off : Icons.visibility,
+                        _obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                         color: ZippaColors.textLight,
                       ),
                       onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
                     ),
                   ),
-                  validator: (value) {
-                    if (value != _passwordController.text) return 'Passwords do not match';
+                  validator: (v) {
+                    if (v != _passwordController.text) return 'Passwords do not match';
                     return null;
                   },
-                ).animate().fadeIn(delay: 550.ms).slideY(begin: 0.05, end: 0),
-                
+                ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.05, end: 0),
+
                 const SizedBox(height: 16),
-                
-                // Terms & Conditions checkbox
+
+                // Terms checkbox
                 Row(
                   children: [
                     Checkbox(
                       value: _agreeToTerms,
-                      onChanged: (value) => setState(() => _agreeToTerms = value!),
-                      activeColor: ZippaColors.primary,
+                      onChanged: (v) => setState(() => _agreeToTerms = v!),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                     ),
                     Expanded(
@@ -275,67 +253,53 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         child: RichText(
                           text: TextSpan(
                             text: 'I agree to the ',
-                            style: TextStyle(color: ZippaColors.textSecondary, fontSize: 13),
-                            children: [
-                              TextSpan(
-                                text: 'Terms & Conditions',
-                                style: TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.w600),
-                              ),
+                            style: const TextStyle(color: ZippaColors.textSecondary, fontSize: 13),
+                            children: const [
+                              TextSpan(text: 'Terms & Conditions', style: TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.w600)),
                               TextSpan(text: ' and '),
-                              TextSpan(
-                                text: 'Privacy Policy',
-                                style: TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.w600),
-                              ),
+                              TextSpan(text: 'Privacy Policy', style: TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.w600)),
                             ],
                           ),
                         ),
                       ),
                     ),
                   ],
-                ).animate().fadeIn(delay: 600.ms),
-                
-                const SizedBox(height: 24),
-                
+                ).animate().fadeIn(delay: 450.ms),
+
+                const SizedBox(height: 22),
+
                 // Register button
                 Consumer<AuthProvider>(
-                  builder: (context, auth, _) {
-                    return SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: auth.isLoading ? null : _handleRegister,
-                        child: auth.isLoading
-                            ? SizedBox(
-                                width: 24, height: 24,
-                                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                              )
-                            : Text('Create Account'),
-                      ),
-                    );
-                  },
-                ).animate().fadeIn(delay: 650.ms).slideY(begin: 0.05, end: 0),
-                
+                  builder: (context, auth, _) => SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: auth.isLoading ? null : _handleRegister,
+                      child: auth.isLoading
+                          ? const SizedBox(width: 22, height: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                          : const Text('Create Account'),
+                    ),
+                  ),
+                ).animate().fadeIn(delay: 500.ms),
+
                 const SizedBox(height: 16),
-                
-                // Already have account?
+
                 Center(
                   child: TextButton(
                     onPressed: () => Navigator.pushNamed(context, '/login'),
                     child: RichText(
                       text: TextSpan(
                         text: 'Already have an account? ',
-                        style: TextStyle(color: ZippaColors.textSecondary),
-                        children: [
-                          TextSpan(
-                            text: 'Login',
-                            style: TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.bold),
-                          ),
+                        style: const TextStyle(color: ZippaColors.textSecondary, fontSize: 14),
+                        children: const [
+                          TextSpan(text: 'Login', style: TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 20),
               ],
             ),

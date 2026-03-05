@@ -1,14 +1,7 @@
 // ============================================
-// 🎓 ONBOARDING SCREEN (onboarding_screen.dart)
-//
-// Shown to first-time users ONLY.
-// 3 pages that explain what the app does:
-// 1. "Send Packages" — for customers
-// 2. "Earn Money" — for riders
-// 3. "Grow Your Business" — for vendors
-//
-// Uses a PageView (swipeable pages) with dots indicator.
-// After the last page, user goes to Role Selection.
+// ONBOARDING SCREEN — Professional, emoji-free
+// Uses the actual Zippa logo with role-context
+// illustrations instead of emoji icons.
 // ============================================
 
 import 'package:flutter/material.dart';
@@ -26,73 +19,78 @@ class OnboardingScreen extends StatefulWidget {
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
-  // PageController controls which page is shown in the PageView
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  // Onboarding content — each page has an icon, title, and description
+  // Professional onboarding pages — no emojis, clean business copy
   final List<Map<String, dynamic>> _pages = [
     {
       'icon': Icons.local_shipping_rounded,
       'color': ZippaColors.primary,
-      'title': 'Send Packages\nAnywhere',
+      'label': 'SEND',
+      'title': 'Send Packages Anywhere',
       'description':
-          'Send packages across the city with real-time tracking. Fast, easy, and safe delivery at your fingertips.',
+          'Schedule pickups, track deliveries in real time, and get packages to their destination — fast, easy, and safe.',
     },
     {
-      'icon': Icons.monetization_on_rounded,
-      'color': ZippaColors.primaryLight,
-      'title': 'Earn as\nYou Ride',
+      'icon': Icons.delivery_dining_rounded,
+      'color': ZippaColors.primaryDark,
+      'label': 'EARN',
+      'title': 'Earn as a Delivery Partner',
       'description':
-          'Join as a delivery partner and earn competitive income. Flexible hours, instant payouts, and performance rewards.',
+          'Join thousands of riders earning competitive income. Flexible hours, instant wallet payouts, and performance bonuses.',
     },
     {
       'icon': Icons.store_rounded,
-      'color': ZippaColors.primaryDark,
-      'title': 'Grow Your\nBusiness',
+      'color': ZippaColors.accent,
+      'label': 'GROW',
+      'title': 'Scale Your Business',
       'description':
-          'Manage all your business deliveries in one place. Bulk orders, analytics, and dedicated support for vendors.',
+          'Manage all your business deliveries in one place. Bulk orders, real-time analytics, and priority support for vendors.',
     },
   ];
 
-  void _onPageChanged(int page) {
-    setState(() {
-      _currentPage = page;
-    });
-  }
+  void _onPageChanged(int page) => setState(() => _currentPage = page);
 
   Future<void> _completeOnboarding() async {
-    // Mark onboarding as complete so it doesn't show again
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(AppConstants.onboardingCompleteKey, true);
-    
     if (!mounted) return;
     Navigator.pushReplacementNamed(context, '/role-select');
   }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
       backgroundColor: ZippaColors.background,
       body: SafeArea(
         child: Column(
           children: [
-            // Skip button (top right)
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: _completeOnboarding,
-                child: Text(
-                  'Skip',
-                  style: TextStyle(
-                    color: ZippaColors.textSecondary,
-                    fontSize: 16,
+            // — Top bar: Logo + Skip
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Image.asset(
+                    'assets/images/logo.png',
+                    height: 36,
+                    width: 36,
                   ),
-                ),
+                  TextButton(
+                    onPressed: _completeOnboarding,
+                    child: Text(
+                      'Skip',
+                      style: TextStyle(color: ZippaColors.textSecondary, fontSize: 15),
+                    ),
+                  ),
+                ],
               ),
             ),
 
-            // Page content
+            // — Page content
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
@@ -100,65 +98,122 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 itemCount: _pages.length,
                 itemBuilder: (context, index) {
                   final page = _pages[index];
+                  final color = page['color'] as Color;
+
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Animated icon in a circle
-                        Container(
-                          width: 160,
-                          height: 160,
-                          decoration: BoxDecoration(
-                            color: (page['color'] as Color).withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            page['icon'] as IconData,
-                            size: 80,
-                            color: page['color'] as Color,
-                          ),
+                        // Illustration block with logo + icon overlay
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Background circle
+                            Container(
+                              width: size.width * 0.6,
+                              height: size.width * 0.6,
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.08),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            // Inner circle
+                            Container(
+                              width: size.width * 0.42,
+                              height: size.width * 0.42,
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            // Logo
+                            Image.asset(
+                              'assets/images/logo.png',
+                              width: size.width * 0.28,
+                              height: size.width * 0.28,
+                            ),
+                            // Role icon badge (bottom-right)
+                            Positioned(
+                              bottom: size.width * 0.05,
+                              right: size.width * 0.07,
+                              child: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: color.withValues(alpha: 0.4),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  page['icon'] as IconData,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
+                              ),
+                            ),
+                          ],
                         )
                             .animate()
                             .fadeIn(duration: 500.ms)
                             .scale(
-                              begin: const Offset(0.5, 0.5),
+                              begin: const Offset(0.85, 0.85),
                               end: const Offset(1.0, 1.0),
                               duration: 500.ms,
-                              curve: Curves.elasticOut,
+                              curve: Curves.easeOut,
                             ),
 
                         const SizedBox(height: 48),
+
+                        // Label chip
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            page['label'] as String,
+                            style: TextStyle(
+                              color: color,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ).animate().fadeIn(delay: 200.ms),
+
+                        const SizedBox(height: 16),
 
                         // Title
                         Text(
                           page['title'] as String,
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 32,
+                          style: const TextStyle(
+                            fontSize: 26,
                             fontWeight: FontWeight.bold,
                             color: ZippaColors.textPrimary,
-                            height: 1.2,
+                            height: 1.25,
                           ),
-                        )
-                            .animate()
-                            .fadeIn(delay: 200.ms, duration: 500.ms)
-                            .slideY(begin: 0.2, end: 0),
+                        ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.15, end: 0),
 
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
 
                         // Description
                         Text(
                           page['description'] as String,
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 16,
+                          style: const TextStyle(
+                            fontSize: 15,
                             color: ZippaColors.textSecondary,
-                            height: 1.5,
+                            height: 1.6,
                           ),
-                        )
-                            .animate()
-                            .fadeIn(delay: 400.ms, duration: 500.ms),
+                        ).animate().fadeIn(delay: 450.ms),
                       ],
                     ),
                   );
@@ -166,47 +221,40 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
 
-            // Bottom section: dots + button
+            // — Bottom: dots + button
             Padding(
-              padding: const EdgeInsets.all(32),
+              padding: const EdgeInsets.fromLTRB(32, 0, 32, 32),
               child: Column(
                 children: [
-                  // Page indicator dots
                   SmoothPageIndicator(
                     controller: _pageController,
                     count: _pages.length,
                     effect: ExpandingDotsEffect(
                       activeDotColor: ZippaColors.primary,
                       dotColor: ZippaColors.primary.withValues(alpha: 0.2),
-                      dotHeight: 10,
-                      dotWidth: 10,
-                      spacing: 8,
+                      dotHeight: 8,
+                      dotWidth: 8,
+                      expansionFactor: 3,
+                      spacing: 6,
                     ),
                   ),
-
-                  const SizedBox(height: 32),
-
-                  // Next / Get Started button
+                  const SizedBox(height: 28),
                   SizedBox(
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
                       onPressed: () {
                         if (_currentPage < _pages.length - 1) {
-                          // Go to next page
                           _pageController.nextPage(
-                            duration: const Duration(milliseconds: 400),
+                            duration: const Duration(milliseconds: 350),
                             curve: Curves.easeInOut,
                           );
                         } else {
-                          // Last page — continue to role selection
                           _completeOnboarding();
                         }
                       },
                       child: Text(
-                        _currentPage < _pages.length - 1
-                            ? 'Next'
-                            : 'Get Started',
+                        _currentPage < _pages.length - 1 ? 'Continue' : 'Get Started',
                       ),
                     ),
                   ),

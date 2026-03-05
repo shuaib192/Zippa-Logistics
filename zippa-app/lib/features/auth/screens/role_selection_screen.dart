@@ -1,15 +1,5 @@
 // ============================================
-// 🎓 ROLE SELECTION SCREEN (role_selection_screen.dart)
-//
-// After onboarding, users choose WHO they are:
-// - Customer (I want to send packages)
-// - Rider (I want to deliver and earn)
-// - Vendor (I have a business)
-//
-// This choice determines which dashboard they see
-// and what features are available to them.
-//
-// The role is saved and sent with registration.
+// ROLE SELECTION SCREEN — Professional, no emojis
 // ============================================
 
 import 'package:flutter/material.dart';
@@ -29,84 +19,68 @@ class RoleSelectionScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 40),
-              
-              // Header
+              const SizedBox(height: 32),
+
+              // Logo
+              Image.asset('assets/images/logo.png', height: 44, width: 44)
+                  .animate().fadeIn(duration: 400.ms),
+
+              const SizedBox(height: 28),
+
               Text(
-                'Welcome to\nZippa! 👋',
+                'Welcome to Zippa',
                 style: TextStyle(
-                  fontSize: 32,
+                  fontSize: 30,
                   fontWeight: FontWeight.bold,
                   color: ZippaColors.textPrimary,
-                  height: 1.2,
                 ),
-              ).animate().fadeIn(duration: 500.ms).slideX(begin: -0.1, end: 0),
-              
-              const SizedBox(height: 12),
-              
+              ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.05, end: 0),
+
+              const SizedBox(height: 8),
+
               Text(
-                'How would you like to use Zippa?',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: ZippaColors.textSecondary,
-                ),
-              ).animate().fadeIn(delay: 200.ms, duration: 500.ms),
-              
-              const SizedBox(height: 40),
-              
-              // Role cards
+                'Select how you want to use the platform',
+                style: TextStyle(fontSize: 15, color: ZippaColors.textSecondary),
+              ).animate().fadeIn(delay: 200.ms),
+
+              const SizedBox(height: 36),
+
               Expanded(
                 child: Column(
                   children: [
-                    // Customer card
                     _RoleCard(
-                      icon: Icons.person_rounded,
+                      icon: Icons.person_outline_rounded,
                       title: 'Customer',
-                      subtitle: 'Send packages & track deliveries',
+                      subtitle: 'Send packages and track deliveries',
                       color: ZippaColors.primary,
                       delay: 300,
-                      onTap: () {
-                        Navigator.pushNamed(context, '/register', arguments: 'customer');
-                      },
+                      onTap: () => Navigator.pushNamed(context, '/register', arguments: 'customer'),
                     ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // Rider card
+                    const SizedBox(height: 14),
                     _RoleCard(
                       icon: Icons.delivery_dining_rounded,
                       title: 'Rider',
-                      subtitle: 'Deliver packages & earn money',
-                      color: ZippaColors.primaryLight,
-                      delay: 450,
-                      onTap: () {
-                        Navigator.pushNamed(context, '/register', arguments: 'rider');
-                      },
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // Vendor card
-                    _RoleCard(
-                      icon: Icons.store_rounded,
-                      title: 'Vendor',
-                      subtitle: 'Manage business deliveries',
+                      subtitle: 'Deliver packages and earn money',
                       color: ZippaColors.primaryDark,
-                      delay: 600,
-                      onTap: () {
-                        Navigator.pushNamed(context, '/register', arguments: 'vendor');
-                      },
+                      delay: 420,
+                      onTap: () => Navigator.pushNamed(context, '/register', arguments: 'rider'),
+                    ),
+                    const SizedBox(height: 14),
+                    _RoleCard(
+                      icon: Icons.store_outlined,
+                      title: 'Vendor',
+                      subtitle: 'Manage business deliveries at scale',
+                      color: ZippaColors.accent,
+                      delay: 540,
+                      onTap: () => Navigator.pushNamed(context, '/register', arguments: 'vendor'),
                     ),
                   ],
                 ),
               ),
-              
-              // Already have account? Login
+
               Center(
                 child: TextButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/login');
-                  },
+                  onPressed: () => Navigator.pushNamed(context, '/login'),
                   child: RichText(
                     text: TextSpan(
                       text: 'Already have an account? ',
@@ -114,16 +88,13 @@ class RoleSelectionScreen extends StatelessWidget {
                       children: [
                         TextSpan(
                           text: 'Login',
-                          style: TextStyle(
-                            color: ZippaColors.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
                   ),
                 ),
-              ).animate().fadeIn(delay: 800.ms),
+              ).animate().fadeIn(delay: 700.ms),
             ],
           ),
         ),
@@ -132,10 +103,6 @@ class RoleSelectionScreen extends StatelessWidget {
   }
 }
 
-// ============================================
-// Role Card Widget — A reusable, tappable card
-// The _ prefix makes it private to this file
-// ============================================
 class _RoleCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -159,14 +126,14 @@ class _RoleCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
           color: ZippaColors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: Colors.grey.shade100),
           boxShadow: [
             BoxShadow(
-              color: color.withValues(alpha: 0.08),
+              color: color.withValues(alpha: 0.06),
               blurRadius: 20,
               offset: const Offset(0, 4),
             ),
@@ -174,56 +141,33 @@ class _RoleCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Icon in colored circle
             Container(
-              width: 60,
-              height: 60,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(icon, color: color, size: 30),
+              child: Icon(icon, color: color, size: 28),
             ),
-            
-            const SizedBox(width: 20),
-            
-            // Text
+            const SizedBox(width: 18),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: ZippaColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: ZippaColors.textSecondary,
-                    ),
-                  ),
+                  Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
+                  const SizedBox(height: 3),
+                  Text(subtitle, style: TextStyle(fontSize: 13, color: ZippaColors.textSecondary)),
                 ],
               ),
             ),
-            
-            // Arrow icon
-            Icon(
-              Icons.arrow_forward_ios_rounded,
-              color: color,
-              size: 20,
-            ),
+            Icon(Icons.arrow_forward_ios_rounded, color: color, size: 18),
           ],
         ),
       ),
     )
         .animate()
         .fadeIn(delay: Duration(milliseconds: delay), duration: 400.ms)
-        .slideX(begin: 0.1, end: 0, delay: Duration(milliseconds: delay));
+        .slideX(begin: 0.05, end: 0, delay: Duration(milliseconds: delay));
   }
 }

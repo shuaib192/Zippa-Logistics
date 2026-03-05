@@ -1,59 +1,49 @@
 // ============================================
-// 🎓 APP THEME (app_theme.dart)
+// 🎓 APP THEME (app_theme.dart) — Fixed
 //
-// WHAT IS A THEME?
-// A theme is a central place that defines how your entire
-// app looks — colors, fonts, button styles, etc.
-// Instead of setting colors on each widget individually,
-// you define them ONCE here and everything follows.
+// THE BUG: Material 3 has a "color seeding" system that
+// automatically generates a full color palette from your
+// primary color. Sometimes this bleeds blue tones into
+// buttons and headers even when you set green.
 //
-// BRAND COLORS (from Zippa logo):
-// - Dark Green (#1B5E20) — Primary brand color
-// - Bright Green (#4CAF50) — Accent/highlight color
-// - White (#FFFFFF) — Clean backgrounds
-// - Dark text for readability
-//
-// WHY USE A THEME?
-// 1. Consistency — every screen looks the same
-// 2. Easy to change — update one value, entire app changes
-// 3. Professional — no random colors scattered around
+// THE FIX: Explicitly set EVERY color in ColorScheme so
+// Material 3 has no room to inject its own palette.
+// We also define a surfaceTint (used for elevated surfaces)
+// as our green so nothing goes blue.
 // ============================================
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// Our brand colors as constants so we can use them anywhere
 class ZippaColors {
-  // Primary brand colors (from logo)
-  static const Color primaryDark = Color(0xFF1B5E20);   // Dark green
-  static const Color primary = Color(0xFF2E7D32);        // Medium green
-  static const Color primaryLight = Color(0xFF4CAF50);   // Bright green
-  static const Color accent = Color(0xFF66BB6A);         // Light accent green
-  
+  // Primary brand colors
+  static const Color primaryDark    = Color(0xFF1B5E20);
+  static const Color primary        = Color(0xFF2E7D32);
+  static const Color primaryLight   = Color(0xFF4CAF50);
+  static const Color accent         = Color(0xFF66BB6A);
+
   // Neutrals
-  static const Color background = Color(0xFFF8FAF8);    // Slight green tint
-  static const Color surface = Color(0xFFFFFFFF);        // Pure white
-  static const Color cardBg = Color(0xFFFFFFFF);
-  
-  // Text colors
-  static const Color textPrimary = Color(0xFF1A1A2E);   // Almost black
-  static const Color textSecondary = Color(0xFF6B7280);  // Gray
-  static const Color textLight = Color(0xFF9CA3AF);      // Light gray
-  static const Color textOnPrimary = Color(0xFFFFFFFF);  // White text on green
-  
-  // Status colors
-  static const Color success = Color(0xFF10B981);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color error = Color(0xFFEF4444);
-  static const Color info = Color(0xFF3B82F6);
-  
-  // Gradient for cards and buttons
+  static const Color background     = Color(0xFFF7FAF7);
+  static const Color surface        = Color(0xFFFFFFFF);
+
+  // Text
+  static const Color textPrimary    = Color(0xFF1A1A2E);
+  static const Color textSecondary  = Color(0xFF6B7280);
+  static const Color textLight      = Color(0xFF9CA3AF);
+  static const Color textOnPrimary  = Color(0xFFFFFFFF);
+
+  // Status
+  static const Color success        = Color(0xFF10B981);
+  static const Color warning        = Color(0xFFF59E0B);
+  static const Color error          = Color(0xFFEF4444);
+  static const Color info           = Color(0xFF3B82F6);
+
+  // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [primaryDark, primary],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
   static const LinearGradient accentGradient = LinearGradient(
     colors: [primary, primaryLight],
     begin: Alignment.topLeft,
@@ -62,112 +52,108 @@ class ZippaColors {
 }
 
 class ZippaTheme {
-  // ============================================
-  // The main theme data object
-  // ThemeData is Flutter's class that holds ALL visual settings
-  // ============================================
   static ThemeData get lightTheme {
+    // ============================================
+    // Build the full ColorScheme manually so Material 3
+    // NEVER overrides our green with its auto-seeded palette.
+    // Every single slot is set explicitly to green tones.
+    // ============================================
+    const colorScheme = ColorScheme(
+      brightness:           Brightness.light,
+      // Primaries
+      primary:              ZippaColors.primary,
+      onPrimary:            ZippaColors.textOnPrimary,
+      primaryContainer:     Color(0xFFC8E6C9),   // light green container
+      onPrimaryContainer:   ZippaColors.primaryDark,
+      // Secondaries (also green — not blue!)
+      secondary:            ZippaColors.primaryLight,
+      onSecondary:          ZippaColors.textOnPrimary,
+      secondaryContainer:   Color(0xFFDCEEDC),
+      onSecondaryContainer: ZippaColors.primaryDark,
+      // Tertiary
+      tertiary:             ZippaColors.accent,
+      onTertiary:           Colors.white,
+      tertiaryContainer:    Color(0xFFE8F5E9),
+      onTertiaryContainer:  ZippaColors.primaryDark,
+      // Error
+      error:                ZippaColors.error,
+      onError:              Colors.white,
+      errorContainer:       Color(0xFFFFDAD6),
+      onErrorContainer:     Color(0xFF410002),
+      // Surfaces
+      surface:              ZippaColors.surface,
+      onSurface:            ZippaColors.textPrimary,
+      surfaceContainerHighest: Color(0xFFE8F5E9),
+      onSurfaceVariant:     ZippaColors.textSecondary,
+      // Outline & others
+      outline:              Color(0xFFCBD5CB),
+      outlineVariant:       Color(0xFFE0EAE0),
+      shadow:               Colors.black,
+      scrim:                Colors.black,
+      inverseSurface:       ZippaColors.primaryDark,
+      onInverseSurface:     Colors.white,
+      inversePrimary:       ZippaColors.primaryLight,
+      // surfaceTint colors the FAB, cards on elevation — must be green!
+      surfaceTint:          ZippaColors.primary,
+    );
+
     return ThemeData(
-      useMaterial3: true,  // Use the latest Material Design 3
-      
-      // Color scheme — Flutter uses this to automatically style widgets
-      colorScheme: ColorScheme.light(
-        primary: ZippaColors.primary,
-        onPrimary: ZippaColors.textOnPrimary,
-        secondary: ZippaColors.primaryLight,
-        surface: ZippaColors.surface,
-        error: ZippaColors.error,
-      ),
-      
-      // Background color for all screens
+      useMaterial3: true,
+      colorScheme: colorScheme,
       scaffoldBackgroundColor: ZippaColors.background,
-      
-      // App bar (top bar) styling
+
+      // App bar
       appBarTheme: AppBarTheme(
         backgroundColor: ZippaColors.surface,
         foregroundColor: ZippaColors.textPrimary,
-        elevation: 0,  // No shadow — modern flat design
+        surfaceTintColor: Colors.transparent, // prevents green tint on scroll
+        elevation: 0,
         centerTitle: true,
         titleTextStyle: GoogleFonts.poppins(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: ZippaColors.textPrimary,
         ),
+        iconTheme: const IconThemeData(color: ZippaColors.textPrimary),
       ),
-      
-      // Default text styles using Poppins font
+
+      // Text theme
       textTheme: GoogleFonts.poppinsTextTheme().copyWith(
-        // Headlines
-        headlineLarge: GoogleFonts.poppins(
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
-          color: ZippaColors.textPrimary,
-        ),
-        headlineMedium: GoogleFonts.poppins(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: ZippaColors.textPrimary,
-        ),
-        headlineSmall: GoogleFonts.poppins(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: ZippaColors.textPrimary,
-        ),
-        // Body text
-        bodyLarge: GoogleFonts.poppins(
-          fontSize: 16,
-          color: ZippaColors.textPrimary,
-        ),
-        bodyMedium: GoogleFonts.poppins(
-          fontSize: 14,
-          color: ZippaColors.textSecondary,
-        ),
-        bodySmall: GoogleFonts.poppins(
-          fontSize: 12,
-          color: ZippaColors.textLight,
-        ),
-        // Labels (for buttons, tabs)
-        labelLarge: GoogleFonts.poppins(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: ZippaColors.textOnPrimary,
-        ),
+        headlineLarge: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold,  color: ZippaColors.textPrimary),
+        headlineMedium: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold,  color: ZippaColors.textPrimary),
+        headlineSmall: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w600, color: ZippaColors.textPrimary),
+        bodyLarge:     GoogleFonts.poppins(fontSize: 16, color: ZippaColors.textPrimary),
+        bodyMedium:    GoogleFonts.poppins(fontSize: 14, color: ZippaColors.textSecondary),
+        bodySmall:     GoogleFonts.poppins(fontSize: 12, color: ZippaColors.textLight),
+        labelLarge:    GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: ZippaColors.textOnPrimary),
       ),
-      
-      // Elevated button styling (main action buttons)
+
+      // Elevated button — fully green
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: ZippaColors.primary,
           foregroundColor: ZippaColors.textOnPrimary,
-          minimumSize: const Size(double.infinity, 56), // Full width, 56px tall
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          disabledBackgroundColor: ZippaColors.primary.withValues(alpha: 0.4),
+          disabledForegroundColor: Colors.white70,
+          minimumSize: const Size(double.infinity, 56),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           elevation: 0,
-          textStyle: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
 
-      // Outlined button styling (secondary actions)
+      // Outlined button
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: ZippaColors.primary,
           minimumSize: const Size(double.infinity, 56),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           side: const BorderSide(color: ZippaColors.primary, width: 1.5),
-          textStyle: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
-      
-      // Text field (input box) styling
+
+      // Text fields
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: ZippaColors.surface,
@@ -188,19 +174,19 @@ class ZippaTheme {
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: ZippaColors.error),
         ),
-        hintStyle: GoogleFonts.poppins(
-          color: ZippaColors.textLight,
-          fontSize: 14,
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: ZippaColors.error, width: 2),
         ),
-        labelStyle: GoogleFonts.poppins(
-          color: ZippaColors.textSecondary,
-          fontSize: 14,
-        ),
+        hintStyle: GoogleFonts.poppins(color: ZippaColors.textLight, fontSize: 14),
+        labelStyle: GoogleFonts.poppins(color: ZippaColors.textSecondary, fontSize: 14),
+        floatingLabelStyle: GoogleFonts.poppins(color: ZippaColors.primary, fontSize: 14),
       ),
-      
-      // Card styling
+
+      // Cards
       cardTheme: CardThemeData(
-        color: ZippaColors.cardBg,
+        color: ZippaColors.surface,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
@@ -208,16 +194,36 @@ class ZippaTheme {
         ),
         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       ),
-      
-      // Bottom navigation bar
+
+      // Bottom nav
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: ZippaColors.surface,
         selectedItemColor: ZippaColors.primary,
         unselectedItemColor: ZippaColors.textLight,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
-        selectedLabelStyle: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
-        unselectedLabelStyle: GoogleFonts.poppins(fontSize: 12),
+        selectedLabelStyle: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: GoogleFonts.poppins(fontSize: 11),
+      ),
+
+      // FAB — force green
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: ZippaColors.primary,
+        foregroundColor: Colors.white,
+      ),
+
+      // Checkbox
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return ZippaColors.primary;
+          return null;
+        }),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+      ),
+
+      // Progress indicator
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: ZippaColors.primary,
       ),
     );
   }
