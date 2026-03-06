@@ -1,9 +1,5 @@
 // ============================================
-// 🎓 RIDER HOME SCREEN (rider_home_screen.dart)
-//
-// Dashboard for RIDERS (delivery partners).
-// Shows: Online/offline toggle, today's earnings,
-// delivery stats, and incoming order requests.
+// RIDER HOME SCREEN — Professional, no emojis
 // ============================================
 
 import 'package:flutter/material.dart';
@@ -14,7 +10,6 @@ import 'package:zippa_app/features/auth/providers/auth_provider.dart';
 
 class RiderHomeScreen extends StatefulWidget {
   const RiderHomeScreen({super.key});
-
   @override
   State<RiderHomeScreen> createState() => _RiderHomeScreenState();
 }
@@ -25,7 +20,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<AuthProvider>(context).user;
-    
+
     return Scaffold(
       backgroundColor: ZippaColors.background,
       appBar: AppBar(
@@ -34,25 +29,28 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Hey, ${user?.fullName.split(' ').first ?? 'Rider'} 🏍️',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              'Hello, ${user?.fullName.split(' ').first ?? 'Rider'}',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             Text(
-              _isOnline ? 'You\'re online — ready for deliveries!' : 'You\'re offline',
-              style: TextStyle(fontSize: 13, color: _isOnline ? ZippaColors.success : ZippaColors.textSecondary),
+              _isOnline ? 'Online — ready for deliveries' : 'Currently offline',
+              style: TextStyle(
+                fontSize: 12,
+                color: _isOnline ? ZippaColors.success : ZippaColors.textSecondary,
+              ),
             ),
           ],
         ),
         actions: [
-          IconButton(icon: Icon(Icons.notifications_outlined), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.notifications_outlined), onPressed: () {}),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: CircleAvatar(
               radius: 18,
-              backgroundColor: ZippaColors.primary.withValues(alpha: 0.1),
+              backgroundColor: ZippaColors.primary.withValues(alpha: 0.12),
               child: Text(
                 user?.fullName.isNotEmpty == true ? user!.fullName[0].toUpperCase() : 'R',
-                style: TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.bold),
+                style: const TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -63,18 +61,20 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Online/Offline toggle card
+            // Online toggle card
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                gradient: _isOnline ? ZippaColors.primaryGradient : LinearGradient(
-                  colors: [Colors.grey.shade600, Colors.grey.shade800],
-                ),
+                gradient: _isOnline
+                    ? ZippaColors.primaryGradient
+                    : const LinearGradient(colors: [Color(0xFF4B5563), Color(0xFF374151)]),
                 borderRadius: BorderRadius.circular(24),
-                boxShadow: [BoxShadow(
-                  color: (_isOnline ? ZippaColors.primary : Colors.grey).withValues(alpha: 0.4),
-                  blurRadius: 20, offset: const Offset(0, 8),
-                )],
+                boxShadow: [
+                  BoxShadow(
+                    color: (_isOnline ? ZippaColors.primary : Colors.grey).withValues(alpha: 0.35),
+                    blurRadius: 20, offset: const Offset(0, 8),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
@@ -82,19 +82,23 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(_isOnline ? 'You\'re Online' : 'You\'re Offline',
-                          style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                        Text(
+                          _isOnline ? 'You are Online' : 'You are Offline',
+                          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
                         const SizedBox(height: 4),
-                        Text(_isOnline ? 'Waiting for delivery requests...' : 'Go online to start receiving orders',
-                          style: TextStyle(color: Colors.white70, fontSize: 13)),
+                        Text(
+                          _isOnline ? 'Waiting for delivery requests' : 'Go online to start receiving orders',
+                          style: const TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
                       ],
                     ),
                   ),
                   Transform.scale(
-                    scale: 1.3,
+                    scale: 1.2,
                     child: Switch(
                       value: _isOnline,
-                      onChanged: (value) => setState(() => _isOnline = value),
+                      onChanged: (v) => setState(() => _isOnline = v),
                       activeThumbColor: Colors.white,
                       activeTrackColor: ZippaColors.primaryLight,
                       inactiveThumbColor: Colors.white,
@@ -103,44 +107,42 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                   ),
                 ],
               ),
-            ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1, end: 0),
-            
+            ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.08, end: 0),
+
             const SizedBox(height: 24),
-            
-            // Earnings summary
-            Text('Today\'s Summary', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
+
+            const Text("Today's Summary", style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
+            const SizedBox(height: 14),
             Row(
               children: [
-                Expanded(child: _StatCard(icon: Icons.monetization_on, label: 'Earnings', value: '₦0.00', color: ZippaColors.success)),
+                Expanded(child: _StatCard(icon: Icons.monetization_on_outlined, label: 'Earnings', value: 'N0.00', color: ZippaColors.success)),
                 const SizedBox(width: 12),
-                Expanded(child: _StatCard(icon: Icons.local_shipping, label: 'Deliveries', value: '0', color: ZippaColors.primary)),
+                Expanded(child: _StatCard(icon: Icons.local_shipping_outlined, label: 'Deliveries', value: '0', color: ZippaColors.primary)),
                 const SizedBox(width: 12),
-                Expanded(child: _StatCard(icon: Icons.star, label: 'Rating', value: '5.0', color: ZippaColors.warning)),
+                Expanded(child: _StatCard(icon: Icons.star_border_rounded, label: 'Rating', value: '5.0', color: ZippaColors.warning)),
               ],
-            ).animate().fadeIn(delay: 200.ms, duration: 500.ms),
-            
+            ).animate().fadeIn(delay: 150.ms, duration: 400.ms),
+
             const SizedBox(height: 24),
-            
-            // Active deliveries
-            Text('Active Deliveries', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
+
+            const Text('Active Deliveries', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
+            const SizedBox(height: 40),
+
             Center(
-              child: Padding(
-                padding: const EdgeInsets.all(40),
-                child: Column(
-                  children: [
-                    Icon(Icons.delivery_dining_outlined, size: 80, color: ZippaColors.textLight),
-                    const SizedBox(height: 16),
-                    Text('No active deliveries', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: ZippaColors.textSecondary)),
-                    const SizedBox(height: 8),
-                    Text(_isOnline ? 'New delivery requests will appear here' : 'Go online to receive delivery requests',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: ZippaColors.textLight)),
-                  ],
-                ),
+              child: Column(
+                children: [
+                  Icon(Icons.delivery_dining_outlined, size: 72, color: ZippaColors.textLight),
+                  const SizedBox(height: 14),
+                  const Text('No active deliveries', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: ZippaColors.textSecondary)),
+                  const SizedBox(height: 6),
+                  Text(
+                    _isOnline ? 'New delivery requests will appear here' : 'Go online to receive delivery requests',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: ZippaColors.textLight, fontSize: 13),
+                  ),
+                ],
               ),
-            ).animate().fadeIn(delay: 400.ms),
+            ).animate().fadeIn(delay: 300.ms),
           ],
         ),
       ),
@@ -168,7 +170,7 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: ZippaColors.surface,
         borderRadius: BorderRadius.circular(16),
@@ -176,11 +178,11 @@ class _StatCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 8),
-          Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
-          const SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 11, color: ZippaColors.textSecondary)),
+          Icon(icon, color: color, size: 26),
+          const SizedBox(height: 6),
+          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
+          const SizedBox(height: 2),
+          Text(label, style: const TextStyle(fontSize: 10, color: ZippaColors.textSecondary)),
         ],
       ),
     );
