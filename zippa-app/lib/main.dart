@@ -30,8 +30,10 @@ import 'features/auth/screens/role_selection_screen.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/register_screen.dart';
 import 'features/customer/screens/customer_home_screen.dart';
+import 'features/customer/screens/order_create_screen.dart';
 import 'features/rider/screens/rider_home_screen.dart';
 import 'features/vendor/screens/vendor_home_screen.dart';
+import 'features/customer/providers/order_provider.dart';
 
 // ============================================
 // main() — The very first function that runs
@@ -66,8 +68,7 @@ class ZippaApp extends StatelessWidget {
       // As we add more features, we'll add more providers here
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        // AuthProvider is created ONCE and shared with all screens
-        // Any screen can access it with: Provider.of<AuthProvider>(context)
+        ChangeNotifierProvider(create: (_) => OrderProvider()),
       ],
       child: MaterialApp(
         // App configuration
@@ -92,6 +93,7 @@ class ZippaApp extends StatelessWidget {
           '/login':         (_) => const LoginScreen(),
           '/register':      (_) => const RegisterScreen(),
           '/customer-home': (_) => const CustomerHomeScreen(),
+          '/order-create':  (_) => const OrderCreateScreen(),
           '/rider-home':    (_) => const RiderHomeScreen(),
           '/vendor-home':   (_) => const VendorHomeScreen(),
         },

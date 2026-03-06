@@ -40,6 +40,14 @@ dependencies:
   pinput: ^5.0.0              # Beautiful OTP input boxes
   flutter_animate: ^4.5.0     # Easy micro-animations
   
+  # --- Maps & Location ---
+  google_maps_flutter: ^2.10.0 # Google Maps integration
+  geolocator: ^13.0.0          # Getting current location
+  geocoding: ^3.0.0           # Address to coordinates and vice versa
+  
+  # --- Utilities ---
+  intl: ^0.19.0               # Formatting currency/dates
+  
   # --- Navigation ---
   go_router: ^14.0.0          # Advanced routing/navigation
 

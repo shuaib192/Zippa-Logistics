@@ -58,7 +58,7 @@ class CustomerHomeScreen extends StatelessWidget {
             const SizedBox(height: 14),
             Row(
               children: [
-                Expanded(child: _QuickAction(icon: Icons.send_rounded, label: 'Send Package', color: ZippaColors.primary, onTap: () {})),
+                Expanded(child: _QuickAction(icon: Icons.send_rounded, label: 'Send Package', color: ZippaColors.primary, onTap: () => Navigator.pushNamed(context, '/order-create'))),
                 const SizedBox(width: 12),
                 Expanded(child: _QuickAction(icon: Icons.track_changes_rounded, label: 'Track Order', color: ZippaColors.info, onTap: () {})),
                 const SizedBox(width: 12),
@@ -101,7 +101,7 @@ class CustomerHomeScreen extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {},
+        onPressed: () => Navigator.pushNamed(context, '/order-create'),
         backgroundColor: ZippaColors.primary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),

@@ -1,0 +1,115 @@
+// ============================================
+// 📦 ORDER MODEL (order_model.dart)
+// ============================================
+
+class OrderModel {
+  final String? id;
+  final String? orderNumber;
+  final String customerId;
+  final String? riderId;
+  
+  // Delivery Details
+  final String pickupAddress;
+  final double pickupLat;
+  final double pickupLng;
+  final String dropoffAddress;
+  final double dropoffLat;
+  final double dropoffLng;
+  
+  // Package Details
+  final String packageSize; // small, medium, large, extra_large
+  final String packageType; // document, electronics, food, etc.
+  final String? packageDescription;
+  
+  // Recipient info
+  final String recipientName;
+  final String recipientPhone;
+  
+  // Pricing
+  final double subtotal;
+  final double platformFee;
+  final double totalFare;
+  final double riderEarnings;
+  
+  // Status & Timestamps
+  final String status; // pending, accepted, picked_up, delivered, cancelled
+  final String? paymentStatus;
+  final String? paymentMethod;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  OrderModel({
+    this.id,
+    this.orderNumber,
+    required this.customerId,
+    this.riderId,
+    required this.pickupAddress,
+    required this.pickupLat,
+    required this.pickupLng,
+    required this.dropoffAddress,
+    required this.dropoffLat,
+    required this.dropoffLng,
+    required this.packageSize,
+    required this.packageType,
+    this.packageDescription,
+    required this.recipientName,
+    required this.recipientPhone,
+    required this.subtotal,
+    required this.platformFee,
+    required this.totalFare,
+    required this.riderEarnings,
+    this.status = 'pending',
+    this.paymentStatus = 'unpaid',
+    this.paymentMethod = 'cash',
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  // Convert JSON to Order object
+  factory OrderModel.fromJson(Map<String, dynamic> json) {
+    return OrderModel(
+      id: json['id']?.toString(),
+      orderNumber: json['order_number'],
+      customerId: json['customer_id']?.toString() ?? '',
+      riderId: json['rider_id']?.toString(),
+      pickupAddress: json['pickup_address'],
+      pickupLat: double.tryParse(json['pickup_lat'].toString()) ?? 0.0,
+      pickupLng: double.tryParse(json['pickup_lng'].toString()) ?? 0.0,
+      dropoffAddress: json['dropoff_address'],
+      dropoffLat: double.tryParse(json['dropoff_lat'].toString()) ?? 0.0,
+      dropoffLng: double.tryParse(json['dropoff_lng'].toString()) ?? 0.0,
+      packageSize: json['package_size'],
+      packageType: json['package_type'],
+      packageDescription: json['package_description'],
+      recipientName: json['recipient_name'],
+      recipientPhone: json['recipient_phone'],
+      subtotal: double.tryParse(json['subtotal'].toString()) ?? 0.0,
+      platformFee: double.tryParse(json['platform_fee'].toString()) ?? 0.0,
+      totalFare: double.tryParse(json['total_fare'].toString()) ?? 0.0,
+      riderEarnings: double.tryParse(json['rider_earnings'].toString()) ?? 0.0,
+      status: json['status'],
+      paymentStatus: json['payment_status'],
+      paymentMethod: json['payment_method'],
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+    );
+  }
+
+  // Convert Order object to JSON (for API)
+  Map<String, dynamic> toJson() {
+    return {
+      'pickup_address': pickupAddress,
+      'pickup_lat': pickupLat,
+      'pickup_lng': pickupLng,
+      'dropoff_address': dropoffAddress,
+      'dropoff_lat': dropoffLat,
+      'dropoff_lng': dropoffLng,
+      'package_size': packageSize,
+      'package_type': packageType,
+      'package_description': packageDescription,
+      'recipient_name': recipientName,
+      'recipient_phone': recipientPhone,
+      'payment_method': paymentMethod,
+    };
+  }
+}
