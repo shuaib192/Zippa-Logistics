@@ -12,9 +12,9 @@ void main() {
   });
 
   test('Brand colors are correct navy/cream/green values', () {
-    expect(ZippaColors.primary.value, equals(const Color(0xFF0A2A5E).value));
-    expect(ZippaColors.primaryDark.value, equals(const Color(0xFF061A3A).value));
-    expect(ZippaColors.primaryLight.value, equals(const Color(0xFF1E4C9A).value));
+    expect(ZippaColors.primary, equals(const Color(0xFF0A2A5E)));
+    expect(ZippaColors.primaryDark, equals(const Color(0xFF061A3A)));
+    expect(ZippaColors.primaryLight, equals(const Color(0xFF1E4C9A)));
   });
 
 }
