@@ -36,7 +36,7 @@ class OrderSuccessScreen extends StatelessWidget {
                   size: 100,
                 ),
               ).animate()
-                .scale(duration: 600.ms, curve: Curves.backOut)
+                .scale(duration: 600.ms, curve: Curves.easeOutBack)
                 .shimmer(delay: 800.ms, duration: 1500.ms),
               
               const SizedBox(height: 40),
