@@ -17,20 +17,24 @@ import 'package:google_fonts/google_fonts.dart';
 
 class ZippaColors {
   // Primary brand colors
-  static const Color primaryDark    = Color(0xFF1B5E20);
-  static const Color primary        = Color(0xFF2E7D32);
-  static const Color primaryLight   = Color(0xFF4CAF50);
-  static const Color accent         = Color(0xFF66BB6A);
+  static const Color primaryDark    = Color(0xFF061A3A); // Deep Navy Blue
+  static const Color primary        = Color(0xFF0A2A5E); // Navy Blue
+  static const Color primaryLight   = Color(0xFF1E4C9A); // Lighter Navy
+  
+  // Secondary / Accent
+  static const Color secondary      = Color(0xFFFDF8EA); // Cream
+  static const Color accent         = Color(0xFF00C853); // Bright Green
 
   // Neutrals
-  static const Color background     = Color(0xFFF7FAF7);
-  static const Color surface        = Color(0xFFFFFFFF);
+  static const Color background     = Color(0xFFFDFBF7); // Soft Cream-white background
+  static const Color surface        = Color(0xFFFFFFFF); // White cards
 
   // Text
   static const Color textPrimary    = Color(0xFF1A1A2E);
   static const Color textSecondary  = Color(0xFF6B7280);
   static const Color textLight      = Color(0xFF9CA3AF);
   static const Color textOnPrimary  = Color(0xFFFFFFFF);
+  static const Color textOnSecondary= Color(0xFF1A1A2E);
 
   // Status
   static const Color success        = Color(0xFF10B981);
@@ -45,7 +49,7 @@ class ZippaColors {
     end: Alignment.bottomRight,
   );
   static const LinearGradient accentGradient = LinearGradient(
-    colors: [primary, primaryLight],
+    colors: [Color(0xFF00E676), accent],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -60,21 +64,21 @@ class ZippaTheme {
     // ============================================
     const colorScheme = ColorScheme(
       brightness:           Brightness.light,
-      // Primaries
+      // Primaries (Navy Blue)
       primary:              ZippaColors.primary,
       onPrimary:            ZippaColors.textOnPrimary,
-      primaryContainer:     Color(0xFFC8E6C9),   // light green container
+      primaryContainer:     Color(0xFFD6E4FF),   
       onPrimaryContainer:   ZippaColors.primaryDark,
-      // Secondaries (also green — not blue!)
-      secondary:            ZippaColors.primaryLight,
-      onSecondary:          ZippaColors.textOnPrimary,
-      secondaryContainer:   Color(0xFFDCEEDC),
-      onSecondaryContainer: ZippaColors.primaryDark,
-      // Tertiary
+      // Secondaries (Cream)
+      secondary:            ZippaColors.secondary,
+      onSecondary:          ZippaColors.textOnSecondary,
+      secondaryContainer:   ZippaColors.secondary,
+      onSecondaryContainer: ZippaColors.textOnSecondary,
+      // Tertiary (Green Accent)
       tertiary:             ZippaColors.accent,
       onTertiary:           Colors.white,
-      tertiaryContainer:    Color(0xFFE8F5E9),
-      onTertiaryContainer:  ZippaColors.primaryDark,
+      tertiaryContainer:    Color(0xFFCCFADA),
+      onTertiaryContainer:  Color(0xFF003915),
       // Error
       error:                ZippaColors.error,
       onError:              Colors.white,
@@ -83,17 +87,17 @@ class ZippaTheme {
       // Surfaces
       surface:              ZippaColors.surface,
       onSurface:            ZippaColors.textPrimary,
-      surfaceContainerHighest: Color(0xFFE8F5E9),
+      surfaceContainerHighest: Color(0xFFE0E2E9),
       onSurfaceVariant:     ZippaColors.textSecondary,
       // Outline & others
-      outline:              Color(0xFFCBD5CB),
-      outlineVariant:       Color(0xFFE0EAE0),
+      outline:              Color(0xFFC4C6D0),
+      outlineVariant:       Color(0xFFE4E6F0),
       shadow:               Colors.black,
       scrim:                Colors.black,
       inverseSurface:       ZippaColors.primaryDark,
       onInverseSurface:     Colors.white,
       inversePrimary:       ZippaColors.primaryLight,
-      // surfaceTint colors the FAB, cards on elevation — must be green!
+      // surfaceTint colors the FAB, cards on elevation
       surfaceTint:          ZippaColors.primary,
     );
 

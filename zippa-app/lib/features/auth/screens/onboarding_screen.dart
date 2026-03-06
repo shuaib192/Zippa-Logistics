@@ -111,8 +111,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           children: [
                             // Background circle
                             Container(
-                              width: size.width * 0.6,
-                              height: size.width * 0.6,
+                              width: size.width * 0.7,
+                              height: size.width * 0.7,
                               decoration: BoxDecoration(
                                 color: color.withValues(alpha: 0.08),
                                 shape: BoxShape.circle,
@@ -120,8 +120,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
                             // Inner circle
                             Container(
-                              width: size.width * 0.42,
-                              height: size.width * 0.42,
+                              width: size.width * 0.55,
+                              height: size.width * 0.55,
                               decoration: BoxDecoration(
                                 color: color.withValues(alpha: 0.12),
                                 shape: BoxShape.circle,
@@ -130,8 +130,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             // Logo
                             Image.asset(
                               'assets/images/logo.png',
-                              width: size.width * 0.28,
-                              height: size.width * 0.28,
+                              width: size.width * 0.45,
+                              height: size.width * 0.45,
                             ),
                             // Role icon badge (bottom-right)
                             Positioned(
