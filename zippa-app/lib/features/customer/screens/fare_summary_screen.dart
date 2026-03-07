@@ -82,10 +82,10 @@ class FareSummaryScreen extends StatelessWidget {
             // 3. Price Breakdown
             const Text('Price Breakdown', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            _PriceRow(label: 'Delivery Fare', value: 'N${estimate?['subtotal']}'),
+            _PriceRow(label: 'Fare Estimate', value: 'N${estimate?['subtotal']}'),
             _PriceRow(label: 'Service Fee', value: 'N${estimate?['platform_fee']}'),
             const Divider(height: 32),
-            _PriceRow(label: 'Total Total', value: 'N${estimate?['total_fare']}', isTotal: true),
+            _PriceRow(label: 'Total Fare', value: 'N${estimate?['total_fare']}', isTotal: true),
 
             const SizedBox(height: 40),
             

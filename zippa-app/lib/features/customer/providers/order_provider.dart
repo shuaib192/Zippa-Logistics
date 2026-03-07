@@ -84,15 +84,18 @@ class OrderProvider with ChangeNotifier {
 
     try {
       final response = await _apiClient.post('/orders/estimate', {
+        'pickup_address': _pickupAddress,
         'pickup_lat': _pickupLat,
         'pickup_lng': _pickupLng,
+        'dropoff_address': _dropoffAddress,
         'dropoff_lat': _dropoffLat,
         'dropoff_lng': _dropoffLng,
         'package_size': _packageSize,
+        'package_type': _packageType,
       });
 
-      if (response['success'] != false) {
-        _lastEstimate = response;
+      if (response['success'] != false && response['data'] != null) {
+        _lastEstimate = response['data'];
         _isLoading = false;
         notifyListeners();
         return true;

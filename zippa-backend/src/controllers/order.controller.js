@@ -39,14 +39,14 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 // Package size multipliers apply on top.
 // ============================================
 const calculateFare = (distanceKm, packageSize = 'small') => {
-    const BASE_FARE = 500;   // flat starting fee (covers first 1 km)
-    const PER_KM = 150;      // cost per additional km
+    const BASE_FARE = 1000;   // test base fee (₦1,000)
+    const PER_KM = 200;       // test per km fee (₦200)
 
     const sizeMultipliers = {
         small: 1.0,
-        medium: 1.3,
-        large: 1.6,
-        extra: 2.0,
+        medium: 1.2,
+        large: 1.5,
+        extra_large: 2.0,
     };
 
     const multiplier = sizeMultipliers[packageSize] || 1.0;
@@ -54,13 +54,13 @@ const calculateFare = (distanceKm, packageSize = 'small') => {
     const rawFare = (BASE_FARE + distanceFare) * multiplier;
 
     return {
-        baseFare: BASE_FARE,
-        distanceFare: Math.round(distanceFare),
+        base_fare: BASE_FARE,
+        distance_fare: Math.round(distanceFare),
         subtotal: Math.round(rawFare),
-        platformFee: Math.round(rawFare * 0.10), // 10% platform cut
-        total: Math.round(rawFare * 1.10),       // customer pays
-        riderEarning: Math.round(rawFare * 0.70), // rider gets 70%
-        distanceKm: Math.round(distanceKm * 10) / 10,
+        platform_fee: Math.round(rawFare * 0.10), // 10% platform cut
+        total_fare: Math.round(rawFare * 1.10),       // customer pays
+        rider_earning: Math.round(rawFare * 0.85), // rider gets 85%
+        distance_km: Math.round(distanceKm * 10) / 10,
     };
 };
 
@@ -72,8 +72,8 @@ const calculateFare = (distanceKm, packageSize = 'small') => {
 const estimateFare = async (req, res) => {
     try {
         const {
-            pickup_lat, pickup_lng,
-            dropoff_lat, dropoff_lng,
+            pickup_address, pickup_lat, pickup_lng,
+            dropoff_address, dropoff_lat, dropoff_lng,
             package_type, package_size,
         } = req.body;
 
@@ -95,8 +95,13 @@ const estimateFare = async (req, res) => {
             success: true,
             data: {
                 ...fare,
+                pickup_address,
+                dropoff_address,
+                package_type,
+                package_size,
+                distance: distanceKm,
                 currency: 'NGN',
-                estimatedDuration: `${Math.round(distanceKm / 30 * 60)} mins`, // ~30km/h avg
+                estimatedDuration: `${Math.round(distanceKm / 30 * 60)} mins`,
             },
         });
 
@@ -174,8 +179,8 @@ const createOrder = async (req, res) => {
                 dropoff_address, dropoff_lat || null, dropoff_lng || null,
                 recipient_name, recipient_phone,
                 package_type, package_size, package_description || null,
-                fare.baseFare, fare.distanceFare, fare.platformFee, fare.total, fare.riderEarning,
-                fare.distanceKm, payment_method || 'wallet',
+                fare.base_fare, fare.distance_fare, fare.platform_fee, fare.total_fare, fare.rider_earning,
+                fare.distance_km, payment_method || 'wallet',
             ],
         );
 
