@@ -70,7 +70,7 @@ class _OrderCreateScreenState extends State<OrderCreateScreen> {
                     context,
                     MaterialPageRoute(builder: (_) => const MapPickerScreen(title: 'Pickup Location')),
                   );
-                  if (result != null && mounted) {
+                  if (result != null) {
                     setState(() { _pickupController.text = result['address']; });
                     if (!mounted) return;
                     context.read<OrderProvider>().setPickup(result['address'], result['lat'], result['lng']);
@@ -89,7 +89,7 @@ class _OrderCreateScreenState extends State<OrderCreateScreen> {
                     context,
                     MaterialPageRoute(builder: (_) => const MapPickerScreen(title: 'Drop-off Location')),
                   );
-                  if (result != null && mounted) {
+                  if (result != null) {
                     setState(() { _dropoffController.text = result['address']; });
                     if (!mounted) return;
                     context.read<OrderProvider>().setDropoff(result['address'], result['lat'], result['lng']);

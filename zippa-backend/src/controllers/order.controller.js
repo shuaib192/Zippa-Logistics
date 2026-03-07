@@ -14,7 +14,7 @@
 // ============================================
 
 const db = require('../config/database');
-const { v4: uuidv4 } = require('uuid');
+
 
 // ============================================
 // HELPER: Haversine formula
@@ -338,7 +338,7 @@ const updateOrderStatus = async (req, res) => {
             // Rider accepting a new order (assigned to them)
             if (status === 'accepted' && order.status === 'pending') {
                 await db.query(
-                    `UPDATE orders SET status = $1, rider_id = $2, accepted_at = CURRENT_TIMESTAMP WHERE id = $3`,
+                    'UPDATE orders SET status = $1, rider_id = $2, accepted_at = CURRENT_TIMESTAMP WHERE id = $3',
                     ['accepted', userId, order.id],
                 );
             } else {

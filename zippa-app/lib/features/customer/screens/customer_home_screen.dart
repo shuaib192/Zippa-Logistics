@@ -9,7 +9,6 @@ import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/features/auth/providers/auth_provider.dart';
 import 'package:zippa_app/features/customer/providers/order_provider.dart';
 import 'package:zippa_app/features/customer/screens/order_tracking_screen.dart';
-import 'package:intl/intl.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
   const CustomerHomeScreen({super.key});

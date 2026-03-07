@@ -8,6 +8,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/features/auth/providers/auth_provider.dart';
 import 'package:zippa_app/features/customer/providers/order_provider.dart';
+import 'package:zippa_app/data/models/order_model.dart';
 import 'package:intl/intl.dart';
 
 class RiderHomeScreen extends StatefulWidget {
@@ -215,7 +216,7 @@ class _OrderCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey.shade100),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
