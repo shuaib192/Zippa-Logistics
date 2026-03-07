@@ -12,24 +12,25 @@
     "test": "jest --forceExit --detectOpenHandles --passWithNoTests"
   },
   "dependencies": {
-    "express": "^4.21.0",
-    "pg": "^8.13.0",
+    "@google/generative-ai": "^0.21.0",
+    "axios": "^1.13.6",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
     "cors": "^2.8.5",
-    "helmet": "^8.0.0",
     "dotenv": "^16.4.5",
-    "express-validator": "^7.2.0",
+    "express": "^4.21.0",
     "express-rate-limit": "^7.4.0",
+    "express-validator": "^7.2.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
-    "uuid": "^10.0.0",
+    "pg": "^8.13.0",
     "socket.io": "^4.8.0",
-    "@google/generative-ai": "^0.21.0"
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.0",
     "eslint": "^8.57.0",
     "jest": "^29.7.0",
+    "nodemon": "^3.1.0",
     "supertest": "^7.0.0"
   },
   "engines": {
