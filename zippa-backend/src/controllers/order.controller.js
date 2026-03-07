@@ -117,7 +117,7 @@ const createOrder = async (req, res) => {
             pickup_address, pickup_lat, pickup_lng,
             dropoff_address, dropoff_lat, dropoff_lng,
             recipient_name, recipient_phone,
-            package_size, package_description,
+            package_type, package_size, package_description,
             payment_method,
         } = req.body;
 
