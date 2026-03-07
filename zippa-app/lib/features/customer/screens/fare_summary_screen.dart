@@ -8,6 +8,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/features/customer/providers/order_provider.dart';
 import 'package:zippa_app/features/customer/screens/order_success_screen.dart';
+import 'package:zippa_app/core/utils/currency_formatter.dart';
 
 class FareSummaryScreen extends StatelessWidget {
   const FareSummaryScreen({super.key});
@@ -82,10 +83,10 @@ class FareSummaryScreen extends StatelessWidget {
             // 3. Price Breakdown
             const Text('Price Breakdown', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            _PriceRow(label: 'Fare Estimate', value: 'N${estimate?['subtotal']}'),
-            _PriceRow(label: 'Service Fee', value: 'N${estimate?['platform_fee']}'),
+            _PriceRow(label: 'Fare Estimate', value: CurrencyFormatter.formatWithComma(estimate?['subtotal'])),
+            _PriceRow(label: 'Service Fee', value: CurrencyFormatter.formatWithComma(estimate?['platform_fee'])),
             const Divider(height: 32),
-            _PriceRow(label: 'Total Fare', value: 'N${estimate?['total_fare']}', isTotal: true),
+            _PriceRow(label: 'Total Fare', value: CurrencyFormatter.formatWithComma(estimate?['total_fare']), isTotal: true),
 
             const SizedBox(height: 40),
             

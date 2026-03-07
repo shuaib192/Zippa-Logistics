@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/features/customer/providers/order_provider.dart';
+import 'package:zippa_app/core/utils/currency_formatter.dart';
 import 'package:zippa_app/core/widgets/app_drawer.dart';
 
 class RiderDeliveriesScreen extends StatefulWidget {
@@ -70,7 +71,7 @@ class _RiderDeliveriesScreenState extends State<RiderDeliveriesScreen> {
                 child: ListTile(
                   contentPadding: const EdgeInsets.all(16),
                   title: Text('Order #${order.orderNumber ?? (order.id?.substring(0, 8) ?? '...')}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('Earnings: N${order.fare.toStringAsFixed(2)}'),
+                  subtitle: Text('Earnings: ${CurrencyFormatter.formatWithComma(order.fare)}'),
                   trailing: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(

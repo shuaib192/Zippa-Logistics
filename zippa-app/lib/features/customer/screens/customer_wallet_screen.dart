@@ -3,6 +3,7 @@ import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/core/widgets/app_drawer.dart';
 import 'package:provider/provider.dart';
 import 'package:zippa_app/features/customer/providers/wallet_provider.dart';
+import 'package:zippa_app/core/utils/currency_formatter.dart';
 import 'package:intl/intl.dart';
 
 class CustomerWalletScreen extends StatefulWidget {
@@ -69,7 +70,7 @@ class _CustomerWalletScreenState extends State<CustomerWalletScreen> {
                         const Text('Total Balance', style: TextStyle(color: Colors.white70, fontSize: 13)),
                         const SizedBox(height: 8),
                         Text(
-                          'N${wallet.balance.toStringAsFixed(2)}', 
+                          CurrencyFormatter.formatWithComma(wallet.balance), 
                           style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)
                         ),
                         const SizedBox(height: 24),
@@ -138,7 +139,7 @@ class _CustomerWalletScreenState extends State<CustomerWalletScreen> {
                           title: Text(tx['description'] ?? 'Wallet Transaction', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                           subtitle: Text(DateFormat('MMM dd, yyyy • hh:mm a').format(date.toLocal()), style: const TextStyle(fontSize: 12)),
                           trailing: Text(
-                            '${isCredit ? '+' : '-'}N${double.parse(tx['amount'].toString()).toStringAsFixed(2)}',
+                            '${isCredit ? '+' : '-'}${CurrencyFormatter.formatWithComma(double.parse(tx['amount'].toString()))}',
                             style: TextStyle(
                               color: isCredit ? Colors.green : Colors.red,
                               fontWeight: FontWeight.bold,

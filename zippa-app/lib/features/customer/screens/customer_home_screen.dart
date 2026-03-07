@@ -15,6 +15,7 @@ import 'package:zippa_app/features/customer/screens/zipbot_screen.dart';
 import 'package:zippa_app/core/providers/navigation_provider.dart';
 import 'package:zippa_app/features/customer/screens/customer_profile_screen.dart';
 import 'package:zippa_app/features/customer/providers/wallet_provider.dart';
+import 'package:zippa_app/core/utils/currency_formatter.dart';
 import 'package:zippa_app/core/widgets/app_drawer.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
@@ -281,7 +282,7 @@ class _WalletCard extends StatelessWidget {
           const SizedBox(height: 8),
           Consumer<WalletProvider>(
             builder: (context, wallet, _) => Text(
-              'N${wallet.balance.toStringAsFixed(2)}', 
+              CurrencyFormatter.formatWithComma(wallet.balance),
               style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)
             ),
           ),

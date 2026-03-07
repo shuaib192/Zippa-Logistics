@@ -158,7 +158,7 @@ const createOrder = async (req, res) => {
                 dropoff_address, dropoff_latitude, dropoff_longitude,
                 dropoff_contact_name, dropoff_contact_phone,
                 package_type, package_size, package_description,
-                base_fare, distance_fare, platform_fee, total_fare, rider_earning,
+                base_fare, distance_fare, platform_fee, subtotal, total_fare, rider_earning,
                 distance_km, payment_method, status
             ) VALUES (
                 $1, $2, $3,
@@ -166,8 +166,8 @@ const createOrder = async (req, res) => {
                 $7, $8, $9,
                 $10, $11,
                 $12, $13, $14,
-                $15, $16, $17, $18, $19,
-                $20, $21, 'pending'
+                $15, $16, $17, $18, $19, $20,
+                $21, $22, 'pending'
             ) RETURNING *, 
                 pickup_latitude as pickup_lat, pickup_longitude as pickup_lng, 
                 dropoff_latitude as dropoff_lat, dropoff_longitude as dropoff_lng,
@@ -180,7 +180,7 @@ const createOrder = async (req, res) => {
                 dropoff_address, dropoff_lat || null, dropoff_lng || null,
                 recipient_name, recipient_phone,
                 package_type, package_size, package_description || null,
-                fare.base_fare, fare.distance_fare, fare.platform_fee, fare.total_fare, fare.rider_earning,
+                fare.base_fare, fare.distance_fare, fare.platform_fee, fare.subtotal, fare.total_fare, fare.rider_earning,
                 fare.distance_km, payment_method || 'wallet',
             ],
         );
@@ -325,7 +325,7 @@ const getOrderById = async (req, res) => {
             return res.status(403).json({ success: false, message: 'Access denied.' });
         }
 
-        res.status(200).json({ success: true, data: order });
+        res.status(200).json({ success: true, order: order });
 
     } catch (err) {
         console.error('Get order by ID error:', err);
@@ -414,7 +414,7 @@ const updateOrderStatus = async (req, res) => {
         res.status(200).json({
             success: true,
             message: `Order status updated to ${status}.`,
-            data: { orderId: order.id, status },
+            order: { ...order, status },
         });
 
     } catch (err) {

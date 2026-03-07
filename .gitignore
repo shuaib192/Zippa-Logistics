@@ -8,9 +8,9 @@
 # ============================================
 
 # === Node.js (Backend) ===
-node_modules/           # Downloaded packages - too big for GitHub
-.env                    # Ignore all .env files
-zippa-backend/.env      # Specifically ignore the backend secret file
+# === Node.js (Backend) ===
+**/node_modules/       # Ignore all node_modules folders
+**/.env                # Ignore all .env files
 .env.local             
 .env.production        
 npm-debug.log*         # Error logs from npm
