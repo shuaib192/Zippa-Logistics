@@ -179,14 +179,15 @@ class _CustomerWalletScreenState extends State<CustomerWalletScreen> {
               final amount = double.tryParse(controller.text);
               if (amount != null && amount > 0) {
                 final wallet = Provider.of<WalletProvider>(context, listen: false);
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
                 Navigator.pop(context);
                 final success = await wallet.fundWallet(amount);
-                if (success && mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                if (success) {
+                  scaffoldMessenger.showSnackBar(
                     SnackBar(content: Text('Successfully funded wallet with N$amount')),
                   );
-                } else if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                } else {
+                  scaffoldMessenger.showSnackBar(
                     SnackBar(content: Text(wallet.error ?? 'Funding failed')),
                   );
                 }

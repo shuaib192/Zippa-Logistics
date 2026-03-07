@@ -176,6 +176,7 @@ class CustomerProfileScreen extends StatelessWidget {
                   if (response['success'] != false) {
                     if (context.mounted) {
                       await Provider.of<AuthProvider>(context, listen: false).fetchProfile();
+                      if (!context.mounted) return;
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Profile updated successfully!')),

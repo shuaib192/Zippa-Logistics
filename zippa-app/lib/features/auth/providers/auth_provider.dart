@@ -224,6 +224,48 @@ class AuthProvider extends ChangeNotifier {
     _isAuthenticated = true;
   }
   
+  // ============================================
+  // Fetch Latest Profile
+  // ============================================
+  Future<bool> fetchProfile() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    
+    try {
+      final response = await _api.get('/users/profile');
+      
+      if (response['success'] == true && response['user'] != null) {
+        // Prepare the save data (needs the existing tokens)
+        final prefs = await SharedPreferences.getInstance();
+        final token = prefs.getString(AppConstants.tokenKey);
+        final refreshToken = prefs.getString(AppConstants.refreshTokenKey);
+        
+        await _saveAuthData({
+          'user': response['user'],
+          'tokens': {
+            'accessToken': token,
+            'refreshToken': refreshToken,
+          }
+        });
+        
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _error = response['message'] ?? 'Failed to fetch profile';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = 'Failed to load profile. Please try again.';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   // Clear any error messages
   void clearError() {
     _error = null;

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
-import 'package:zippa_app/features/auth/providers/auth_provider.dart';
 import 'package:zippa_app/data/api/api_client.dart';
 
 class ChangePasswordScreen extends StatefulWidget {

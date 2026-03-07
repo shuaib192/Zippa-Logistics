@@ -14,6 +14,7 @@ import 'package:zippa_app/features/customer/screens/customer_wallet_screen.dart'
 import 'package:zippa_app/features/customer/screens/zipbot_screen.dart';
 import 'package:zippa_app/core/providers/navigation_provider.dart';
 import 'package:zippa_app/features/customer/screens/customer_profile_screen.dart';
+import 'package:zippa_app/features/customer/providers/wallet_provider.dart';
 import 'package:zippa_app/core/widgets/app_drawer.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
