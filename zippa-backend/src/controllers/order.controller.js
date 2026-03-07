@@ -72,12 +72,12 @@ const calculateFare = (distanceKm, packageSize = 'small') => {
 const estimateFare = async (req, res) => {
     try {
         const {
-            pickupLat, pickupLng,
-            dropoffLat, dropoffLng,
-            packageSize,
+            pickup_lat, pickup_lng,
+            dropoff_lat, dropoff_lng,
+            package_size,
         } = req.body;
 
-        if (pickupLat === undefined || pickupLng === undefined || dropoffLat === undefined || dropoffLng === undefined) {
+        if (pickup_lat === undefined || pickup_lng === undefined || dropoff_lat === undefined || dropoff_lng === undefined) {
             return res.status(400).json({
                 success: false,
                 message: 'Pickup and dropoff coordinates are required.',
@@ -85,11 +85,11 @@ const estimateFare = async (req, res) => {
         }
 
         const distanceKm = calculateDistance(
-            parseFloat(pickupLat), parseFloat(pickupLng),
-            parseFloat(dropoffLat), parseFloat(dropoffLng),
+            parseFloat(pickup_lat), parseFloat(pickup_lng),
+            parseFloat(dropoff_lat), parseFloat(dropoff_lng),
         );
 
-        const fare = calculateFare(distanceKm, packageSize);
+        const fare = calculateFare(distanceKm, package_size);
 
         res.status(200).json({
             success: true,
@@ -114,15 +114,15 @@ const estimateFare = async (req, res) => {
 const createOrder = async (req, res) => {
     try {
         const {
-            pickupAddress, pickupLat, pickupLng,
-            dropoffAddress, dropoffLat, dropoffLng,
-            recipientName, recipientPhone,
-            packageSize, packageDescription,
-            paymentMethod,
+            pickup_address, pickup_lat, pickup_lng,
+            dropoff_address, dropoff_lat, dropoff_lng,
+            recipient_name, recipient_phone,
+            package_size, package_description,
+            payment_method,
         } = req.body;
 
         // Validate required fields
-        const required = { pickupAddress, dropoffAddress, recipientName, recipientPhone, packageSize };
+        const required = { pickup_address, dropoff_address, recipient_name, recipient_phone, package_size };
         for (const [field, value] of Object.entries(required)) {
             if (!value) {
                 return res.status(400).json({
@@ -133,11 +133,11 @@ const createOrder = async (req, res) => {
         }
 
         // Calculate distance and fare
-        const distanceKm = (pickupLat && dropoffLat)
-            ? calculateDistance(parseFloat(pickupLat), parseFloat(pickupLng), parseFloat(dropoffLat), parseFloat(dropoffLng))
+        const distanceKm = (pickup_lat && dropoff_lat)
+            ? calculateDistance(parseFloat(pickup_lat), parseFloat(pickup_lng), parseFloat(dropoff_lat), parseFloat(dropoff_lng))
             : 5; // default fallback
 
-        const fare = calculateFare(distanceKm, packageSize);
+        const fare = calculateFare(distanceKm, package_size);
 
         // Generate unique order number: ZLP-YYYYMMDD-XXXX
         const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -148,10 +148,10 @@ const createOrder = async (req, res) => {
         const result = await db.query(
             `INSERT INTO orders (
                 order_number, customer_id, vendor_id,
-                pickup_address, pickup_lat, pickup_lng,
-                dropoff_address, dropoff_lat, dropoff_lng,
-                recipient_name, recipient_phone,
-                package_size, package_description,
+                pickup_address, pickup_latitude, pickup_longitude,
+                dropoff_address, dropoff_latitude, dropoff_longitude,
+                dropoff_contact_name, dropoff_contact_phone,
+                package_type, package_size, package_description,
                 base_fare, distance_fare, platform_fee, total_fare, rider_earning,
                 distance_km, payment_method, status
             ) VALUES (
@@ -159,20 +159,23 @@ const createOrder = async (req, res) => {
                 $4, $5, $6,
                 $7, $8, $9,
                 $10, $11,
-                $12, $13,
-                $14, $15, $16, $17, $18,
-                $19, $20, 'pending'
-            ) RETURNING *`,
+                $12, $13, $14,
+                $15, $16, $17, $18, $19,
+                $20, $21, 'pending'
+            ) RETURNING *, 
+                pickup_latitude as pickup_lat, pickup_longitude as pickup_lng, 
+                dropoff_latitude as dropoff_lat, dropoff_longitude as dropoff_lng,
+                dropoff_contact_name as recipient_name, dropoff_contact_phone as recipient_phone`,
             [
                 orderNumber,
                 req.user.role === 'customer' ? req.user.id : null,
                 req.user.role === 'vendor' ? req.user.id : null,
-                pickupAddress, pickupLat || null, pickupLng || null,
-                dropoffAddress, dropoffLat || null, dropoffLng || null,
-                recipientName, recipientPhone,
-                packageSize, packageDescription || null,
+                pickup_address, pickup_lat || null, pickup_lng || null,
+                dropoff_address, dropoff_lat || null, dropoff_lng || null,
+                recipient_name, recipient_phone,
+                package_type, package_size, package_description || null,
                 fare.baseFare, fare.distanceFare, fare.platformFee, fare.total, fare.riderEarning,
-                fare.distanceKm, paymentMethod || 'wallet',
+                fare.distanceKm, payment_method || 'wallet',
             ],
         );
 
@@ -207,6 +210,9 @@ const getOrders = async (req, res) => {
 
         if (role === 'customer') {
             query = `SELECT o.*, 
+                o.pickup_latitude as pickup_lat, o.pickup_longitude as pickup_lng, 
+                o.dropoff_latitude as dropoff_lat, o.dropoff_longitude as dropoff_lng,
+                o.dropoff_contact_name as recipient_name, o.dropoff_contact_phone as recipient_phone,
                 u.full_name as rider_name, u.phone as rider_phone
                 FROM orders o
                 LEFT JOIN users u ON u.id = o.rider_id
@@ -219,6 +225,9 @@ const getOrders = async (req, res) => {
         } else if (role === 'rider') {
             // Riders see their assigned + all pending (available to pick up)
             query = `SELECT o.*,
+                o.pickup_latitude as pickup_lat, o.pickup_longitude as pickup_lng, 
+                o.dropoff_latitude as dropoff_lat, o.dropoff_longitude as dropoff_lng,
+                o.dropoff_contact_name as recipient_name, o.dropoff_contact_phone as recipient_phone,
                 u.full_name as customer_name, u.phone as customer_phone
                 FROM orders o
                 LEFT JOIN users u ON u.id = o.customer_id
@@ -230,6 +239,9 @@ const getOrders = async (req, res) => {
 
         } else if (role === 'vendor') {
             query = `SELECT o.*,
+                o.pickup_latitude as pickup_lat, o.pickup_longitude as pickup_lng, 
+                o.dropoff_latitude as dropoff_lat, o.dropoff_longitude as dropoff_lng,
+                o.dropoff_contact_name as recipient_name, o.dropoff_contact_phone as recipient_phone,
                 u.full_name as rider_name
                 FROM orders o
                 LEFT JOIN users u ON u.id = o.rider_id
@@ -271,6 +283,9 @@ const getOrderById = async (req, res) => {
 
         const result = await db.query(
             `SELECT o.*,
+                o.pickup_latitude as pickup_lat, o.pickup_longitude as pickup_lng, 
+                o.dropoff_latitude as dropoff_lat, o.dropoff_longitude as dropoff_lng,
+                o.dropoff_contact_name as recipient_name, o.dropoff_contact_phone as recipient_phone,
                 c.full_name as customer_name, c.phone as customer_phone,
                 r.full_name as rider_name, r.phone as rider_phone
             FROM orders o
