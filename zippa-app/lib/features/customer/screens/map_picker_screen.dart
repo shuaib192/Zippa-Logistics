@@ -4,7 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong2.dart';
+import 'package:latlong2/latlong2.dart' as ll;
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
@@ -19,7 +19,7 @@ class MapPickerScreen extends StatefulWidget {
 
 class _MapPickerScreenState extends State<MapPickerScreen> {
   final MapController _mapController = MapController();
-  LatLng _lastPosition = const LatLng(6.5244, 3.3792); // Default to Lagos, Nigeria
+  ll.LatLng _lastPosition = const ll.LatLng(6.5244, 3.3792); // Default to Lagos, Nigeria
   String _currentAddress = 'Searching...';
 
   @override
@@ -51,7 +51,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
     }
 
     final position = await Geolocator.getCurrentPosition();
-    _lastPosition = LatLng(position.latitude, position.longitude);
+    _lastPosition = ll.LatLng(position.latitude, position.longitude);
     
     // Reverse geocode to get initial address
     _updateAddress(_lastPosition);
@@ -62,7 +62,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   // ============================================
   // Get address text from coordinates
   // ============================================
-  Future<void> _updateAddress(LatLng pos) async {
+  Future<void> _updateAddress(ll.LatLng pos) async {
     try {
       List<Placemark> placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
       if (placemarks.isNotEmpty) {

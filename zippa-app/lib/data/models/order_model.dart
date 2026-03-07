@@ -30,6 +30,8 @@ class OrderModel {
   final double platformFee;
   final double totalFare;
   final double riderEarnings;
+
+  double get fare => totalFare;
   
   // Status & Timestamps
   final String status; // pending, accepted, picked_up, delivered, cancelled

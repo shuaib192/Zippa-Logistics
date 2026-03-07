@@ -4,7 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong2.dart';
+import 'package:latlong2/latlong2.dart' as ll;
 import 'package:provider/provider.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/data/models/order_model.dart';
@@ -46,7 +46,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     
     // Calculate bounds manually if needed or use center/zoom
     _mapController.move(
-      LatLng(_order!.pickupLat, _order!.pickupLng),
+      ll.LatLng(_order!.pickupLat, _order!.pickupLng),
       13.0,
     );
   }
@@ -81,7 +81,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                 child: FlutterMap(
                   mapController: _mapController,
                   options: MapOptions(
-                    initialCenter: LatLng(_order!.pickupLat, _order!.pickupLng),
+                    initialCenter: ll.LatLng(_order!.pickupLat, _order!.pickupLng),
                     initialZoom: 13.0,
                   ),
                   children: [
@@ -92,13 +92,13 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                     MarkerLayer(
                       markers: [
                         Marker(
-                          point: LatLng(_order!.pickupLat, _order!.pickupLng),
+                          point: ll.LatLng(_order!.pickupLat, _order!.pickupLng),
                           width: 40,
                           height: 40,
                           child: const Icon(Icons.location_on, color: ZippaColors.primary, size: 40),
                         ),
                         Marker(
-                          point: LatLng(_order!.dropoffLat, _order!.dropoffLng),
+                          point: ll.LatLng(_order!.dropoffLat, _order!.dropoffLng),
                           width: 40,
                           height: 40,
                           child: const Icon(Icons.flag, color: ZippaColors.accent, size: 40),

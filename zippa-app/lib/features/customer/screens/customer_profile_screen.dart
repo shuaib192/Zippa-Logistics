@@ -32,7 +32,7 @@ class CustomerProfileScreen extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 50,
-                    backgroundColor: ZippaColors.primary.withOpacity(0.1),
+                    backgroundColor: ZippaColors.primary.withValues(alpha: 0.1),
                     child: const Icon(Icons.person_rounded, size: 50, color: ZippaColors.primary),
                   ),
                   Positioned(

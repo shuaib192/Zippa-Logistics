@@ -14,7 +14,11 @@ class _RiderDeliveriesScreenState extends State<RiderDeliveriesScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => Provider.of<OrderProvider>(context, listen: false).fetchOrders());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Provider.of<OrderProvider>(context, listen: false).fetchOrders();
+      }
+    });
   }
 
   @override
@@ -57,12 +61,12 @@ class _RiderDeliveriesScreenState extends State<RiderDeliveriesScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: ListTile(
                   contentPadding: const EdgeInsets.all(16),
-                  title: Text('Order #${order.orderNumber ?? order.id.substring(0,8)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  title: Text('Order #${order.orderNumber ?? (order.id?.substring(0, 8) ?? '...')}', style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text('Earnings: N${order.fare.toStringAsFixed(2)}'),
                   trailing: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(order.status).withOpacity(0.1),
+                      color: _getStatusColor(order.status).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
