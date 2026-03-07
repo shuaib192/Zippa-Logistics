@@ -74,7 +74,7 @@ const estimateFare = async (req, res) => {
         const {
             pickup_lat, pickup_lng,
             dropoff_lat, dropoff_lng,
-            package_size,
+            package_type, package_size,
         } = req.body;
 
         if (pickup_lat === undefined || pickup_lng === undefined || dropoff_lat === undefined || dropoff_lng === undefined) {
@@ -122,7 +122,7 @@ const createOrder = async (req, res) => {
         } = req.body;
 
         // Validate required fields
-        const required = { pickup_address, dropoff_address, recipient_name, recipient_phone, package_size };
+        const required = { pickup_address, dropoff_address, recipient_name, recipient_phone, package_type, package_size };
         for (const [field, value] of Object.entries(required)) {
             if (!value) {
                 return res.status(400).json({
