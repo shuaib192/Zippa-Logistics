@@ -52,6 +52,8 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
           IconButton(
             icon: const Icon(Icons.logout_rounded),
             onPressed: () async {
+              final auth = Provider.of<AuthProvider>(context, listen: false);
+              final nav = Navigator.of(context);
               final shouldLogout = await showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
@@ -66,9 +68,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                   ],
                 ),
               );
-              if (shouldLogout == true && context.mounted) {
-                await Provider.of<AuthProvider>(context, listen: false).logout();
-                Navigator.pushNamedAndRemoveUntil(context, '/login', (r) => false);
+              if (shouldLogout == true) {
+                await auth.logout();
+                nav.pushNamedAndRemoveUntil('/login', (r) => false);
               }
             },
           ),
