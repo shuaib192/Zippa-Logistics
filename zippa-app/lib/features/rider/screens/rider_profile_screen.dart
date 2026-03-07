@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/features/auth/providers/auth_provider.dart';
+import 'package:zippa_app/core/widgets/app_drawer.dart';
 
 class RiderProfileScreen extends StatelessWidget {
   const RiderProfileScreen({super.key});
@@ -11,7 +12,14 @@ class RiderProfileScreen extends StatelessWidget {
     final user = Provider.of<AuthProvider>(context).user;
     
     return Scaffold(
+      drawer: const AppDrawer(),
       appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu_rounded),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: const Text('Rider Profile', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         foregroundColor: ZippaColors.textPrimary,

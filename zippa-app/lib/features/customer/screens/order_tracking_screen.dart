@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/data/models/order_model.dart';
 import 'package:zippa_app/features/customer/providers/order_provider.dart';
@@ -34,13 +35,117 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     final provider = Provider.of<OrderProvider>(context, listen: false);
     final order = await provider.fetchOrderDetails(widget.orderId);
     if (mounted) {
+      bool shouldShowRating = _order?.status != 'delivered' && order?.status == 'delivered';
       setState(() {
         _order = order;
         _isLoading = false;
       });
+      if (shouldShowRating) {
+        _showRatingDialog();
+      }
     }
   }
 
+  Future<void> _cancelOrder() async {
+    final provider = Provider.of<OrderProvider>(context, listen: false);
+    setState(() => _isLoading = true);
+    
+    final success = await provider.cancelOrder(widget.orderId);
+    if (mounted) {
+      setState(() => _isLoading = false);
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Order cancelled successfully.')),
+        );
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to cancel order.')),
+        );
+      }
+    }
+  }
+
+  void _showRatingDialog() {
+    int rating = 5;
+    final commentController = TextEditingController();
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Rate your Delivery'),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('How was your experience with the rider?'),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (index) => IconButton(
+                  icon: Icon(
+                    index < rating ? Icons.star : Icons.star_border,
+                    color: Colors.amber,
+                    size: 32,
+                  ),
+                  onPressed: () => setState(() => rating = index + 1),
+                )),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: commentController,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  hintText: 'Add a comment (optional)',
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Later')),
+            ElevatedButton(
+              onPressed: isSubmitting ? null : () async {
+                setState(() => isSubmitting = true);
+                final provider = Provider.of<OrderProvider>(context, listen: false);
+                try {
+                  final response = await provider.apiClient.post('/ratings', {
+                    'orderId': widget.orderId,
+                    'rating': rating,
+                    'comment': commentController.text,
+                  });
+                  if (response['success'] != false) {
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Thank you for your feedback!')),
+                      );
+                    }
+                  }
+                } catch (e) {
+                   debugPrint('Rating error: $e');
+                } finally {
+                  if (context.mounted) setState(() => isSubmitting = false);
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ZippaColors.primary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: isSubmitting 
+                ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : const Text('Submit', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,6 +165,9 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Order #${_order!.orderNumber ?? widget.orderId.substring(0, 8)}'),
+        backgroundColor: Colors.white,
+        foregroundColor: ZippaColors.textPrimary,
+        elevation: 0,
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -107,7 +215,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                 bottom: isWide ? 20 : 0,
                 child: Container(
                   width: isWide ? 400 : constraints.maxWidth,
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: isWide 
@@ -128,7 +236,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                       _buildStatusHeader(),
                       const Divider(height: 32),
                       _buildTimeline(),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
                       _buildRiderInfo(),
                     ],
                   ),
@@ -162,6 +270,10 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
         statusText = 'Delivered';
         statusColor = ZippaColors.success;
         break;
+      case 'cancelled':
+        statusText = 'Cancelled';
+        statusColor = Colors.red;
+        break;
     }
 
     return Row(
@@ -178,10 +290,11 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
           ),
         ),
         const Spacer(),
-        Text(
-          'ETA: 15-20 mins',
-          style: TextStyle(color: ZippaColors.textSecondary, fontWeight: FontWeight.w600, fontSize: 12),
-        ),
+        if (_order!.status != 'delivered' && _order!.status != 'cancelled')
+          Text(
+            'ETA: 15-20 mins',
+            style: TextStyle(color: ZippaColors.textSecondary, fontWeight: FontWeight.w600, fontSize: 12),
+          ),
       ],
     );
   }
@@ -241,27 +354,47 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
   Widget _buildRiderInfo() {
     if (_order!.riderId == null) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            const CircularProgressIndicator(strokeWidth: 2),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text('Finding your rider...', style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text('Matching with the nearest delivery partner', style: TextStyle(fontSize: 12, color: ZippaColors.textSecondary)),
-                ],
+      return Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text('Finding your rider...', style: TextStyle(fontWeight: FontWeight.bold)),
+                      Text('Matching with the nearest delivery partner', style: TextStyle(fontSize: 12, color: ZippaColors.textSecondary)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (_order!.status == 'pending') ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: OutlinedButton(
+                onPressed: _cancelOrder,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  side: const BorderSide(color: Colors.red),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Cancel Order', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
             ),
           ],
-        ),
+        ],
       );
     }
 
@@ -275,7 +408,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
         children: [
           CircleAvatar(
             backgroundColor: ZippaColors.primary.withValues(alpha: 0.1),
-            child: const Icon(Icons.person, color: ZippaColors.primary),
+            backgroundImage: _order!.riderAvatar != null ? NetworkImage(_order!.riderAvatar!) : null,
+            child: _order!.riderAvatar == null ? const Icon(Icons.person, color: ZippaColors.primary) : null,
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -283,18 +417,26 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('Rider Assigned', style: TextStyle(fontWeight: FontWeight.bold)),
-                Text('John Doe • 4.9 ★', style: const TextStyle(fontSize: 12, color: ZippaColors.textSecondary)),
+                Text('${_order!.riderName ?? 'Rider'} • Assigned', style: const TextStyle(fontSize: 12, color: ZippaColors.textSecondary)),
               ],
             ),
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+               if (_order!.riderPhone != null) {
+                 launchUrl(Uri.parse('tel:${_order!.riderPhone}'));
+               }
+            },
             icon: const Icon(Icons.phone_in_talk_rounded, color: ZippaColors.primary),
             style: IconButton.styleFrom(backgroundColor: Colors.white),
           ),
           const SizedBox(width: 8),
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+               ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Chat feature coming in Phase 7!')),
+              );
+            },
             icon: const Icon(Icons.chat_bubble_rounded, color: ZippaColors.primary),
             style: IconButton.styleFrom(backgroundColor: Colors.white),
           ),

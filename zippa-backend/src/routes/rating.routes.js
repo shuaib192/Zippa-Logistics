@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/auth.middleware');
-const { chatWithZipBot } = require('../controllers/zipbot.controller');
+const { submitRating } = require('../controllers/rating.controller');
 
 router.use(authenticate);
 
-router.post('/zipbot', chatWithZipBot);
+router.post('/', submitRating);
 
 module.exports = router;

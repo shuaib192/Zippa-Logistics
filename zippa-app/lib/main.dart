@@ -33,7 +33,11 @@ import 'features/customer/screens/customer_home_screen.dart';
 import 'features/customer/screens/order_create_screen.dart';
 import 'features/rider/screens/rider_home_screen.dart';
 import 'features/vendor/screens/vendor_home_screen.dart';
+import 'features/customer/screens/customer_notifications_screen.dart';
+import 'features/customer/screens/zipbot_screen.dart';
 import 'features/customer/providers/order_provider.dart';
+import 'features/customer/providers/wallet_provider.dart';
+import 'features/customer/providers/notification_provider.dart';
 import 'core/providers/navigation_provider.dart';
 
 // ============================================
@@ -70,6 +74,8 @@ class ZippaApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
+        ChangeNotifierProvider(create: (_) => WalletProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
       ],
       child: MaterialApp(
@@ -96,6 +102,8 @@ class ZippaApp extends StatelessWidget {
           '/register':      (_) => const RegisterScreen(),
           '/customer-home': (_) => const CustomerHomeScreen(),
           '/order-create':  (_) => const OrderCreateScreen(),
+          '/notifications': (_) => const CustomerNotificationsScreen(),
+          '/zipbot':        (_) => const ZipBotScreen(),
           '/rider-home':    (_) => const RiderHomeScreen(),
           '/vendor-home':   (_) => const VendorHomeScreen(),
         },

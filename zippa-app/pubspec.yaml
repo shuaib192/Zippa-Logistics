@@ -48,6 +48,7 @@ dependencies:
   
   # --- Utilities ---
   intl: ^0.19.0               # Formatting currency/dates
+  url_launcher: ^6.3.0       # Making phone calls/opening URLs
   
   # --- Navigation ---
   go_router: ^14.0.0          # Advanced routing/navigation

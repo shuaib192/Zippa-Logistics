@@ -152,6 +152,9 @@ CREATE TABLE IF NOT EXISTS orders (
     -- Pricing
     distance_km      DECIMAL(10, 2),  -- Distance in kilometers
     base_fare        DECIMAL(12, 2),  -- Base delivery fee
+    distance_fare    DECIMAL(12, 2),  -- Fare based on distance
+    platform_fee     DECIMAL(12, 2),  -- Zippa platform cut
+    subtotal         DECIMAL(12, 2),  -- Fare before platform fee
     surge_multiplier DECIMAL(4, 2) DEFAULT 1.00,
     -- Surge pricing: 1.00 = normal, 1.50 = 50% extra during high demand
     total_fare       DECIMAL(12, 2),  -- Final amount customer pays

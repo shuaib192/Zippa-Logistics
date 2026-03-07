@@ -84,6 +84,7 @@ class _HomeContentState extends State<_HomeContent> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<OrderProvider>(context, listen: false).fetchOrders();
+      Provider.of<WalletProvider>(context, listen: false).fetchBalance();
     });
   }
 
@@ -93,6 +94,7 @@ class _HomeContentState extends State<_HomeContent> {
 
     return Scaffold(
       backgroundColor: ZippaColors.background,
+      drawer: const AppDrawer(),
       appBar: AppBar(
         leading: Builder(
           builder: (context) => IconButton(
@@ -114,7 +116,10 @@ class _HomeContentState extends State<_HomeContent> {
           ],
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.notifications_outlined), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined), 
+            onPressed: () => Navigator.pushNamed(context, '/notifications'),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: CircleAvatar(
@@ -127,6 +132,11 @@ class _HomeContentState extends State<_HomeContent> {
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => Navigator.pushNamed(context, '/zipbot'),
+        backgroundColor: ZippaColors.primary,
+        child: const Icon(Icons.psychology, color: Colors.white),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -167,11 +177,7 @@ class _HomeContentState extends State<_HomeContent> {
                   icon: Icons.history_rounded, 
                   label: 'History', 
                   color: ZippaColors.accent, 
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Order history feature coming soon!')),
-                    );
-                  }
+                  onTap: () => Provider.of<NavigationProvider>(context, listen: false).setIndex(1),
                 )),
               ],
             ).animate().fadeIn(delay: 150.ms, duration: 400.ms),
@@ -180,7 +186,10 @@ class _HomeContentState extends State<_HomeContent> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Recent Orders', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
-                TextButton(onPressed: () {}, child: const Text('See All')),
+                TextButton(
+                  onPressed: () => Provider.of<NavigationProvider>(context, listen: false).setIndex(1), 
+                  child: const Text('See All'),
+                ),
               ],
             ),
             Consumer<OrderProvider>(
@@ -269,15 +278,20 @@ class _WalletCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          const Text('N0.00', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+          Consumer<WalletProvider>(
+            builder: (context, wallet, _) => Text(
+              'N${wallet.balance.toStringAsFixed(2)}', 
+              style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)
+            ),
+          ),
           const SizedBox(height: 18),
           Row(
             children: [
-              _WalletAction(icon: Icons.add, label: 'Fund'),
+              _WalletAction(icon: Icons.add, label: 'Fund', onTap: () => Provider.of<NavigationProvider>(context, listen: false).setIndex(2)),
               const SizedBox(width: 28),
-              _WalletAction(icon: Icons.arrow_upward, label: 'Send'),
+              _WalletAction(icon: Icons.arrow_upward, label: 'Send', onTap: () => Navigator.pushNamed(context, '/order-create')),
               const SizedBox(width: 28),
-              _WalletAction(icon: Icons.receipt_long_rounded, label: 'History'),
+              _WalletAction(icon: Icons.receipt_long_rounded, label: 'History', onTap: () => Provider.of<NavigationProvider>(context, listen: false).setIndex(2)),
             ],
           ),
         ],
@@ -289,23 +303,27 @@ class _WalletCard extends StatelessWidget {
 class _WalletAction extends StatelessWidget {
   final IconData icon;
   final String label;
-  const _WalletAction({required this.icon, required this.label});
+  final VoidCallback? onTap;
+  const _WalletAction({required this.icon, required this.label, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: Colors.white, size: 18),
           ),
-          child: Icon(icon, color: Colors.white, size: 18),
-        ),
-        const SizedBox(height: 5),
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
-      ],
+          const SizedBox(height: 5),
+          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+        ],
+      ),
     );
   }
 }

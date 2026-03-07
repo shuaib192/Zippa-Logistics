@@ -33,8 +33,11 @@ const rateLimit = require('express-rate-limit'); // Rate limiting
 // Import our route files (we'll create these next)
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
+const notificationRoutes = require('./routes/notification.routes');
+const ratingRoutes = require('./routes/rating.routes');
 const chatRoutes = require('./routes/chat.routes');
 const orderRoutes = require('./routes/order.routes');
+const walletRoutes = require('./routes/wallet.routes');
 
 // Create the Express application
 const app = express();
@@ -107,6 +110,9 @@ app.get('/api/health', (_req, res) => {
 // Mount route modules
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/wallet', walletRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/ratings', ratingRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/orders', orderRoutes);
 

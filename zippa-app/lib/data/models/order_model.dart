@@ -39,6 +39,11 @@ class OrderModel {
   final String? paymentMethod;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  
+  // Rider Info (Loaded in details)
+  final String? riderName;
+  final String? riderPhone;
+  final String? riderAvatar;
 
   OrderModel({
     this.id,
@@ -65,6 +70,9 @@ class OrderModel {
     this.paymentMethod = 'cash',
     this.createdAt,
     this.updatedAt,
+    this.riderName,
+    this.riderPhone,
+    this.riderAvatar,
   });
 
   // Convert JSON to Order object
@@ -80,20 +88,23 @@ class OrderModel {
       dropoffAddress: json['dropoff_address'],
       dropoffLat: double.tryParse(json['dropoff_lat'].toString()) ?? 0.0,
       dropoffLng: double.tryParse(json['dropoff_lng'].toString()) ?? 0.0,
-      packageSize: json['package_size'],
-      packageType: json['package_type'],
+      packageSize: json['package_size'] ?? 'medium',
+      packageType: json['package_type'] ?? 'parcel',
       packageDescription: json['package_description'],
-      recipientName: json['recipient_name'],
-      recipientPhone: json['recipient_phone'],
-      subtotal: double.tryParse(json['subtotal'].toString()) ?? 0.0,
-      platformFee: double.tryParse(json['platform_fee'].toString()) ?? 0.0,
-      totalFare: double.tryParse(json['total_fare'].toString()) ?? 0.0,
-      riderEarnings: double.tryParse(json['rider_earning'].toString()) ?? 0.0,
-      status: json['status'],
+      recipientName: json['recipient_name'] ?? json['dropoff_contact_name'] ?? '',
+      recipientPhone: json['recipient_phone'] ?? json['dropoff_contact_phone'] ?? '',
+      subtotal: double.tryParse(json['subtotal']?.toString() ?? '0') ?? 0.0,
+      platformFee: double.tryParse(json['platform_fee']?.toString() ?? '0') ?? 0.0,
+      totalFare: double.tryParse(json['total_fare']?.toString() ?? '0') ?? 0.0,
+      riderEarnings: double.tryParse(json['rider_earning']?.toString() ?? '0') ?? 0.0,
+      status: json['status'] ?? 'pending',
       paymentStatus: json['payment_status'],
       paymentMethod: json['payment_method'],
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+      riderName: json['rider_name'],
+      riderPhone: json['rider_phone'],
+      riderAvatar: json['rider_avatar'],
     );
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/features/customer/providers/order_provider.dart';
+import 'package:zippa_app/core/widgets/app_drawer.dart';
 
 class RiderDeliveriesScreen extends StatefulWidget {
   const RiderDeliveriesScreen({super.key});
@@ -24,7 +25,14 @@ class _RiderDeliveriesScreenState extends State<RiderDeliveriesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const AppDrawer(),
       appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu_rounded),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: const Text('My Deliveries', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         foregroundColor: ZippaColors.textPrimary,

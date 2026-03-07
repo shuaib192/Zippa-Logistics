@@ -15,13 +15,16 @@ class OrderProvider with ChangeNotifier {
   Map<String, dynamic>? _lastEstimate;
 
   // Getters
+  ApiClient get apiClient => _apiClient;
   bool get isLoading => _isLoading;
   String? get error => _error;
   List<OrderModel> get orders => _orders;
   Map<String, dynamic>? get lastEstimate => _lastEstimate;
   
+  String get pickupAddress => _pickupAddress;
   double get pickupLat => _pickupLat;
   double get pickupLng => _pickupLng;
+  String get dropoffAddress => _dropoffAddress;
   double get dropoffLat => _dropoffLat;
   double get dropoffLng => _dropoffLng;
 
@@ -168,8 +171,8 @@ class OrderProvider with ChangeNotifier {
 
     try {
       final response = await _apiClient.get('/orders/$orderId');
-      if (response['success'] != false && response['data'] != null) {
-        final order = OrderModel.fromJson(response['data']);
+      if (response['success'] != false && response['order'] != null) {
+        final order = OrderModel.fromJson(response['order']);
         _isLoading = false;
         notifyListeners();
         return order;
@@ -264,6 +267,68 @@ class OrderProvider with ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  // ============================================
+  // API CALL: Cancel Order
+  // ============================================
+  Future<bool> cancelOrder(String orderId) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.put('/orders/$orderId/cancel', {});
+      if (response['success'] != false) {
+        // Find and update local order status
+        final index = _orders.indexWhere((o) => o.id == orderId);
+        if (index != -1) {
+          final oldOrder = _orders[index];
+          _orders[index] = OrderModel(
+            id: oldOrder.id,
+            orderNumber: oldOrder.orderNumber,
+            customerId: oldOrder.customerId,
+            riderId: oldOrder.riderId,
+            pickupAddress: oldOrder.pickupAddress,
+            pickupLat: oldOrder.pickupLat,
+            pickupLng: oldOrder.pickupLng,
+            dropoffAddress: oldOrder.dropoffAddress,
+            dropoffLat: oldOrder.dropoffLat,
+            dropoffLng: oldOrder.dropoffLng,
+            packageSize: oldOrder.packageSize,
+            packageType: oldOrder.packageType,
+            packageDescription: oldOrder.packageDescription,
+            recipientName: oldOrder.recipientName,
+            recipientPhone: oldOrder.recipientPhone,
+            subtotal: oldOrder.subtotal,
+            platformFee: oldOrder.platformFee,
+            totalFare: oldOrder.totalFare,
+            riderEarnings: oldOrder.riderEarnings,
+            status: 'cancelled',
+            paymentStatus: oldOrder.paymentStatus,
+            paymentMethod: oldOrder.paymentMethod,
+            createdAt: oldOrder.createdAt,
+            updatedAt: DateTime.now(),
+            riderName: oldOrder.riderName,
+            riderPhone: oldOrder.riderPhone,
+            riderAvatar: oldOrder.riderAvatar,
+          );
+        }
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _error = response['message'];
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = 'Failed to cancel order';
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 }

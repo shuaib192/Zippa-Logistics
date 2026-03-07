@@ -14,6 +14,7 @@
 // ============================================
 
 const db = require('../config/database');
+const { createNotification } = require('./notification.controller');
 
 
 // ============================================
@@ -186,6 +187,15 @@ const createOrder = async (req, res) => {
 
         const order = result.rows[0];
 
+        // Create notification for customer
+        await createNotification(
+            order.customer_id, // Use order.customer_id as the recipient
+            'Order Placed!',
+            `Your order #${orderNumber} has been successfully placed and is pending rider acceptance.`,
+            'order',
+            order.id
+        );
+
         res.status(201).json({
             success: true,
             message: 'Order placed successfully. Searching for a rider...',
@@ -263,11 +273,9 @@ const getOrders = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            data: {
-                orders: result.rows,
-                count: result.rows.length,
-                hasMore: result.rows.length === parseInt(limit),
-            },
+            orders: result.rows,
+            count: result.rows.length,
+            hasMore: result.rows.length === parseInt(limit),
         });
 
     } catch (err) {
@@ -291,8 +299,8 @@ const getOrderById = async (req, res) => {
                 o.pickup_latitude as pickup_lat, o.pickup_longitude as pickup_lng, 
                 o.dropoff_latitude as dropoff_lat, o.dropoff_longitude as dropoff_lng,
                 o.dropoff_contact_name as recipient_name, o.dropoff_contact_phone as recipient_phone,
-                c.full_name as customer_name, c.phone as customer_phone,
-                r.full_name as rider_name, r.phone as rider_phone
+                c.full_name as customer_name, c.phone as customer_phone, c.avatar_url as customer_avatar,
+                r.full_name as rider_name, r.phone as rider_phone, r.avatar_url as rider_avatar
             FROM orders o
             LEFT JOIN users c ON c.id = o.customer_id
             LEFT JOIN users r ON r.id = o.rider_id
@@ -380,6 +388,29 @@ const updateOrderStatus = async (req, res) => {
             await db.query(updateQuery, [status, order.id]);
         }
 
+        // Create notification for customer about status update
+        let title = 'Order Update';
+        let msg = `Your order status has been updated to ${status.replace('_', ' ')}.`;
+
+        if (status === 'accepted') {
+            title = 'Rider Accepted!';
+            msg = 'A rider has accepted your order and is heading to pickup.';
+        } else if (status === 'picked_up') {
+            title = 'Order Picked Up!';
+            msg = 'Your package is on its way to the recipient.';
+        } else if (status === 'delivered') {
+            title = 'Delivered!';
+            msg = 'Your package has been successfully delivered.';
+        }
+
+        await createNotification(
+            order.customer_id,
+            title,
+            msg,
+            'order',
+            order.id
+        );
+
         res.status(200).json({
             success: true,
             message: `Order status updated to ${status}.`,
@@ -392,4 +423,65 @@ const updateOrderStatus = async (req, res) => {
     }
 };
 
-module.exports = { estimateFare, createOrder, getOrders, getOrderById, updateOrderStatus };
+/**
+ * Cancel an order (Customer only, if status is pending)
+ * PUT /api/orders/:id/cancel
+ */
+const cancelOrder = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Check if order exists and belongs to user
+        const orderResult = await db.query(
+            'SELECT * FROM orders WHERE id = $1 AND customer_id = $2',
+            [id, req.user.id]
+        );
+
+        if (orderResult.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Order not found.' });
+        }
+
+        const order = orderResult.rows[0];
+
+        // Only allow cancellation if pending
+        if (order.status !== 'pending') {
+            return res.status(400).json({
+                success: false,
+                message: 'Only pending orders can be cancelled.'
+            });
+        }
+
+        // Update status to cancelled
+        await db.query(
+            'UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2',
+            ['cancelled', id]
+        );
+
+        // Create notification for customer
+        await createNotification(
+            req.user.id,
+            'Order Cancelled!',
+            `Your order #${order.order_number} has been successfully cancelled.`,
+            'order',
+            order.id
+        );
+
+        res.status(200).json({
+            success: true,
+            message: 'Order cancelled successfully.'
+        });
+
+    } catch (err) {
+        console.error('Cancel order error:', err);
+        res.status(500).json({ success: false, message: 'Failed to cancel order.' });
+    }
+};
+
+module.exports = {
+    estimateFare,
+    createOrder,
+    getOrders,
+    getOrderById,
+    updateOrderStatus,
+    cancelOrder,
+};

@@ -77,6 +77,7 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
 
     return Scaffold(
       backgroundColor: ZippaColors.background,
+      drawer: const AppDrawer(),
       appBar: AppBar(
         leading: Builder(
           builder: (context) => IconButton(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
+import 'package:zippa_app/core/widgets/app_drawer.dart';
 
 class RiderEarningsScreen extends StatelessWidget {
   const RiderEarningsScreen({super.key});
@@ -7,7 +8,14 @@ class RiderEarningsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const AppDrawer(),
       appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu_rounded),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: const Text('Earnings', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         foregroundColor: ZippaColors.textPrimary,
