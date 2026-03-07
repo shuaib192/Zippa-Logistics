@@ -56,7 +56,7 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: ListTile(
                   contentPadding: const EdgeInsets.all(16),
-                  title: Text('Order #${order.orderNumber ?? order.id.substring(0,8)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  title: Text('Order #${order.orderNumber ?? (order.id?.substring(0, 8) ?? '...')}', style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text('${order.pickupAddress.split(',')[0]} → ${order.dropoffAddress.split(',')[0]}'),
                   trailing: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -71,7 +71,7 @@ class _CustomerOrdersScreenState extends State<CustomerOrdersScreen> {
                   ),
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => OrderTrackingScreen(orderId: order.id)),
+                    MaterialPageRoute(builder: (context) => OrderTrackingScreen(orderId: order.id ?? '')),
                   ),
                 ),
               );
