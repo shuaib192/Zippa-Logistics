@@ -77,7 +77,7 @@ const estimateFare = async (req, res) => {
             packageSize,
         } = req.body;
 
-        if (!pickupLat || !pickupLng || !dropoffLat || !dropoffLng) {
+        if (pickupLat === undefined || pickupLng === undefined || dropoffLat === undefined || dropoffLng === undefined) {
             return res.status(400).json({
                 success: false,
                 message: 'Pickup and dropoff coordinates are required.',

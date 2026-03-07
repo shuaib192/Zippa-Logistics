@@ -19,6 +19,11 @@ class OrderProvider with ChangeNotifier {
   String? get error => _error;
   List<OrderModel> get orders => _orders;
   Map<String, dynamic>? get lastEstimate => _lastEstimate;
+  
+  double get pickupLat => _pickupLat;
+  double get pickupLng => _pickupLng;
+  double get dropoffLat => _dropoffLat;
+  double get dropoffLng => _dropoffLng;
 
   // ============================================
   // Current Order Creation State

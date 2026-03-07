@@ -197,6 +197,14 @@ class _OrderCreateScreenState extends State<OrderCreateScreen> {
         return;
       }
 
+      // Final safety check for coordinates
+      if (provider.pickupLat == 0.0 || provider.dropoffLat == 0.0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select valid locations from the list')),
+        );
+        return;
+      }
+
       // Show loading and get estimate
       if (!mounted) return;
       showDialog(
