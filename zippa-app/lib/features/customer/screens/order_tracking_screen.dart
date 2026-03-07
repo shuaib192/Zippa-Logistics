@@ -41,15 +41,6 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     }
   }
 
-  void _fitBounds() {
-    if (_order == null) return;
-    
-    // Calculate bounds manually if needed or use center/zoom
-    _mapController.move(
-      ll.LatLng(_order!.pickupLat, _order!.pickupLng),
-      13.0,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {

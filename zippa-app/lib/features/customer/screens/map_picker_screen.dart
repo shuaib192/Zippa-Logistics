@@ -93,12 +93,16 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
             options: MapOptions(
               initialCenter: _lastPosition,
               initialZoom: 15,
-              onPositionChanged: (pos, hasGesture) {
+              onPositionChanged: (camera, hasGesture) {
                 if (hasGesture) {
-                  _lastPosition = pos.center!;
+                  _lastPosition = camera.center;
                 }
               },
-              onMapIdle: () => _updateAddress(_lastPosition),
+              onMapEvent: (event) {
+                if (event is MapEventMoveEnd) {
+                  _updateAddress(_lastPosition);
+                }
+              },
             ),
             children: [
               TileLayer(

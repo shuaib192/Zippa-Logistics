@@ -9,7 +9,6 @@ import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/features/auth/providers/auth_provider.dart';
 import 'package:zippa_app/features/customer/providers/order_provider.dart';
 import 'package:zippa_app/features/customer/screens/order_tracking_screen.dart';
-import 'package:zippa_app/features/customer/widgets/nigeria_location_picker.dart';
 import 'package:zippa_app/features/customer/screens/customer_orders_screen.dart';
 import 'package:zippa_app/features/customer/screens/customer_wallet_screen.dart';
 import 'package:zippa_app/features/customer/screens/zipbot_screen.dart';
