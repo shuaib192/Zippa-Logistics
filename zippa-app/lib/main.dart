@@ -34,6 +34,7 @@ import 'features/customer/screens/order_create_screen.dart';
 import 'features/rider/screens/rider_home_screen.dart';
 import 'features/vendor/screens/vendor_home_screen.dart';
 import 'features/customer/providers/order_provider.dart';
+import 'core/providers/navigation_provider.dart';
 
 // ============================================
 // main() — The very first function that runs
@@ -69,6 +70,7 @@ class ZippaApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
+        ChangeNotifierProvider(create: (_) => NavigationProvider()),
       ],
       child: MaterialApp(
         // App configuration

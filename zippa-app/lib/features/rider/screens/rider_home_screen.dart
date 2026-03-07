@@ -10,6 +10,8 @@ import 'package:zippa_app/features/rider/screens/rider_deliveries_screen.dart';
 import 'package:zippa_app/features/rider/screens/rider_earnings_screen.dart';
 import 'package:zippa_app/features/customer/screens/zipbot_screen.dart';
 import 'package:zippa_app/features/rider/screens/rider_profile_screen.dart';
+import 'package:zippa_app/core/providers/navigation_provider.dart';
+import 'package:zippa_app/core/widgets/app_drawer.dart';
 
 class RiderHomeScreen extends StatefulWidget {
   const RiderHomeScreen({super.key});
@@ -19,7 +21,6 @@ class RiderHomeScreen extends StatefulWidget {
 }
 
 class _RiderHomeScreenState extends State<RiderHomeScreen> {
-  int _currentIndex = 0;
 
   final List<Widget> _screens = [
     const _RiderHomeContent(),
@@ -31,14 +32,17 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final navProvider = Provider.of<NavigationProvider>(context);
+
     return Scaffold(
+      drawer: const AppDrawer(),
       body: IndexedStack(
-        index: _currentIndex,
+        index: navProvider.currentIndex,
         children: _screens,
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        currentIndex: navProvider.currentIndex,
+        onTap: (index) => navProvider.setIndex(index),
         type: BottomNavigationBarType.fixed,
         selectedItemColor: ZippaColors.primary,
         unselectedItemColor: Colors.grey,
@@ -74,18 +78,23 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
     return Scaffold(
       backgroundColor: ZippaColors.background,
       appBar: AppBar(
-        automaticallyImplyLeading: false,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu_rounded),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Hello, ${user?.fullName.split(' ').first ?? 'Rider'}',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             Text(
               _isOnline ? 'Online — ready for deliveries' : 'Currently offline',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 color: _isOnline ? ZippaColors.success : ZippaColors.textSecondary,
               ),
             ),
@@ -93,31 +102,6 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
         ),
         actions: [
           IconButton(icon: const Icon(Icons.notifications_outlined), onPressed: () {}),
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            onPressed: () async {
-              final auth = Provider.of<AuthProvider>(context, listen: false);
-              final nav = Navigator.of(context);
-              final shouldLogout = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Logout'),
-                  content: const Text('Are you sure you want to logout?'),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text('Logout', style: TextStyle(color: Colors.red)),
-                    ),
-                  ],
-                ),
-              );
-              if (shouldLogout == true) {
-                await auth.logout();
-                nav.pushNamedAndRemoveUntil('/login', (r) => false);
-              }
-            },
-          ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: CircleAvatar(

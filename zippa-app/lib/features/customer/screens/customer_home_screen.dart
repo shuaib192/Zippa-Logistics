@@ -12,7 +12,9 @@ import 'package:zippa_app/features/customer/screens/order_tracking_screen.dart';
 import 'package:zippa_app/features/customer/screens/customer_orders_screen.dart';
 import 'package:zippa_app/features/customer/screens/customer_wallet_screen.dart';
 import 'package:zippa_app/features/customer/screens/zipbot_screen.dart';
+import 'package:zippa_app/core/providers/navigation_provider.dart';
 import 'package:zippa_app/features/customer/screens/customer_profile_screen.dart';
+import 'package:zippa_app/core/widgets/app_drawer.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
   const CustomerHomeScreen({super.key});
@@ -22,7 +24,6 @@ class CustomerHomeScreen extends StatefulWidget {
 }
 
 class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
-  int _currentIndex = 0;
 
   final List<Widget> _screens = [
     const _HomeContent(),
@@ -34,14 +35,17 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final navProvider = Provider.of<NavigationProvider>(context);
+
     return Scaffold(
+      drawer: const AppDrawer(),
       body: IndexedStack(
-        index: _currentIndex,
+        index: navProvider.currentIndex,
         children: _screens,
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        currentIndex: navProvider.currentIndex,
+        onTap: (index) => navProvider.setIndex(index),
         type: BottomNavigationBarType.fixed,
         selectedItemColor: ZippaColors.primary,
         unselectedItemColor: Colors.grey,
@@ -54,7 +58,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Profile'),
         ],
       ),
-      floatingActionButton: _currentIndex == 0 
+      floatingActionButton: navProvider.currentIndex == 0 
         ? FloatingActionButton.extended(
             onPressed: () => Navigator.pushNamed(context, '/order-create'),
             backgroundColor: ZippaColors.primary,
@@ -90,47 +94,27 @@ class _HomeContentState extends State<_HomeContent> {
     return Scaffold(
       backgroundColor: ZippaColors.background,
       appBar: AppBar(
-        automaticallyImplyLeading: false,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu_rounded),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Hello, ${user?.fullName.split(' ').first ?? 'Customer'}',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const Text(
               'Where are you sending today?',
-              style: TextStyle(fontSize: 12, color: ZippaColors.textSecondary),
+              style: TextStyle(fontSize: 11, color: ZippaColors.textSecondary),
             ),
           ],
         ),
         actions: [
           IconButton(icon: const Icon(Icons.notifications_outlined), onPressed: () {}),
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            onPressed: () async {
-              final auth = Provider.of<AuthProvider>(context, listen: false);
-              final nav = Navigator.of(context);
-              final shouldLogout = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Logout'),
-                  content: const Text('Are you sure you want to logout?'),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text('Logout', style: TextStyle(color: Colors.red)),
-                    ),
-                  ],
-                ),
-              );
-              if (shouldLogout == true) {
-                await auth.logout();
-                nav.pushNamedAndRemoveUntil('/login', (r) => false);
-              }
-            },
-          ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: CircleAvatar(
