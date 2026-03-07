@@ -66,14 +66,15 @@ class _OrderCreateScreenState extends State<OrderCreateScreen> {
                 icon: Icons.location_on_rounded,
                 color: ZippaColors.primary,
                 onTap: () async {
+                  final provider = context.read<OrderProvider>();
                   final result = await Navigator.push<Map<String, dynamic>>(
                     context,
                     MaterialPageRoute(builder: (_) => const MapPickerScreen(title: 'Pickup Location')),
                   );
                   if (result != null) {
-                    setState(() { _pickupController.text = result['address']; });
                     if (!mounted) return;
-                    context.read<OrderProvider>().setPickup(result['address'], result['lat'], result['lng']);
+                    setState(() { _pickupController.text = result['address']; });
+                    provider.setPickup(result['address'], result['lat'], result['lng']);
                   }
                 },
               ),
@@ -85,14 +86,15 @@ class _OrderCreateScreenState extends State<OrderCreateScreen> {
                 icon: Icons.flag_rounded,
                 color: ZippaColors.accent,
                 onTap: () async {
+                  final provider = context.read<OrderProvider>();
                   final result = await Navigator.push<Map<String, dynamic>>(
                     context,
                     MaterialPageRoute(builder: (_) => const MapPickerScreen(title: 'Drop-off Location')),
                   );
                   if (result != null) {
-                    setState(() { _dropoffController.text = result['address']; });
                     if (!mounted) return;
-                    context.read<OrderProvider>().setDropoff(result['address'], result['lat'], result['lng']);
+                    setState(() { _dropoffController.text = result['address']; });
+                    provider.setDropoff(result['address'], result['lat'], result['lng']);
                   }
                 },
               ),
