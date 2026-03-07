@@ -3,7 +3,8 @@
 // ============================================
 
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong2.dart';
 import 'package:provider/provider.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/data/models/order_model.dart';
@@ -19,8 +20,7 @@ class OrderTrackingScreen extends StatefulWidget {
 }
 
 class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
-  GoogleMapController? _mapController;
-  Set<Marker> _markers = {};
+  final MapController _mapController = MapController();
   OrderModel? _order;
   bool _isLoading = true;
 
@@ -37,48 +37,18 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
       setState(() {
         _order = order;
         _isLoading = false;
-        if (order != null) {
-          _updateMarkers(order);
-        }
       });
-    }
-  }
-
-  void _updateMarkers(OrderModel order) {
-    _markers = {
-      Marker(
-        markerId: const MarkerId('pickup'),
-        position: LatLng(order.pickupLat, order.pickupLng),
-        infoWindow: const InfoWindow(title: 'Pickup Location'),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-      ),
-      Marker(
-        markerId: const MarkerId('dropoff'),
-        position: LatLng(order.dropoffLat, order.dropoffLng),
-        infoWindow: const InfoWindow(title: 'Drop-off Location'),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-      ),
-    };
-
-    // Zoom to fit markers
-    if (_mapController != null) {
-      _fitBounds();
     }
   }
 
   void _fitBounds() {
     if (_order == null) return;
-    final bounds = LatLngBounds(
-      southwest: LatLng(
-        _order!.pickupLat < _order!.dropoffLat ? _order!.pickupLat : _order!.dropoffLat,
-        _order!.pickupLng < _order!.dropoffLng ? _order!.pickupLng : _order!.dropoffLng,
-      ),
-      northeast: LatLng(
-        _order!.pickupLat > _order!.dropoffLat ? _order!.pickupLat : _order!.dropoffLat,
-        _order!.pickupLng > _order!.dropoffLng ? _order!.pickupLng : _order!.dropoffLng,
-      ),
+    
+    // Calculate bounds manually if needed or use center/zoom
+    _mapController.move(
+      LatLng(_order!.pickupLat, _order!.pickupLng),
+      13.0,
     );
-    _mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 50));
   }
 
   @override
@@ -106,20 +76,36 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
           return Stack(
             children: [
-              // 1. MAP VIEW
+              // 1. MAP VIEW (OpenStreetMap)
               Positioned.fill(
-                child: GoogleMap(
-                  initialCameraPosition: CameraPosition(
-                    target: LatLng(_order!.pickupLat, _order!.pickupLng),
-                    zoom: 14,
+                child: FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: LatLng(_order!.pickupLat, _order!.pickupLng),
+                    initialZoom: 13.0,
                   ),
-                  onMapCreated: (controller) {
-                    _mapController = controller;
-                    _fitBounds();
-                  },
-                  markers: _markers,
-                  myLocationButtonEnabled: false,
-                  zoomControlsEnabled: false,
+                  children: [
+                    TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.zippa.app',
+                    ),
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: LatLng(_order!.pickupLat, _order!.pickupLng),
+                          width: 40,
+                          height: 40,
+                          child: const Icon(Icons.location_on, color: ZippaColors.primary, size: 40),
+                        ),
+                        Marker(
+                          point: LatLng(_order!.dropoffLat, _order!.dropoffLng),
+                          width: 40,
+                          height: 40,
+                          child: const Icon(Icons.flag, color: ZippaColors.accent, size: 40),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
 

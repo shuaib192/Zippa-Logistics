@@ -9,6 +9,11 @@ import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/features/auth/providers/auth_provider.dart';
 import 'package:zippa_app/features/customer/providers/order_provider.dart';
 import 'package:zippa_app/features/customer/screens/order_tracking_screen.dart';
+import 'package:zippa_app/features/customer/widgets/nigeria_location_picker.dart';
+import 'package:zippa_app/features/customer/screens/customer_orders_screen.dart';
+import 'package:zippa_app/features/customer/screens/customer_wallet_screen.dart';
+import 'package:zippa_app/features/customer/screens/zipbot_screen.dart';
+import 'package:zippa_app/features/customer/screens/customer_profile_screen.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
   const CustomerHomeScreen({super.key});
@@ -18,6 +23,59 @@ class CustomerHomeScreen extends StatefulWidget {
 }
 
 class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
+  int _currentIndex = 0;
+
+  final List<Widget> _screens = [
+    const _HomeContent(),
+    const CustomerOrdersScreen(),
+    const CustomerWalletScreen(),
+    const ZipBotScreen(),
+    const CustomerProfileScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: ZippaColors.primary,
+        unselectedItemColor: Colors.grey,
+        showUnselectedLabels: true,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.receipt_long_rounded), label: 'Orders'),
+          BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_rounded), label: 'Wallet'),
+          BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline_rounded), label: 'ZipBot'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Profile'),
+        ],
+      ),
+      floatingActionButton: _currentIndex == 0 
+        ? FloatingActionButton.extended(
+            onPressed: () => Navigator.pushNamed(context, '/order-create'),
+            backgroundColor: ZippaColors.primary,
+            foregroundColor: Colors.white,
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Send Package'),
+          ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.2, end: 0)
+        : null,
+    );
+  }
+}
+
+class _HomeContent extends StatefulWidget {
+  const _HomeContent();
+
+  @override
+  State<_HomeContent> createState() => _HomeContentState();
+}
+
+class _HomeContentState extends State<_HomeContent> {
   @override
   void initState() {
     super.initState();
@@ -201,23 +259,6 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.receipt_long_rounded), label: 'Orders'),
-          BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_rounded), label: 'Wallet'),
-          BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline_rounded), label: 'ZipBot'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Profile'),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.pushNamed(context, '/order-create'),
-        backgroundColor: ZippaColors.primary,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Send Package'),
-      ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.2, end: 0),
     );
   }
 }

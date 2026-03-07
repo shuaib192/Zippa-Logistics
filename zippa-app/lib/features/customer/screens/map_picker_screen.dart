@@ -3,7 +3,8 @@
 // ============================================
 
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong2.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
@@ -17,7 +18,7 @@ class MapPickerScreen extends StatefulWidget {
 }
 
 class _MapPickerScreenState extends State<MapPickerScreen> {
-  GoogleMapController? _mapController;
+  final MapController _mapController = MapController();
   LatLng _lastPosition = const LatLng(6.5244, 3.3792); // Default to Lagos, Nigeria
   String _currentAddress = 'Searching...';
 
@@ -55,7 +56,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
     // Reverse geocode to get initial address
     _updateAddress(_lastPosition);
     
-    _mapController?.animateCamera(CameraUpdate.newLatLng(_lastPosition));
+    _mapController.move(_lastPosition, 15.0);
   }
 
   // ============================================
@@ -86,15 +87,25 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       ),
       body: Stack(
         children: [
-          // 1. The Map
-          GoogleMap(
-            initialCameraPosition: CameraPosition(target: _lastPosition, zoom: 15),
-            onMapCreated: (controller) => _mapController = controller,
-            onCameraMove: (pos) => _lastPosition = pos.target,
-            onCameraIdle: () => _updateAddress(_lastPosition),
-            myLocationEnabled: true,
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: false,
+          // 1. The Map (OpenStreetMap)
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: _lastPosition,
+              initialZoom: 15,
+              onPositionChanged: (pos, hasGesture) {
+                if (hasGesture) {
+                  _lastPosition = pos.center!;
+                }
+              },
+              onMapIdle: () => _updateAddress(_lastPosition),
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.zippa.app',
+              ),
+            ],
           ),
           
           // 2. Fixed Pin in center

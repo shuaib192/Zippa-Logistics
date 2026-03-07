@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/features/customer/providers/order_provider.dart';
-import 'package:zippa_app/features/customer/screens/map_picker_screen.dart';
+import 'package:zippa_app/features/customer/widgets/nigeria_location_picker.dart';
 import 'package:zippa_app/features/customer/screens/fare_summary_screen.dart';
 
 class OrderCreateScreen extends StatefulWidget {
@@ -65,17 +65,20 @@ class _OrderCreateScreenState extends State<OrderCreateScreen> {
                 hint: 'Where should we pick it up?',
                 icon: Icons.location_on_rounded,
                 color: ZippaColors.primary,
-                onTap: () async {
+                onTap: () {
                   final provider = context.read<OrderProvider>();
-                  final result = await Navigator.push<Map<String, dynamic>>(
-                    context,
-                    MaterialPageRoute(builder: (_) => const MapPickerScreen(title: 'Pickup Location')),
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => NigeriaLocationPicker(
+                      title: 'Pickup Location',
+                      onSelected: (address, lat, lng) {
+                        setState(() { _pickupController.text = address; });
+                        provider.setPickup(address, lat, lng);
+                      },
+                    ),
                   );
-                  if (result != null) {
-                    if (!mounted) return;
-                    setState(() { _pickupController.text = result['address']; });
-                    provider.setPickup(result['address'], result['lat'], result['lng']);
-                  }
                 },
               ),
               const SizedBox(height: 12),
@@ -85,17 +88,20 @@ class _OrderCreateScreenState extends State<OrderCreateScreen> {
                 hint: 'Where is it going?',
                 icon: Icons.flag_rounded,
                 color: ZippaColors.accent,
-                onTap: () async {
+                onTap: () {
                   final provider = context.read<OrderProvider>();
-                  final result = await Navigator.push<Map<String, dynamic>>(
-                    context,
-                    MaterialPageRoute(builder: (_) => const MapPickerScreen(title: 'Drop-off Location')),
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => NigeriaLocationPicker(
+                      title: 'Drop-off Location',
+                      onSelected: (address, lat, lng) {
+                        setState(() { _dropoffController.text = address; });
+                        provider.setDropoff(address, lat, lng);
+                      },
+                    ),
                   );
-                  if (result != null) {
-                    if (!mounted) return;
-                    setState(() { _dropoffController.text = result['address']; });
-                    provider.setDropoff(result['address'], result['lat'], result['lng']);
-                  }
                 },
               ),
               

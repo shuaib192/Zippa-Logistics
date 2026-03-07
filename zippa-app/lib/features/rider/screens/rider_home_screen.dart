@@ -1,7 +1,3 @@
-// ============================================
-// RIDER HOME SCREEN — Professional, no emojis
-// ============================================
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -10,14 +6,63 @@ import 'package:zippa_app/features/auth/providers/auth_provider.dart';
 import 'package:zippa_app/features/customer/providers/order_provider.dart';
 import 'package:zippa_app/data/models/order_model.dart';
 import 'package:intl/intl.dart';
+import 'package:zippa_app/features/rider/screens/rider_deliveries_screen.dart';
+import 'package:zippa_app/features/rider/screens/rider_earnings_screen.dart';
+import 'package:zippa_app/features/customer/screens/zipbot_screen.dart';
+import 'package:zippa_app/features/rider/screens/rider_profile_screen.dart';
 
 class RiderHomeScreen extends StatefulWidget {
   const RiderHomeScreen({super.key});
+
   @override
   State<RiderHomeScreen> createState() => _RiderHomeScreenState();
 }
 
 class _RiderHomeScreenState extends State<RiderHomeScreen> {
+  int _currentIndex = 0;
+
+  final List<Widget> _screens = [
+    const _RiderHomeContent(),
+    const RiderDeliveriesScreen(),
+    const RiderEarningsScreen(),
+    const ZipBotScreen(),
+    const RiderProfileScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: ZippaColors.primary,
+        unselectedItemColor: Colors.grey,
+        showUnselectedLabels: true,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.delivery_dining_rounded), label: 'Deliveries'),
+          BottomNavigationBarItem(icon: Icon(Icons.monetization_on_rounded), label: 'Earnings'),
+          BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline_rounded), label: 'ZipBot'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Profile'),
+        ],
+      ),
+    );
+  }
+}
+
+class _RiderHomeContent extends StatefulWidget {
+  const _RiderHomeContent();
+
+  @override
+  State<_RiderHomeContent> createState() => _RiderHomeContentState();
+}
+
+class _RiderHomeContentState extends State<_RiderHomeContent> {
   bool _isOnline = false;
 
   @override
@@ -181,16 +226,6 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
               _buildOfflineState(),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.receipt_long_rounded), label: 'Deliveries'),
-          BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_rounded), label: 'Earnings'),
-          BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline_rounded), label: 'ZipBot'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Profile'),
-        ],
       ),
     );
   }
