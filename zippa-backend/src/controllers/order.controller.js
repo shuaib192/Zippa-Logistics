@@ -181,20 +181,7 @@ const createOrder = async (req, res) => {
         res.status(201).json({
             success: true,
             message: 'Order placed successfully. Searching for a rider...',
-            data: {
-                orderId: order.id,
-                orderNumber: order.order_number,
-                status: order.status,
-                fare: {
-                    total: order.total_fare,
-                    breakdown: {
-                        base: order.base_fare,
-                        distance: order.distance_fare,
-                        platformFee: order.platform_fee,
-                    },
-                },
-                estimatedDistance: `${order.distance_km} km`,
-            },
+            order: order,
         });
 
     } catch (err) {

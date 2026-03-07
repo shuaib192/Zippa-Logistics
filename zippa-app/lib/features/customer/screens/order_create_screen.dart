@@ -4,7 +4,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/features/customer/providers/order_provider.dart';
 import 'package:zippa_app/features/customer/screens/map_picker_screen.dart';
@@ -73,6 +72,7 @@ class _OrderCreateScreenState extends State<OrderCreateScreen> {
                   );
                   if (result != null && mounted) {
                     setState(() { _pickupController.text = result['address']; });
+                    if (!mounted) return;
                     context.read<OrderProvider>().setPickup(result['address'], result['lat'], result['lng']);
                   }
                 },
@@ -91,6 +91,7 @@ class _OrderCreateScreenState extends State<OrderCreateScreen> {
                   );
                   if (result != null && mounted) {
                     setState(() { _dropoffController.text = result['address']; });
+                    if (!mounted) return;
                     context.read<OrderProvider>().setDropoff(result['address'], result['lat'], result['lng']);
                   }
                 },
@@ -139,7 +140,7 @@ class _OrderCreateScreenState extends State<OrderCreateScreen> {
                 label: "Recipient's Phone",
                 controller: _recipientPhoneController,
                 hint: 'Enter mobile number',
-                keyboardType: TextInputAction.next == null ? TextInputType.phone : null, // Fix for lint
+                keyboardType: TextInputType.phone,
                 validator: (val) => val == null || val.length < 10 ? 'Invalid number' : null,
               ),
               
@@ -189,6 +190,7 @@ class _OrderCreateScreenState extends State<OrderCreateScreen> {
       }
 
       // Show loading and get estimate
+      if (!mounted) return;
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -197,18 +199,18 @@ class _OrderCreateScreenState extends State<OrderCreateScreen> {
 
       final success = await provider.estimateFare();
       
-      if (mounted) {
-        Navigator.pop(context); // Close loading
-        if (success) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const FareSummaryScreen()),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(provider.error ?? 'Failed to get estimate')),
-          );
-        }
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading
+      
+      if (success) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const FareSummaryScreen()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(provider.error ?? 'Failed to get estimate')),
+        );
       }
     }
   }

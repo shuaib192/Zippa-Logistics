@@ -7,9 +7,25 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/features/auth/providers/auth_provider.dart';
+import 'package:zippa_app/features/customer/providers/order_provider.dart';
+import 'package:zippa_app/features/customer/screens/order_tracking_screen.dart';
+import 'package:intl/intl.dart';
 
-class CustomerHomeScreen extends StatelessWidget {
+class CustomerHomeScreen extends StatefulWidget {
   const CustomerHomeScreen({super.key});
+
+  @override
+  State<CustomerHomeScreen> createState() => _CustomerHomeScreenState();
+}
+
+class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<OrderProvider>(context, listen: false).fetchOrders();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,9 +76,38 @@ class CustomerHomeScreen extends StatelessWidget {
               children: [
                 Expanded(child: _QuickAction(icon: Icons.send_rounded, label: 'Send Package', color: ZippaColors.primary, onTap: () => Navigator.pushNamed(context, '/order-create'))),
                 const SizedBox(width: 12),
-                Expanded(child: _QuickAction(icon: Icons.track_changes_rounded, label: 'Track Order', color: ZippaColors.info, onTap: () {})),
+                Expanded(child: _QuickAction(
+                  icon: Icons.track_changes_rounded, 
+                  label: 'Track Order', 
+                  color: ZippaColors.info, 
+                  onTap: () {
+                    final provider = Provider.of<OrderProvider>(context, listen: false);
+                    if (provider.orders.isNotEmpty) {
+                      // Navigate to the most recent order for tracking
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => OrderTrackingScreen(orderId: provider.orders.first.id ?? ''),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('No active orders to track.')),
+                      );
+                    }
+                  }
+                )),
                 const SizedBox(width: 12),
-                Expanded(child: _QuickAction(icon: Icons.history_rounded, label: 'History', color: ZippaColors.accent, onTap: () {})),
+                Expanded(child: _QuickAction(
+                  icon: Icons.history_rounded, 
+                  label: 'History', 
+                  color: ZippaColors.accent, 
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Order history feature coming soon!')),
+                    );
+                  }
+                )),
               ],
             ).animate().fadeIn(delay: 150.ms, duration: 400.ms),
             const SizedBox(height: 24),
@@ -73,20 +118,62 @@ class CustomerHomeScreen extends StatelessWidget {
                 TextButton(onPressed: () {}, child: const Text('See All')),
               ],
             ),
-            const SizedBox(height: 40),
-            Center(
-              child: Column(
-                children: [
-                  Icon(Icons.local_shipping_outlined, size: 72, color: ZippaColors.textLight),
-                  const SizedBox(height: 14),
-                  const Text('No orders yet', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: ZippaColors.textSecondary)),
-                  const SizedBox(height: 6),
-                  const Text('Tap "Send Package" to create\nyour first delivery',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: ZippaColors.textLight, fontSize: 13)),
-                ],
-              ),
-            ).animate().fadeIn(delay: 300.ms),
+            Consumer<OrderProvider>(
+              builder: (context, provider, _) {
+                if (provider.isLoading && provider.orders.isEmpty) {
+                  return const Center(child: Padding(padding: EdgeInsets.only(top: 40), child: CircularProgressIndicator()));
+                }
+                
+                if (provider.orders.isEmpty) {
+                  return Center(
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 40),
+                        Icon(Icons.local_shipping_outlined, size: 72, color: ZippaColors.textLight),
+                        const SizedBox(height: 14),
+                        const Text('No orders yet', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: ZippaColors.textSecondary)),
+                        const SizedBox(height: 6),
+                        const Text('Tap "Send Package" to create\nyour first delivery',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: ZippaColors.textLight, fontSize: 13)),
+                      ],
+                    ),
+                  ).animate().fadeIn(delay: 300.ms);
+                }
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: provider.orders.length > 3 ? 3 : provider.orders.length,
+                  itemBuilder: (context, index) {
+                    final order = provider.orders[index];
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: ZippaColors.primary.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.local_shipping_outlined, color: ZippaColors.primary, size: 20),
+                      ),
+                      title: Text('Order #${order.orderNumber}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: Text(order.status[0].toUpperCase() + order.status.substring(1), 
+                        style: TextStyle(fontSize: 12, color: order.status == 'delivered' ? ZippaColors.success : ZippaColors.warning)),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => OrderTrackingScreen(orderId: order.id ?? ''),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
           ],
         ),
       ),

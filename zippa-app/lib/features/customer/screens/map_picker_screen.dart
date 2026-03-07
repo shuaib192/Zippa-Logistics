@@ -20,7 +20,6 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   GoogleMapController? _mapController;
   LatLng _lastPosition = const LatLng(6.5244, 3.3792); // Default to Lagos, Nigeria
   String _currentAddress = 'Searching...';
-  bool _isLoading = true;
 
   @override
   void initState() {
@@ -37,7 +36,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
 
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      setState(() { _currentAddress = 'Location services disabled'; _isLoading = false; });
+      setState(() { _currentAddress = 'Location services disabled'; });
       return;
     }
 
@@ -45,7 +44,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        setState(() { _currentAddress = 'Permission denied'; _isLoading = false; });
+        setState(() { _currentAddress = 'Permission denied'; });
         return;
       }
     }
@@ -55,8 +54,6 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
     
     // Reverse geocode to get initial address
     _updateAddress(_lastPosition);
-    
-    setState(() { _isLoading = false; });
     
     _mapController?.animateCamera(CameraUpdate.newLatLng(_lastPosition));
   }

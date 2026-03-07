@@ -151,11 +151,71 @@ class OrderProvider with ChangeNotifier {
   }
 
   // ============================================
-  // API CALL: Get User Orders
+  // API CALL: Fetch Single Order Details
+  // ============================================
+  Future<OrderModel?> fetchOrderDetails(String orderId) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.get('/orders/$orderId');
+      if (response['success'] != false && response['data'] != null) {
+        final order = OrderModel.fromJson(response['data']);
+        _isLoading = false;
+        notifyListeners();
+        return order;
+      } else {
+        _error = response['message'];
+        _isLoading = false;
+        notifyListeners();
+        return null;
+      }
+    } catch (e) {
+      _error = 'Failed to fetch order details';
+      _isLoading = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  // ============================================
+  // API CALL: Update Order Status (Rider)
+  // ============================================
+  Future<bool> updateOrderStatus(String orderId, String status) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.put('/orders/$orderId/status', {
+        'status': status,
+      });
+
+      if (response['success'] != false) {
+        fetchOrders(); // Refresh the list
+        return true;
+      } else {
+        _error = response['message'];
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = 'Failed to update order status';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ============================================
+  // API CALL: Get User Orders History
   // ============================================
   Future<void> fetchOrders() async {
     _isLoading = true;
     _error = null;
+    notifyListeners();
 
     try {
       final response = await _apiClient.get('/orders');
@@ -168,6 +228,31 @@ class OrderProvider with ChangeNotifier {
       }
     } catch (e) {
       _error = 'Failed to fetch orders';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // ============================================
+  // API CALL: Get Available Orders (Rider)
+  // ============================================
+  Future<void> fetchPendingOrders() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.get('/orders?status=pending');
+      if (response['success'] != false && response['orders'] != null) {
+        _orders = (response['orders'] as List)
+            .map((o) => OrderModel.fromJson(o))
+            .toList();
+      } else {
+        _error = response['message'];
+      }
+    } catch (e) {
+      _error = 'Failed to fetch pending orders';
     } finally {
       _isLoading = false;
       notifyListeners();

@@ -86,7 +86,7 @@ class OrderModel {
       subtotal: double.tryParse(json['subtotal'].toString()) ?? 0.0,
       platformFee: double.tryParse(json['platform_fee'].toString()) ?? 0.0,
       totalFare: double.tryParse(json['total_fare'].toString()) ?? 0.0,
-      riderEarnings: double.tryParse(json['rider_earnings'].toString()) ?? 0.0,
+      riderEarnings: double.tryParse(json['rider_earning'].toString()) ?? 0.0,
       status: json['status'],
       paymentStatus: json['payment_status'],
       paymentMethod: json['payment_method'],
