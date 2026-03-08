@@ -1,4 +1,3 @@
-const db = require('../config/database');
 const aiAgentService = require('../services/ai_agent.service');
 
 /**

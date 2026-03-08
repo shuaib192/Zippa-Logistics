@@ -28,7 +28,7 @@ const processWhatsAppMessage = async (from, message) => {
             console.log(`Analyzing voice note from ${from}...`);
             userText = await transcribeAudio(message.audio.id);
         } else {
-            return whatsappService.sendMessage(from, "I'm still learning! For now, I only understand text and voice notes. 🎤");
+            return whatsappService.sendMessage(from, 'I\'m still learning! For now, I only understand text and voice notes. 🎤');
         }
 
         // 3. Extract intent using Gemini
@@ -41,7 +41,7 @@ const processWhatsAppMessage = async (from, message) => {
 
     } catch (err) {
         console.error('AI Agent Error:', err);
-        await whatsappService.sendMessage(from, "ZipBot is having a quick nap. Please try again in a moment!");
+        await whatsappService.sendMessage(from, 'ZipBot is having a quick nap. Please try again in a moment!');
     }
 };
 
@@ -114,7 +114,7 @@ const handleIntent = async (from, session, intent) => {
     }
 
     // Default response
-    await whatsappService.sendMessage(from, "Welcome to Zippa! I can help you book a ride or track a package. What would you like to do? (You can even send a voice note!)");
+    await whatsappService.sendMessage(from, 'Welcome to Zippa! I can help you book a ride or track a package. What would you like to do? (You can even send a voice note!)');
 };
 
 /**
@@ -131,7 +131,7 @@ const handleBookingFlow = async (from, session, entities) => {
 
         if (!pickup) {
             // Suggest previous landmarks if available
-            const landmarkMsg = user_id ? " (I can also see your saved landmarks!)" : "";
+            const landmarkMsg = user_id ? ' (I can also see your saved landmarks!)' : '';
             return whatsappService.sendMessage(from, `Sure! Where should the rider pick up the package?${landmarkMsg}`);
         }
     }
@@ -139,7 +139,7 @@ const handleBookingFlow = async (from, session, entities) => {
     // 2. State-based processing
     if (flow_step === 'awaiting_pickup') {
         // Check if user mentioned a landmark
-        const landmark = await landmarkService.findLandmark(user_id, pickup || "");
+        const landmark = await landmarkService.findLandmark(user_id, pickup || '');
         if (landmark) {
             pickup = `${landmark.name} (${landmark.description})`;
             console.log(`Matched landmark: ${landmark.name}`);
@@ -151,7 +151,7 @@ const handleBookingFlow = async (from, session, entities) => {
     }
 
     if (flow_step === 'awaiting_dropoff') {
-        const landmark = await landmarkService.findLandmark(user_id, dropoff || "");
+        const landmark = await landmarkService.findLandmark(user_id, dropoff || '');
         if (landmark) {
             dropoff = `${landmark.name} (${landmark.description})`;
         }
@@ -165,26 +165,26 @@ const handleBookingFlow = async (from, session, entities) => {
         await updateSession(from, 'awaiting_confirmation', updatedData);
         
         return whatsappService.sendMessage(from, 
-            `Summary of your booking:\n\n` +
+            'Summary of your booking:\n\n' +
             `📍 From: ${updatedData.pickup}\n` +
             `🎯 To: ${updatedData.dropoff}\n` +
             `📦 Package: ${updatedData.package || 'Standard'}\n` +
             `💰 Estimated Fare: ₦${updatedData.price.toLocaleString()}\n\n` +
-            `Should I go ahead and book this for you? (Reply 'YES', 'OK', or 'CANCEL')`
+            'Should I go ahead and book this for you? (Reply \'YES\', \'OK\', or \'CANCEL\')'
         );
     }
 
     if (flow_step === 'awaiting_confirmation') {
-        const response = (pickup || "").toLowerCase(); // entities.pickup often contains the full text in this simple extractor
+        const response = (pickup || '').toLowerCase(); // entities.pickup often contains the full text in this simple extractor
 
         if (response.includes('yes') || response.includes('ok')) {
              await updateSession(from, 'idle', {}, 'none');
-             return whatsappService.sendMessage(from, "✅ Order confirmed! A rider will be assigned shortly. You'll receive a tracking link here.");
+             return whatsappService.sendMessage(from, '✅ Order confirmed! A rider will be assigned shortly. You\'ll receive a tracking link here.');
         } else if (response.includes('cancel')) {
              await updateSession(from, 'idle', {}, 'none');
-             return whatsappService.sendMessage(from, "No problem! I've cancelled the booking. Let me know if you need anything else.");
+             return whatsappService.sendMessage(from, 'No problem! I\'ve cancelled the booking. Let me know if you need anything else.');
         } else {
-             return whatsappService.sendMessage(from, "I didn't quite catch that. Should I book it? (Reply 'YES' or 'CANCEL')");
+             return whatsappService.sendMessage(from, 'I didn\'t quite catch that. Should I book it? (Reply \'YES\' or \'CANCEL\')');
         }
     }
 };
@@ -221,7 +221,7 @@ const transcribeAudio = async (mediaId) => {
 
         // 3. Send to Gemini for transcription
         const result = await model.generateContent([
-            "Transcribe this Nigerian voice note exactly. It might be in English, Pidgin, or a local language. If it's a booking request, capture the locations.",
+            'Transcribe this Nigerian voice note exactly. It might be in English, Pidgin, or a local language. If it\'s a booking request, capture the locations.',
             {
                 inlineData: {
                     data: audioData,
@@ -233,7 +233,7 @@ const transcribeAudio = async (mediaId) => {
         return result.response.text();
     } catch (err) {
         console.error('Transcription Error:', err);
-        return "";
+        return '';
     }
 };
 
