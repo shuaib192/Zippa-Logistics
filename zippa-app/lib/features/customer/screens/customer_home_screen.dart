@@ -1,4 +1,3 @@
-// ignore_for_file: deprecated_member_use
 // ============================================
 // CUSTOMER HOME SCREEN — Professional, no emojis
 // ============================================
@@ -129,7 +128,7 @@ class _HomeContentState extends State<_HomeContent> {
             padding: const EdgeInsets.only(right: 12),
             child: CircleAvatar(
               radius: 18,
-              backgroundColor: ZippaColors.primary.withOpacity(0.12),
+              backgroundColor: ZippaColors.primary.withOpacity( 0.12),
               child: Text(
                 user?.fullName.isNotEmpty == true ? user!.fullName[0].toUpperCase() : 'C',
                 style: const TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.bold),
@@ -137,11 +136,6 @@ class _HomeContentState extends State<_HomeContent> {
             ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.pushNamed(context, '/zipbot'),
-        backgroundColor: ZippaColors.primary,
-        child: const Icon(Icons.psychology, color: Colors.white),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -187,11 +181,8 @@ class _HomeContentState extends State<_HomeContent> {
               ],
             ).animate().fadeIn(delay: 150.ms, duration: 400.ms),
             const SizedBox(height: 24),
-
-            // --- WhatsApp Booking Card ---
             _WhatsAppBookingCard().animate().fadeIn(delay: 200.ms, duration: 400.ms).slideX(begin: 0.1, end: 0),
             const SizedBox(height: 24),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -236,7 +227,7 @@ class _HomeContentState extends State<_HomeContent> {
                       leading: Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: ZippaColors.primary.withOpacity(0.1),
+                          color: ZippaColors.primary.withOpacity( 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(Icons.local_shipping_outlined, color: ZippaColors.primary, size: 20),
@@ -274,7 +265,7 @@ class _WalletCard extends StatelessWidget {
         gradient: ZippaColors.primaryGradient,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: ZippaColors.primary.withOpacity(0.35), blurRadius: 20, offset: const Offset(0, 8)),
+          BoxShadow(color: ZippaColors.primary.withOpacity( 0.35), blurRadius: 20, offset: const Offset(0, 8)),
         ],
       ),
       child: Column(
@@ -325,7 +316,7 @@ class _WalletAction extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withOpacity( 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: Colors.white, size: 18),
@@ -362,7 +353,7 @@ class _QuickAction extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(11),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withOpacity( 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 22),
