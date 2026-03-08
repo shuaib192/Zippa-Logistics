@@ -223,7 +223,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                       : const BorderRadius.vertical(top: Radius.circular(32)),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
+                        color: Colors.black.withOpacity(0.1),
                         blurRadius: 20,
                         offset: const Offset(0, -5),
                       ),
@@ -281,7 +281,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: statusColor.withValues(alpha: 0.1),
+            color: statusColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
@@ -401,13 +401,13 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: ZippaColors.primary.withValues(alpha: 0.05),
+        color: ZippaColors.primary.withOpacity(0.05),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: ZippaColors.primary.withValues(alpha: 0.1),
+            backgroundColor: ZippaColors.primary.withOpacity(0.1),
             backgroundImage: _order!.riderAvatar != null ? NetworkImage(_order!.riderAvatar!) : null,
             child: _order!.riderAvatar == null ? const Icon(Icons.person, color: ZippaColors.primary) : null,
           ),

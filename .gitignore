@@ -8,11 +8,10 @@
 # ============================================
 
 # === Node.js (Backend) ===
-# === Node.js (Backend) ===
-**/node_modules/       # Ignore all node_modules folders
-**/.env                # Ignore all .env files
-.env.local             
-.env.production        
+node_modules/
+.env
+.env.*
+!.env.example
 npm-debug.log*         # Error logs from npm
 yarn-debug.log*
 yarn-error.log*

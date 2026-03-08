@@ -14,6 +14,7 @@
 // ============================================
 
 const db = require('../config/database');
+const { calculateFare } = require('../utils/fare_calculator');
 const { createNotification } = require('./notification.controller');
 
 
@@ -32,37 +33,6 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
         Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
-};
-
-// ============================================
-// HELPER: Calculate fare
-// Base rate: ₦500 base + ₦150/km
-// Package size multipliers apply on top.
-// ============================================
-const calculateFare = (distanceKm, packageSize = 'small') => {
-    const BASE_FARE = 1000;   // test base fee (₦1,000)
-    const PER_KM = 200;       // test per km fee (₦200)
-
-    const sizeMultipliers = {
-        small: 1.0,
-        medium: 1.2,
-        large: 1.5,
-        extra_large: 2.0,
-    };
-
-    const multiplier = sizeMultipliers[packageSize] || 1.0;
-    const distanceFare = Math.max(0, distanceKm - 1) * PER_KM; // first km already in base
-    const rawFare = (BASE_FARE + distanceFare) * multiplier;
-
-    return {
-        base_fare: BASE_FARE,
-        distance_fare: Math.round(distanceFare),
-        subtotal: Math.round(rawFare),
-        platform_fee: Math.round(rawFare * 0.10), // 10% platform cut
-        total_fare: Math.round(rawFare * 1.10),       // customer pays
-        rider_earning: Math.round(rawFare * 0.85), // rider gets 85%
-        distance_km: Math.round(distanceKm * 10) / 10,
-    };
 };
 
 // ============================================
@@ -304,7 +274,7 @@ const getOrderById = async (req, res) => {
             FROM orders o
             LEFT JOIN users c ON c.id = o.customer_id
             LEFT JOIN users r ON r.id = o.rider_id
-            WHERE o.id = $1 OR o.order_number = $1`,
+            WHERE o.id::text = $1 OR o.order_number = $1`,
             [id],
         );
 

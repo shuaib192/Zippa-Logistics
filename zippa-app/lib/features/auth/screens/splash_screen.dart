@@ -76,7 +76,7 @@ class _SplashScreenState extends State<SplashScreen> {
               'Fast, Easy and Safe',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.white.withValues(alpha: 0.7),
+                color: Colors.white.withOpacity(0.7),
                 letterSpacing: 1.5,
               ),
             ).animate().fadeIn(delay: 700.ms, duration: 600.ms),
@@ -89,7 +89,7 @@ class _SplashScreenState extends State<SplashScreen> {
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  ZippaColors.primaryLight.withValues(alpha: 0.8),
+                  ZippaColors.primaryLight.withOpacity(0.8),
                 ),
               ),
             ).animate().fadeIn(delay: 1100.ms, duration: 400.ms),

@@ -7,6 +7,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:zippa_app/core/theme/app_theme.dart';
 
 class MapPickerScreen extends StatefulWidget {
@@ -21,6 +23,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   final MapController _mapController = MapController();
   ll.LatLng _lastPosition = const ll.LatLng(6.5244, 3.3792); // Default to Lagos, Nigeria
   String _currentAddress = 'Searching...';
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -76,6 +80,47 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
     }
   }
 
+  // ============================================
+  // Search address using Nominatim (OSM)
+  // ============================================
+  Future<void> _searchAddress(String query) async {
+    if (query.isEmpty) return;
+    setState(() => _isSearching = true);
+    
+    try {
+      final response = await http.get(
+        Uri.parse('https://nominatim.openstreetmap.org/search?q=$query&format=json&limit=1&countrycodes=ng'),
+        headers: {'User-Agent': 'ZippaLogisticsApp'},
+      );
+
+      if (response.statusCode == 200) {
+        final List data = json.decode(response.body);
+        if (data.isNotEmpty) {
+          final lat = double.parse(data[0]['lat']);
+          final lon = double.parse(data[0]['lon']);
+          final newPos = ll.LatLng(lat, lon);
+          
+          setState(() {
+            _lastPosition = newPos;
+            _currentAddress = data[0]['display_name'];
+          });
+          
+          _mapController.move(newPos, 15.0);
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Location not found in Nigeria.')),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Search error: $e');
+    } finally {
+      if (mounted) setState(() => _isSearching = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -110,6 +155,36 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                 userAgentPackageName: 'com.zippa.app',
               ),
             ],
+          ),
+          
+          // 1.5. Search Bar
+          Positioned(
+            top: 10,
+            left: 15,
+            right: 15,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15),
+                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)],
+              ),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search for a location...',
+                  prefixIcon: const Icon(Icons.search, color: ZippaColors.primary),
+                  suffixIcon: _isSearching 
+                    ? const Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2))
+                    : IconButton(
+                        icon: const Icon(Icons.clear), 
+                        onPressed: () => _searchController.clear(),
+                      ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                ),
+                onSubmitted: _searchAddress,
+              ),
+            ),
           ),
           
           // 2. Fixed Pin in center

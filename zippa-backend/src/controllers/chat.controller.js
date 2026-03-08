@@ -234,6 +234,7 @@ Respond as ZipBot:`;
     }
 };
 
+
 // ============================================
 // HELPER: Fallback responses when Gemini isn't configured
 // Basic keyword-matching for common questions

@@ -50,7 +50,7 @@ const chatWithZipBot = async (req, res) => {
         const response = await axios.post(
             'https://api.groq.com/openai/v1/chat/completions',
             {
-                model: 'mixtral-8x7b-32768',
+                model: 'llama-3.3-70b-versatile',
                 messages: messages,
                 temperature: 0.7,
                 max_tokens: 1024

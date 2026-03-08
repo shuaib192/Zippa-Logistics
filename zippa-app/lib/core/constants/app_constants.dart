@@ -17,7 +17,7 @@ class AppConstants {
   // Backend API URL
   // FOR PHYSICAL DEVICE: Use your Mac's WiFi IP address
   // Both your phone and Mac must be on the same WiFi network!
-  static const String apiBaseUrl = 'http://192.168.0.103:3001/api';
+  static const String apiBaseUrl = 'http://192.168.0.126:3001/api';
   
   // FOR ANDROID EMULATOR use: 'http://10.0.2.2:3001/api'
   // FOR iOS SIMULATOR use:    'http://localhost:3001/api'
@@ -28,4 +28,7 @@ class AppConstants {
   static const String userDataKey = 'user_data';
   static const String roleKey = 'user_role';
   static const String onboardingCompleteKey = 'onboarding_complete';
+  
+  // WhatsApp Support
+  static const String whatsappNumber = '+15551502771'; // Replace with real business number later
 }

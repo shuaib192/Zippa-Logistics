@@ -17,6 +17,8 @@ import 'package:zippa_app/features/customer/screens/customer_profile_screen.dart
 import 'package:zippa_app/features/customer/providers/wallet_provider.dart';
 import 'package:zippa_app/core/utils/currency_formatter.dart';
 import 'package:zippa_app/core/widgets/app_drawer.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:zippa_app/core/constants/app_constants.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
   const CustomerHomeScreen({super.key});
@@ -94,164 +96,121 @@ class _HomeContentState extends State<_HomeContent> {
   Widget build(BuildContext context) {
     final user = Provider.of<AuthProvider>(context).user;
 
-    return Scaffold(
-      backgroundColor: ZippaColors.background,
-      drawer: const AppDrawer(),
-      appBar: AppBar(
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu_rounded),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Hello, ${user?.fullName.split(' ').first ?? 'Customer'}',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const Text(
-              'Where are you sending today?',
-              style: TextStyle(fontSize: 11, color: ZippaColors.textSecondary),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined), 
-            onPressed: () => Navigator.pushNamed(context, '/notifications'),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: ZippaColors.primary.withValues(alpha: 0.12),
-              child: Text(
-                user?.fullName.isNotEmpty == true ? user!.fullName[0].toUpperCase() : 'C',
-                style: const TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.bold),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _WalletCard().animate().fadeIn(duration: 500.ms).slideY(begin: 0.08, end: 0),
+          const SizedBox(height: 24),
+          const Text('Quick Actions', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(child: _QuickAction(icon: Icons.send_rounded, label: 'Send Package', color: ZippaColors.primary, onTap: () => Navigator.pushNamed(context, '/order-create'))),
+              const SizedBox(width: 12),
+              Expanded(child: _QuickAction(
+                icon: Icons.track_changes_rounded, 
+                label: 'Track Order', 
+                color: ZippaColors.info, 
+                onTap: () {
+                  final provider = Provider.of<OrderProvider>(context, listen: false);
+                  if (provider.orders.isNotEmpty) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => OrderTrackingScreen(orderId: provider.orders.first.id ?? ''),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('No active orders to track.')),
+                    );
+                  }
+                }
+              )),
+              const SizedBox(width: 12),
+              Expanded(child: _QuickAction(
+                icon: Icons.history_rounded, 
+                label: 'History', 
+                color: ZippaColors.accent, 
+                onTap: () => Provider.of<NavigationProvider>(context, listen: false).setIndex(1),
+              )),
+            ],
+          ).animate().fadeIn(delay: 150.ms, duration: 400.ms),
+          const SizedBox(height: 24),
+          
+          // --- WhatsApp Booking Card ---
+          _WhatsAppBookingCard().animate().fadeIn(delay: 200.ms, duration: 400.ms).slideX(begin: 0.1, end: 0),
+          
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Recent Orders', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
+              TextButton(
+                onPressed: () => Provider.of<NavigationProvider>(context, listen: false).setIndex(1), 
+                child: const Text('See All'),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.pushNamed(context, '/zipbot'),
-        backgroundColor: ZippaColors.primary,
-        child: const Icon(Icons.psychology, color: Colors.white),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _WalletCard().animate().fadeIn(duration: 500.ms).slideY(begin: 0.08, end: 0),
-            const SizedBox(height: 24),
-            const Text('Quick Actions', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(child: _QuickAction(icon: Icons.send_rounded, label: 'Send Package', color: ZippaColors.primary, onTap: () => Navigator.pushNamed(context, '/order-create'))),
-                const SizedBox(width: 12),
-                Expanded(child: _QuickAction(
-                  icon: Icons.track_changes_rounded, 
-                  label: 'Track Order', 
-                  color: ZippaColors.info, 
-                  onTap: () {
-                    final provider = Provider.of<OrderProvider>(context, listen: false);
-                    if (provider.orders.isNotEmpty) {
-                      // Navigate to the most recent order for tracking
+          Consumer<OrderProvider>(
+            builder: (context, provider, _) {
+              if (provider.isLoading && provider.orders.isEmpty) {
+                return const Center(child: Padding(padding: EdgeInsets.only(top: 40), child: CircularProgressIndicator()));
+              }
+              
+              if (provider.orders.isEmpty) {
+                return Center(
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 40),
+                      Icon(Icons.local_shipping_outlined, size: 72, color: ZippaColors.textLight),
+                      const SizedBox(height: 14),
+                      const Text('No orders yet', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: ZippaColors.textSecondary)),
+                      const SizedBox(height: 6),
+                      const Text('Tap "Send Package" to create\nyour first delivery',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: ZippaColors.textLight, fontSize: 13)),
+                    ],
+                  ),
+                ).animate().fadeIn(delay: 300.ms);
+              }
+
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: provider.orders.length > 3 ? 3 : provider.orders.length,
+                itemBuilder: (context, index) {
+                  final order = provider.orders[index];
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: ZippaColors.primary.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.local_shipping_outlined, color: ZippaColors.primary, size: 20),
+                    ),
+                    title: Text('Order #${order.orderNumber}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: Text(order.status[0].toUpperCase() + order.status.substring(1), 
+                      style: TextStyle(fontSize: 12, color: order.status == 'delivered' ? ZippaColors.success : ZippaColors.warning)),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => OrderTrackingScreen(orderId: provider.orders.first.id ?? ''),
+                          builder: (context) => OrderTrackingScreen(orderId: order.id ?? ''),
                         ),
                       );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('No active orders to track.')),
-                      );
-                    }
-                  }
-                )),
-                const SizedBox(width: 12),
-                Expanded(child: _QuickAction(
-                  icon: Icons.history_rounded, 
-                  label: 'History', 
-                  color: ZippaColors.accent, 
-                  onTap: () => Provider.of<NavigationProvider>(context, listen: false).setIndex(1),
-                )),
-              ],
-            ).animate().fadeIn(delay: 150.ms, duration: 400.ms),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Recent Orders', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
-                TextButton(
-                  onPressed: () => Provider.of<NavigationProvider>(context, listen: false).setIndex(1), 
-                  child: const Text('See All'),
-                ),
-              ],
-            ),
-            Consumer<OrderProvider>(
-              builder: (context, provider, _) {
-                if (provider.isLoading && provider.orders.isEmpty) {
-                  return const Center(child: Padding(padding: EdgeInsets.only(top: 40), child: CircularProgressIndicator()));
-                }
-                
-                if (provider.orders.isEmpty) {
-                  return Center(
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 40),
-                        Icon(Icons.local_shipping_outlined, size: 72, color: ZippaColors.textLight),
-                        const SizedBox(height: 14),
-                        const Text('No orders yet', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: ZippaColors.textSecondary)),
-                        const SizedBox(height: 6),
-                        const Text('Tap "Send Package" to create\nyour first delivery',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: ZippaColors.textLight, fontSize: 13)),
-                      ],
-                    ),
-                  ).animate().fadeIn(delay: 300.ms);
-                }
-
-                return ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: provider.orders.length > 3 ? 3 : provider.orders.length,
-                  itemBuilder: (context, index) {
-                    final order = provider.orders[index];
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: ZippaColors.primary.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.local_shipping_outlined, color: ZippaColors.primary, size: 20),
-                      ),
-                      title: Text('Order #${order.orderNumber}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      subtitle: Text(order.status[0].toUpperCase() + order.status.substring(1), 
-                        style: TextStyle(fontSize: 12, color: order.status == 'delivered' ? ZippaColors.success : ZippaColors.warning)),
-                      trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => OrderTrackingScreen(orderId: order.id ?? ''),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                );
-              },
-            ),
-          ],
-        ),
+                    },
+                  );
+                },
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -266,7 +225,7 @@ class _WalletCard extends StatelessWidget {
         gradient: ZippaColors.primaryGradient,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: ZippaColors.primary.withValues(alpha: 0.35), blurRadius: 20, offset: const Offset(0, 8)),
+          BoxShadow(color: ZippaColors.primary.withOpacity(0.35), blurRadius: 20, offset: const Offset(0, 8)),
         ],
       ),
       child: Column(
@@ -317,7 +276,7 @@ class _WalletAction extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: Colors.white, size: 18),
@@ -354,7 +313,7 @@ class _QuickAction extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(11),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
+                color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 22),
@@ -363,6 +322,69 @@ class _QuickAction extends StatelessWidget {
             Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: ZippaColors.textPrimary), textAlign: TextAlign.center),
           ],
         ),
+      ),
+    );
+  }
+}
+class _WhatsAppBookingCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF25D366).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF25D366).withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              color: Color(0xFF25D366),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.chat_rounded, color: Colors.white, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Book via WhatsApp',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Chat with ZipBot to send packages instantly.',
+                  style: TextStyle(fontSize: 13, color: ZippaColors.textSecondary.withOpacity(0.8)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: () async {
+              final Uri whatsappUri = Uri.parse("https://wa.me/${AppConstants.whatsappNumber}?text=Hello ZipBot, I want to send a package.");
+              if (await canLaunchUrl(whatsappUri)) {
+                await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Could not launch WhatsApp. Please check if it is installed.')),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF25D366),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            child: const Text('Chat Now', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }

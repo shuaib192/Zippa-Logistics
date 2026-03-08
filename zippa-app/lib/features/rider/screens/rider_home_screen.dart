@@ -11,6 +11,7 @@ import 'package:zippa_app/features/rider/screens/rider_earnings_screen.dart';
 import 'package:zippa_app/features/customer/screens/zipbot_screen.dart';
 import 'package:zippa_app/features/rider/screens/rider_profile_screen.dart';
 import 'package:zippa_app/core/providers/navigation_provider.dart';
+import 'package:zippa_app/core/utils/currency_formatter.dart';
 import 'package:zippa_app/core/widgets/app_drawer.dart';
 
 class RiderHomeScreen extends StatefulWidget {
@@ -107,7 +108,7 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
             padding: const EdgeInsets.only(right: 12),
             child: CircleAvatar(
               radius: 18,
-              backgroundColor: ZippaColors.primary.withValues(alpha: 0.12),
+              backgroundColor: ZippaColors.primary.withOpacity(0.12),
               child: Text(
                 user?.fullName.isNotEmpty == true ? user!.fullName[0].toUpperCase() : 'R',
                 style: const TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.bold),
@@ -131,7 +132,7 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: (_isOnline ? ZippaColors.primary : Colors.grey).withValues(alpha: 0.35),
+                    color: (_isOnline ? ZippaColors.primary : Colors.grey).withOpacity(0.35),
                     blurRadius: 20, offset: const Offset(0, 8),
                   ),
                 ],
@@ -180,7 +181,7 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
             const SizedBox(height: 14),
             Row(
               children: [
-                Expanded(child: _StatCard(icon: Icons.monetization_on_outlined, label: 'Earnings', value: 'N0.00', color: ZippaColors.success)),
+                Expanded(child: _StatCard(icon: Icons.monetization_on_outlined, label: 'Earnings', value: CurrencyFormatter.formatWithComma(0), color: ZippaColors.success)),
                 const SizedBox(width: 12),
                 Expanded(child: _StatCard(icon: Icons.local_shipping_outlined, label: 'Deliveries', value: '0', color: ZippaColors.primary)),
                 const SizedBox(width: 12),
@@ -261,7 +262,7 @@ class _OrderCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey.shade100),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(

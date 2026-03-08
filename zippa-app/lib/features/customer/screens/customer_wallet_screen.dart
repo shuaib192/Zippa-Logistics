@@ -61,7 +61,7 @@ class _CustomerWalletScreenState extends State<CustomerWalletScreen> {
                       gradient: ZippaColors.primaryGradient,
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
-                        BoxShadow(color: ZippaColors.primary.withValues(alpha: 0.3), blurRadius: 15, offset: const Offset(0, 8)),
+                        BoxShadow(color: ZippaColors.primary.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8)),
                       ],
                     ),
                     child: Column(
@@ -127,7 +127,7 @@ class _CustomerWalletScreenState extends State<CustomerWalletScreen> {
                           leading: Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: (isCredit ? Colors.green : Colors.red).withValues(alpha: 0.1),
+                              color: (isCredit ? Colors.green : Colors.red).withOpacity(0.1),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -215,7 +215,7 @@ class _ActionBtn extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.2),
+          color: Colors.white.withOpacity(0.2),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(

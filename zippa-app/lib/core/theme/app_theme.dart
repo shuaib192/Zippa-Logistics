@@ -137,7 +137,7 @@ class ZippaTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: ZippaColors.primary,
           foregroundColor: ZippaColors.textOnPrimary,
-          disabledBackgroundColor: ZippaColors.primary.withValues(alpha: 0.4),
+          disabledBackgroundColor: ZippaColors.primary.withOpacity(0.4),
           disabledForegroundColor: Colors.white70,
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

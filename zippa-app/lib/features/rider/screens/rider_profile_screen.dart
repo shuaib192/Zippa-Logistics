@@ -32,7 +32,7 @@ class RiderProfileScreen extends StatelessWidget {
             Center(
               child: CircleAvatar(
                 radius: 50,
-                backgroundColor: ZippaColors.primary.withValues(alpha: 0.1),
+                backgroundColor: ZippaColors.primary.withOpacity(0.1),
                 child: const Icon(Icons.delivery_dining_rounded, size: 50, color: ZippaColors.primary),
               ),
             ),

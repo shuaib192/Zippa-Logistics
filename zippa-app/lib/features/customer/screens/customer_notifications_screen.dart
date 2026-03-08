@@ -41,7 +41,7 @@ class _CustomerNotificationsScreenState extends State<CustomerNotificationsScree
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.notifications_none_rounded, size: 80, color: ZippaColors.primary.withValues(alpha: 0.1)),
+                  Icon(Icons.notifications_none_rounded, size: 80, color: ZippaColors.primary.withOpacity(0.1)),
                   const SizedBox(height: 16),
                   const Text('No notifications yet', style: TextStyle(color: ZippaColors.textSecondary, fontSize: 16)),
                 ],
@@ -72,7 +72,7 @@ class _CustomerNotificationsScreenState extends State<CustomerNotificationsScree
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: _getIconColor(notification['type']).withValues(alpha: 0.1),
+                          color: _getIconColor(notification['type']).withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -109,14 +109,14 @@ class _CustomerNotificationsScreenState extends State<CustomerNotificationsScree
                             Text(
                               notification['message'] ?? '',
                               style: TextStyle(
-                                color: isRead ? ZippaColors.textSecondary.withValues(alpha: 0.7) : ZippaColors.textSecondary,
+                                color: isRead ? ZippaColors.textSecondary.withOpacity(0.7) : ZippaColors.textSecondary,
                                 fontSize: 13,
                               ),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               DateFormat('MMM dd, hh:mm a').format(date.toLocal()),
-                              style: TextStyle(color: ZippaColors.textSecondary.withValues(alpha: 0.5), fontSize: 11),
+                              style: TextStyle(color: ZippaColors.textSecondary.withOpacity(0.5), fontSize: 11),
                             ),
                           ],
                         ),

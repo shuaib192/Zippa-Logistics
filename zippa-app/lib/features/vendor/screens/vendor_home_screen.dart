@@ -36,7 +36,7 @@ class VendorHomeScreen extends StatelessWidget {
             padding: const EdgeInsets.only(right: 12),
             child: CircleAvatar(
               radius: 18,
-              backgroundColor: ZippaColors.primary.withValues(alpha: 0.12),
+              backgroundColor: ZippaColors.primary.withOpacity(0.12),
               child: Text(
                 user?.fullName.isNotEmpty == true ? user!.fullName[0].toUpperCase() : 'V',
                 style: const TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.bold),
@@ -57,7 +57,7 @@ class VendorHomeScreen extends StatelessWidget {
                 gradient: ZippaColors.primaryGradient,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
-                  BoxShadow(color: ZippaColors.primary.withValues(alpha: 0.35), blurRadius: 20, offset: const Offset(0, 8)),
+                  BoxShadow(color: ZippaColors.primary.withOpacity(0.35), blurRadius: 20, offset: const Offset(0, 8)),
                 ],
               ),
               child: Column(
@@ -191,7 +191,7 @@ class _VendorAction extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(9),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
+                color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 20),

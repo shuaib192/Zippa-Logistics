@@ -114,7 +114,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               width: size.width * 0.7,
                               height: size.width * 0.7,
                               decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.08),
+                                color: color.withOpacity(0.08),
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -123,7 +123,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               width: size.width * 0.55,
                               height: size.width * 0.55,
                               decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.12),
+                                color: color.withOpacity(0.12),
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -144,7 +144,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: color.withValues(alpha: 0.4),
+                                      color: color.withOpacity(0.4),
                                       blurRadius: 12,
                                       offset: const Offset(0, 4),
                                     ),
@@ -174,7 +174,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
                           decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.1),
+                            color: color.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -231,7 +231,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     count: _pages.length,
                     effect: ExpandingDotsEffect(
                       activeDotColor: ZippaColors.primary,
-                      dotColor: ZippaColors.primary.withValues(alpha: 0.2),
+                      dotColor: ZippaColors.primary.withOpacity(0.2),
                       dotHeight: 8,
                       dotWidth: 8,
                       expansionFactor: 3,
