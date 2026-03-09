@@ -150,8 +150,8 @@ const fundWallet = async (req, res) => {
             user_id: userId,
             type: 'wallet_funding',
             custom_fields: [
-                { display_name: "Action", variable_name: "action", value: "fund_wallet" },
-                { display_name: "User ID", variable_name: "user_id", value: userId }
+                { display_name: 'Action', variable_name: 'action', value: 'fund_wallet' },
+                { display_name: 'User ID', variable_name: 'user_id', value: userId }
             ]
         };
 
