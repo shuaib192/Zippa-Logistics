@@ -35,6 +35,13 @@ class User {
   final String role;
   final String kycStatus;
   
+  // Rider-specific fields
+  final String? vehicleType;
+  final String? vehiclePlate;
+  final String? payoutBankName;
+  final String? payoutAccountNumber;
+  final String? payoutAccountName;
+  
   User({
     required this.id,
     this.email,
@@ -42,6 +49,11 @@ class User {
     required this.fullName,
     required this.role,
     required this.kycStatus,
+    this.vehicleType,
+    this.vehiclePlate,
+    this.payoutBankName,
+    this.payoutAccountNumber,
+    this.payoutAccountName,
   });
   
   // Factory constructor — creates a User from JSON (API response)
@@ -50,9 +62,14 @@ class User {
       id: json['id'] ?? '',
       email: json['email'],
       phone: json['phone'] ?? '',
-      fullName: json['fullName'] ?? '',
+      fullName: json['fullName'] ?? json['full_name'] ?? '',
       role: json['role'] ?? 'customer',
-      kycStatus: json['kycStatus'] ?? 'unverified',
+      kycStatus: json['kycStatus'] ?? json['kyc_status'] ?? 'unverified',
+      vehicleType: json['vehicle_type'],
+      vehiclePlate: json['vehicle_plate'],
+      payoutBankName: json['payout_bank_name'],
+      payoutAccountNumber: json['payout_account_number'],
+      payoutAccountName: json['payout_account_name'],
     );
   }
   
@@ -64,6 +81,11 @@ class User {
     'fullName': fullName,
     'role': role,
     'kycStatus': kycStatus,
+    'vehicle_type': vehicleType,
+    'vehicle_plate': vehiclePlate,
+    'payout_bank_name': payoutBankName,
+    'payout_account_number': payoutAccountNumber,
+    'payout_account_name': payoutAccountName,
   };
 }
 
@@ -260,6 +282,35 @@ class AuthProvider extends ChangeNotifier {
       }
     } catch (e) {
       _error = 'Failed to load profile. Please try again.';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ============================================
+  // Update Profile
+  // ============================================
+  Future<bool> updateProfile(Map<String, dynamic> updateData) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    
+    try {
+      final response = await _api.put('/users/profile', updateData);
+      
+      if (response['success'] == true) {
+        // Refresh local data
+        await fetchProfile();
+        return true;
+      } else {
+        _error = response['message'] ?? 'Failed to update profile';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = 'Connection error. Please try again.';
       _isLoading = false;
       notifyListeners();
       return false;

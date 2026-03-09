@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const PaystackService = require('../services/paystack.service');
 
 /**
  * Get current user's wallet balance
@@ -6,24 +7,105 @@ const db = require('../config/database');
  */
 const getBalance = async (req, res) => {
     try {
+        const { id: userId, role } = req.user;
+        
         const result = await db.query(
-            'SELECT balance FROM wallets WHERE user_id = $1',
+            `SELECT w.*, u.email, u.full_name, u.phone 
+             FROM wallets w 
+             JOIN users u ON u.id = w.user_id 
+             WHERE w.user_id = $1`,
             [req.user.id]
         );
 
+        let wallet;
         if (result.rows.length === 0) {
-            // If wallet doesn't exist, create it (safety)
-            const newWallet = await db.query(
-                'INSERT INTO wallets (user_id, balance) VALUES ($1, 0) RETURNING balance',
+            // Create wallet if it doesn't exist
+            const newW = await db.query(
+                'INSERT INTO wallets (user_id, balance) VALUES ($1, 0) RETURNING *',
                 [req.user.id]
             );
-            return res.status(200).json({ success: true, balance: newWallet.rows[0].balance });
+            wallet = newW.rows[0];
+            // Fetch user info for Paystack
+            const userRes = await db.query('SELECT email, full_name, phone FROM users WHERE id = $1', [req.user.id]);
+            wallet = { ...wallet, ...userRes.rows[0] };
+        } else {
+            wallet = result.rows[0];
         }
 
-        res.status(200).json({ success: true, balance: result.rows[0].balance });
+        // Check if we need to generate Paystack details (ONLY for customers)
+        if (!wallet.virtual_account_number && role === 'customer' && wallet.email) {
+            try {
+                // 1. Create/Fetch Paystack Customer
+                if (!wallet.paystack_customer_code) {
+                    const fullName = wallet.full_name || 'Zippa User';
+                    const customer = await PaystackService.createCustomer(wallet.email, fullName, wallet.phone || '');
+                    wallet.paystack_customer_code = customer.data.customer_code;
+                    await db.query('UPDATE wallets SET paystack_customer_code = $1 WHERE user_id = $2', [wallet.paystack_customer_code, req.user.id]);
+                }
+
+                // 2. Create Dedicated Virtual Account
+                const account = await PaystackService.createDedicatedAccount(wallet.paystack_customer_code);
+                if (account.success && account.data) {
+                    const accData = account.data;
+                    wallet.virtual_account_number = accData.account_number;
+                    wallet.virtual_bank_name = accData.bank.name;
+                    wallet.virtual_account_name = accData.account_name;
+
+                    await db.query(
+                        `UPDATE wallets SET 
+                         virtual_account_number = $1, 
+                         virtual_bank_name = $2, 
+                         virtual_account_name = $3 
+                         WHERE user_id = $4`,
+                        [wallet.virtual_account_number, wallet.virtual_bank_name, wallet.virtual_account_name, req.user.id]
+                    );
+                }
+            } catch (pErr) {
+                console.error('Paystack Auto-Generation Error:', pErr.message);
+                // Special handling for Test accounts or unverified businesses
+                if (pErr.message.includes('not available')) {
+                    wallet.virtual_account_error = 'Dedicated NUBAN not enabled for this Paystack account.';
+                }
+                // Continue without virtual account info, user can try later
+            }
+        }
+        
+        // 3. For Riders, calculate Today's Summary
+        let summary = {
+            today_earnings: 0,
+            today_deliveries: 0,
+            rating: 5.0 // Placeholder for now
+        };
+
+        if (role === 'rider') {
+            const riderSummary = await db.query(
+                `SELECT 
+                    COALESCE(SUM(rider_earning), 0) as earnings,
+                    COUNT(*) as deliveries
+                 FROM orders 
+                 WHERE rider_id = $1 
+                 AND status = 'delivered'
+                 AND created_at >= CURRENT_DATE`,
+                [userId]
+            );
+            summary.today_earnings = parseFloat(riderSummary.rows[0].earnings);
+            summary.today_deliveries = parseInt(riderSummary.rows[0].deliveries);
+        }
+
+        res.status(200).json({ 
+            success: true, 
+            balance: wallet.balance,
+            virtual_account: wallet.virtual_account_number ? {
+                account_number: wallet.virtual_account_number,
+                bank_name: wallet.virtual_bank_name,
+                account_name: wallet.virtual_account_name
+            } : null,
+            virtual_account_message: wallet.virtual_account_error || null,
+            summary: summary
+        });
     } catch (err) {
         console.error('Get balance error:', err);
-        res.status(500).json({ success: false, message: 'Failed to fetch wallet balance.' });
+        res.status(500).json({ success: false, message: 'Failed to fetch wallet information.' });
     }
 };
 
@@ -59,7 +141,7 @@ const fundWallet = async (req, res) => {
         return res.status(400).json({ success: false, message: 'Invalid amount.' });
     }
 
-    const client = await db.pool.connect();
+    const client = await db.connect();
     try {
         await client.query('BEGIN');
 

@@ -4,6 +4,7 @@ import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/features/customer/providers/order_provider.dart';
 import 'package:zippa_app/core/utils/currency_formatter.dart';
 import 'package:zippa_app/core/widgets/app_drawer.dart';
+import 'package:zippa_app/features/rider/screens/rider_order_details_screen.dart';
 
 class RiderDeliveriesScreen extends StatefulWidget {
   const RiderDeliveriesScreen({super.key});
@@ -69,9 +70,38 @@ class _RiderDeliveriesScreenState extends State<RiderDeliveriesScreen> {
                 margin: const EdgeInsets.only(bottom: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: ListTile(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => RiderOrderDetailsScreen(orderId: order.id!)),
+                  ),
                   contentPadding: const EdgeInsets.all(16),
-                  title: Text('Order #${order.orderNumber ?? (order.id?.substring(0, 8) ?? '...')}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('Earnings: ${CurrencyFormatter.formatWithComma(order.fare)}'),
+                  title: Row(
+                    children: [
+                      Expanded(child: Text('Order #${order.orderNumber ?? (order.id?.substring(0, 8) ?? '...')}', style: const TextStyle(fontWeight: FontWeight.bold))),
+                      if (order.isMarketplace)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(color: ZippaColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                          child: const Text('MARKETPLACE', style: TextStyle(color: ZippaColors.primary, fontSize: 8, fontWeight: FontWeight.bold)),
+                        ),
+                    ],
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Earnings: ${CurrencyFormatter.formatWithComma(order.riderEarnings)}'),
+                      if (order.isMarketplace) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.storefront_outlined, size: 12, color: ZippaColors.textSecondary),
+                            const SizedBox(width: 4),
+                            Text(order.vendorName ?? 'Marketplace Store', style: const TextStyle(fontSize: 11, color: ZippaColors.textSecondary)),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
                   trailing: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(

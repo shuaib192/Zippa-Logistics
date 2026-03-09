@@ -8,10 +8,14 @@ import 'package:zippa_app/data/models/order_model.dart';
 import 'package:intl/intl.dart';
 import 'package:zippa_app/features/rider/screens/rider_deliveries_screen.dart';
 import 'package:zippa_app/features/rider/screens/rider_earnings_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zippa_app/features/customer/screens/zipbot_screen.dart';
 import 'package:zippa_app/features/rider/screens/rider_profile_screen.dart';
 import 'package:zippa_app/core/providers/navigation_provider.dart';
+import 'package:zippa_app/features/customer/providers/wallet_provider.dart';
 import 'package:zippa_app/core/utils/currency_formatter.dart';
+import 'package:zippa_app/features/rider/screens/rider_order_details_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:zippa_app/core/widgets/app_drawer.dart';
 
 class RiderHomeScreen extends StatefulWidget {
@@ -36,7 +40,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
     final navProvider = Provider.of<NavigationProvider>(context);
 
     return Scaffold(
-      drawer: const AppDrawer(),
+      drawer: AppDrawer(),
       body: IndexedStack(
         index: navProvider.currentIndex,
         children: _screens,
@@ -71,6 +75,45 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
   bool _isOnline = false;
 
   @override
+  void initState() {
+    super.initState();
+    _loadOnlineStatus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Provider.of<WalletProvider>(context, listen: false).fetchBalance();
+      }
+    });
+  }
+
+  Future<void> _loadOnlineStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isOnline = prefs.getBool('rider_online_status') ?? false;
+    });
+    // Sync with backend on load
+    if (mounted) {
+      Provider.of<OrderProvider>(context, listen: false).toggleOnline(_isOnline);
+      if (_isOnline) {
+        Provider.of<OrderProvider>(context, listen: false).fetchPendingOrders();
+      }
+    }
+  }
+
+  Future<void> _toggleOnline(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() => _isOnline = value);
+    await prefs.setBool('rider_online_status', value);
+    
+    if (mounted) {
+      final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+      await orderProvider.toggleOnline(value);
+      if (value) {
+        orderProvider.fetchPendingOrders();
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final user = Provider.of<AuthProvider>(context).user;
     final orderProvider = Provider.of<OrderProvider>(context);
@@ -78,7 +121,7 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
 
     return Scaffold(
       backgroundColor: ZippaColors.background,
-      drawer: const AppDrawer(),
+      drawer: AppDrawer(),
       appBar: AppBar(
         leading: Builder(
           builder: (context) => IconButton(
@@ -159,12 +202,7 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
                     scale: 1.2,
                     child: Switch(
                       value: _isOnline,
-                      onChanged: (v) {
-                        setState(() => _isOnline = v);
-                        if (v) {
-                          orderProvider.fetchPendingOrders();
-                        }
-                      },
+                      onChanged: _toggleOnline,
                       activeThumbColor: Colors.white,
                       activeTrackColor: ZippaColors.primaryLight,
                       inactiveThumbColor: Colors.white,
@@ -177,21 +215,46 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
 
             const SizedBox(height: 24),
 
-            const Text("Today's Summary", style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
+            Text("Today's Summary", style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
             const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(child: _StatCard(icon: Icons.monetization_on_outlined, label: 'Earnings', value: CurrencyFormatter.formatWithComma(0), color: ZippaColors.success)),
-                const SizedBox(width: 12),
-                Expanded(child: _StatCard(icon: Icons.local_shipping_outlined, label: 'Deliveries', value: '0', color: ZippaColors.primary)),
-                const SizedBox(width: 12),
-                Expanded(child: _StatCard(icon: Icons.star_border_rounded, label: 'Rating', value: '5.0', color: ZippaColors.warning)),
-              ],
+            Consumer<WalletProvider>(
+              builder: (context, wallet, child) {
+                final summary = wallet.summary ?? {};
+                return Row(
+                  children: [
+                    Expanded(child: _StatCard(
+                      icon: Icons.monetization_on_outlined, 
+                      label: 'Earnings', 
+                      value: CurrencyFormatter.formatWithComma(double.tryParse(summary['today_earnings']?.toString() ?? '0') ?? 0), 
+                      color: ZippaColors.success
+                    )),
+                    const SizedBox(width: 12),
+                    Expanded(child: _StatCard(
+                      icon: Icons.local_shipping_outlined, 
+                      label: 'Deliveries', 
+                      value: (summary['today_deliveries'] ?? 0).toString(), 
+                      color: ZippaColors.primary
+                    )),
+                    const SizedBox(width: 12),
+                    Expanded(child: _StatCard(
+                      icon: Icons.star_border_rounded, 
+                      label: 'Rating', 
+                      value: (summary['today_ratings'] ?? 5.0).toString(), 
+                      color: ZippaColors.warning
+                    )),
+                  ],
+                );
+              }
             ).animate().fadeIn(delay: 150.ms, duration: 400.ms),
 
             const SizedBox(height: 24),
 
-            const Text('Available Orders', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
+            if (orderProvider.activeOrder != null) ...[
+              _ActiveDeliveryCard(order: orderProvider.activeOrder!, currencyFormat: currencyFormat),
+              const SizedBox(height: 24),
+            ],
+
+            Text('Available Orders', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
             const SizedBox(height: 14),
 
             if (_isOnline)
@@ -271,13 +334,42 @@ class _OrderCard extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: ZippaColors.secondary, borderRadius: BorderRadius.circular(12)),
-                child: Text('#${order.orderNumber}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: ZippaColors.primary)),
+                decoration: BoxDecoration(
+                  color: order.isMarketplace ? ZippaColors.primary.withOpacity(0.1) : ZippaColors.secondary,
+                  borderRadius: BorderRadius.circular(12)
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (order.isMarketplace) ...[
+                      const Icon(Icons.shopping_bag_outlined, size: 10, color: ZippaColors.primary),
+                      const SizedBox(width: 4),
+                    ],
+                    Text(
+                      order.isMarketplace ? 'MARKETPLACE' : '#${order.orderNumber}', 
+                      style: TextStyle(
+                        fontSize: 10, 
+                        fontWeight: FontWeight.bold, 
+                        color: order.isMarketplace ? ZippaColors.primary : ZippaColors.primary
+                      )
+                    ),
+                  ],
+                ),
               ),
               const Spacer(),
               Text(currencyFormat.format(order.riderEarnings), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: ZippaColors.success)),
             ],
           ),
+          if (order.isMarketplace) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.storefront_outlined, size: 14, color: ZippaColors.textSecondary),
+                const SizedBox(width: 6),
+                Text(order.vendorName ?? 'Marketplace Store', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: ZippaColors.textPrimary)),
+              ],
+            ),
+          ],
           const Divider(height: 24),
           Row(
             children: [
@@ -306,7 +398,10 @@ class _OrderCard extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                // Navigate to Order Details
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => RiderOrderDetailsScreen(orderId: order.id!)),
+                );
               },
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
@@ -347,5 +442,99 @@ class _StatCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _ActiveDeliveryCard extends StatelessWidget {
+  final OrderModel order;
+  final NumberFormat currencyFormat;
+  const _ActiveDeliveryCard({required this.order, required this.currencyFormat});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: ZippaColors.primary,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(color: ZippaColors.primary.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Row(
+                children: [
+                   Icon(Icons.directions_bike, color: Colors.white, size: 18),
+                   SizedBox(width: 8),
+                   Text('ACTIVE DELIVERY', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5)),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(8)),
+                child: Text('#${order.orderNumber}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('DROPOFF LOCATION', style: TextStyle(color: Colors.white60, fontSize: 10, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text(order.dropoffAddress, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text('EARNING', style: TextStyle(color: Colors.white60, fontSize: 10, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text(currencyFormat.format(order.riderEarnings), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => RiderOrderDetailsScreen(orderId: order.id!)),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: ZippaColors.primary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ),
+                  child: const Text('Resume Task', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              IconButton.filled(
+                onPressed: () => launchUrl(Uri.parse('tel:${order.recipientPhone}')),
+                icon: const Icon(Icons.phone),
+                style: IconButton.styleFrom(backgroundColor: Colors.white24, foregroundColor: Colors.white),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ).animate().slideY(begin: 0.1, duration: 400.ms).fadeIn();
   }
 }

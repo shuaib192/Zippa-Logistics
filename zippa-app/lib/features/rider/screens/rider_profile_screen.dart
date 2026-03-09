@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/features/auth/providers/auth_provider.dart';
 import 'package:zippa_app/core/widgets/app_drawer.dart';
+import 'package:zippa_app/features/rider/screens/rider_edit_profile_screen.dart';
 
 class RiderProfileScreen extends StatelessWidget {
   const RiderProfileScreen({super.key});
@@ -12,7 +13,7 @@ class RiderProfileScreen extends StatelessWidget {
     final user = Provider.of<AuthProvider>(context).user;
     
     return Scaffold(
-      drawer: const AppDrawer(),
+      drawer: AppDrawer(),
       appBar: AppBar(
         leading: Builder(
           builder: (context) => IconButton(
@@ -33,16 +34,28 @@ class RiderProfileScreen extends StatelessWidget {
               child: CircleAvatar(
                 radius: 50,
                 backgroundColor: ZippaColors.primary.withOpacity(0.1),
-                child: const Icon(Icons.delivery_dining_rounded, size: 50, color: ZippaColors.primary),
+                child: Icon(Icons.delivery_dining_rounded, size: 50, color: ZippaColors.primary),
               ),
             ),
             const SizedBox(height: 16),
             Text(user?.fullName ?? 'Rider', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            Text(user?.email ?? '', style: const TextStyle(color: ZippaColors.textSecondary)),
+            Text(user?.email ?? '', style: TextStyle(color: ZippaColors.textSecondary)),
             const SizedBox(height: 32),
-            _ProfileItem(icon: Icons.person_outline, label: 'Personal Information'),
-            _ProfileItem(icon: Icons.directions_bike_rounded, label: 'Vehicle Details'),
-            _ProfileItem(icon: Icons.account_balance_rounded, label: 'Banking & Payouts'),
+            _ProfileItem(
+              icon: Icons.person_outline, 
+              label: 'Personal Information',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RiderEditProfileScreen())),
+            ),
+            _ProfileItem(
+              icon: Icons.directions_bike_rounded, 
+              label: 'Vehicle Details',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RiderEditProfileScreen())),
+            ),
+            _ProfileItem(
+              icon: Icons.account_balance_rounded, 
+              label: 'Banking & Payouts',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RiderEditProfileScreen())),
+            ),
             _ProfileItem(icon: Icons.history_rounded, label: 'Delivery History'),
             const Divider(height: 32, indent: 24, endIndent: 24),
             _ProfileItem(

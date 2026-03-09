@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 import 'package:zippa_app/features/customer/providers/wallet_provider.dart';
@@ -81,6 +82,58 @@ class _CustomerWalletScreenState extends State<CustomerWalletScreen> {
                     ],
                   ),
                 ),
+                
+                if (wallet.virtualAccount != null) ...[
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: ZippaColors.surface,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: ZippaColors.primary.withAlpha(50)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.account_balance_wallet_outlined, size: 16, color: ZippaColors.primary),
+                            SizedBox(width: 8),
+                            Text('Dedicated Funding Account', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: ZippaColors.primary)),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        const Text('Transfer money to this unique account to fund your wallet instantly.', style: TextStyle(fontSize: 11, color: ZippaColors.textSecondary)),
+                        const SizedBox(height: 16),
+                        _AccountDetailRow(label: 'Bank Name', value: wallet.virtualAccount!['bank_name'] ?? 'Wema Bank'),
+                        _AccountDetailRow(
+                          label: 'Account Number', 
+                          value: wallet.virtualAccount!['account_number'] ?? '---', 
+                          isCopyable: true,
+                        ),
+                        _AccountDetailRow(label: 'Account Name', value: wallet.virtualAccount!['account_name'] ?? 'Zippa Logistics'),
+                      ],
+                    ),
+                  ),
+                ] else if (wallet.virtualAccountMessage != null) ...[
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.blue.shade100),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(child: Text(wallet.virtualAccountMessage!, style: TextStyle(fontSize: 12, color: Colors.blue.shade800))),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 32),
                 const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -176,6 +229,51 @@ class _CustomerWalletScreenState extends State<CustomerWalletScreen> {
               }
             },
             child: const Text('Fund'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccountDetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool isCopyable;
+
+  const _AccountDetailRow({
+    required this.label,
+    required this.value,
+    this.isCopyable = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: ZippaColors.textSecondary, fontSize: 13)),
+          Row(
+            children: [
+              Text(
+                value,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: ZippaColors.textPrimary),
+              ),
+              if (isCopyable) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: value));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('$label copied to clipboard')),
+                    );
+                  },
+                  child: const Icon(Icons.copy_rounded, size: 16, color: ZippaColors.primary),
+                ),
+              ],
+            ],
           ),
         ],
       ),

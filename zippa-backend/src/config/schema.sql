@@ -97,6 +97,12 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     guarantor_name  VARCHAR(255),     -- Guarantor's full name
     guarantor_phone VARCHAR(20),      -- Guarantor's phone
     
+    -- Payout/Bank Details (For receiving earnings)
+    payout_bank_name      VARCHAR(100),
+    payout_account_number VARCHAR(20),
+    payout_account_name   VARCHAR(255),
+    payout_bank_code      VARCHAR(10),
+    
     -- Vendor-specific fields
     business_name       VARCHAR(255),
     business_address    TEXT,
@@ -154,6 +160,8 @@ CREATE TABLE IF NOT EXISTS orders (
     payment_status      VARCHAR(20) DEFAULT 'held', -- 'pending', 'held', 'released', 'refunded'
     customer_confirmed  BOOLEAN DEFAULT FALSE,
     package_description TEXT,
+    customer_notes      TEXT,
+    is_marketplace      BOOLEAN DEFAULT FALSE,
     
     -- Pricing
     distance_km      DECIMAL(10, 2),  -- Distance in kilometers
@@ -217,7 +225,14 @@ CREATE TABLE IF NOT EXISTS wallets (
     -- Balance in Nigerian Naira
     currency    VARCHAR(3) DEFAULT 'NGN',
     is_locked   BOOLEAN DEFAULT false,
-    -- Lock wallet if suspicious activity detected
+    
+    -- Paystack Integration
+    paystack_customer_code   VARCHAR(50),
+    virtual_account_number   VARCHAR(20),
+    virtual_bank_name        VARCHAR(100),
+    virtual_account_name     VARCHAR(255),
+    virtual_account_error    TEXT,
+    
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

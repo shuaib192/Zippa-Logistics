@@ -5,11 +5,17 @@ class WalletProvider with ChangeNotifier {
   final ApiClient _apiClient = ApiClient();
 
   double _balance = 0.0;
+  Map<String, dynamic>? _virtualAccount;
+  Map<String, dynamic>? _summary;
+  String? _virtualAccountMessage;
   List<dynamic> _transactions = [];
   bool _isLoading = false;
   String? _error;
 
   double get balance => _balance;
+  Map<String, dynamic>? get virtualAccount => _virtualAccount;
+  Map<String, dynamic>? get summary => _summary;
+  String? get virtualAccountMessage => _virtualAccountMessage;
   List<dynamic> get transactions => _transactions;
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -26,6 +32,13 @@ class WalletProvider with ChangeNotifier {
       final response = await _apiClient.get('/wallet/balance');
       if (response['success'] != false) {
         _balance = double.tryParse(response['balance']?.toString() ?? '0') ?? 0.0;
+        _virtualAccount = response['virtual_account'] != null 
+            ? Map<String, dynamic>.from(response['virtual_account']) 
+            : null;
+        _summary = response['summary'] != null
+            ? Map<String, dynamic>.from(response['summary'])
+            : null;
+        _virtualAccountMessage = response['virtual_account_message'];
       } else {
         _error = response['message'];
       }

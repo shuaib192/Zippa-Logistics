@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/features/customer/providers/marketplace_provider.dart';
 import 'package:zippa_app/features/customer/providers/order_provider.dart';
-import 'package:zippa_app/features/customer/screens/map_picker_screen.dart';
+import 'package:zippa_app/features/customer/widgets/nigeria_location_picker.dart';
 import 'package:zippa_app/core/utils/currency_formatter.dart';
 import 'package:zippa_app/data/models/order_model.dart';
 import 'package:zippa_app/features/customer/screens/order_success_screen.dart';
@@ -41,26 +41,23 @@ class _MarketplaceCartScreenState extends State<MarketplaceCartScreen> {
   }
 
   Future<void> _pickDropoff() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const MapPickerScreen(title: 'Select Dropoff Location'),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => NigeriaLocationPicker(
+        title: 'Select Dropoff Location',
+        onSelected: (address, lat, lng) async {
+          if (!mounted) return;
+          final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+          orderProvider.setDropoff(address, lat, lng);
+          
+          setState(() => _isEstimating = true);
+          await orderProvider.estimateFare();
+          setState(() => _isEstimating = false);
+        },
       ),
     );
-
-    if (result != null && result is Map<String, dynamic>) {
-      if (!mounted) return;
-      final orderProvider = Provider.of<OrderProvider>(context, listen: false);
-      orderProvider.setDropoff(
-        result['address'],
-        result['lat'],
-        result['lng'],
-      );
-      
-      setState(() => _isEstimating = true);
-      await orderProvider.estimateFare();
-      setState(() => _isEstimating = false);
-    }
   }
 
   Future<void> _placeOrder() async {
@@ -84,7 +81,10 @@ class _MarketplaceCartScreenState extends State<MarketplaceCartScreen> {
       'dropoff_lng': orderProvider.dropoffLng,
       'package_size': 'small',
       'package_type': 'marketplace_order',
-      'package_description': 'Order from ${widget.vendor['business_name']}',
+      'package_description': marketplace.cart.entries.map((e) {
+        final p = marketplace.cartProductDetails[e.key];
+        return '${e.value}x ${p?.name ?? "Item"}';
+      }).join(', '),
       'item_price': marketplace.cartTotal,
       'recipient_name': 'Me', // Customer is ordering for themselves
       'recipient_phone': 'N/A',

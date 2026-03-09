@@ -20,6 +20,11 @@ class OrderModel {
   final String packageSize; // small, medium, large, extra_large
   final String packageType; // document, electronics, food, etc.
   final String? packageDescription;
+  final String? customerNotes;
+  
+  // Marketplace Specific
+  final bool isMarketplace;
+  final String? vendorName;
   
   // Recipient info
   final String recipientName;
@@ -77,6 +82,9 @@ class OrderModel {
     this.riderName,
     this.riderPhone,
     this.riderAvatar,
+    this.customerNotes,
+    this.isMarketplace = false,
+    this.vendorName,
   });
 
   // Convert JSON to Order object
@@ -111,6 +119,9 @@ class OrderModel {
       riderName: json['rider_name'],
       riderPhone: json['rider_phone'],
       riderAvatar: json['rider_avatar'],
+      customerNotes: json['customer_notes'],
+      isMarketplace: json['is_marketplace'] == true,
+      vendorName: json['vendor_name'] ?? json['pickup_contact_name'],
     );
   }
 

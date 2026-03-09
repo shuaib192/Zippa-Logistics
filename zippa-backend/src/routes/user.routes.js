@@ -13,7 +13,7 @@ const express = require('express');
 const router = express.Router();
 
 const { authenticate } = require('../middleware/auth.middleware');
-const { getProfile, updateProfile, changePassword } = require('../controllers/user.controller');
+const { getProfile, updateProfile, changePassword, toggleOnline } = require('../controllers/user.controller');
 
 // All routes below require authentication
 // GET /api/users/profile — View your profile
@@ -24,5 +24,8 @@ router.put('/profile', authenticate, updateProfile);
 
 // PUT /api/users/change-password — Change password
 router.put('/change-password', authenticate, changePassword);
+
+// POST /api/users/toggle-online — Toggle rider online status
+router.post('/toggle-online', authenticate, toggleOnline);
 
 module.exports = router;

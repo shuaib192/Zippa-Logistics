@@ -20,6 +20,14 @@ class OrderProvider with ChangeNotifier {
   String? get error => _error;
   List<OrderModel> get orders => _orders;
   Map<String, dynamic>? get lastEstimate => _lastEstimate;
+
+  OrderModel? get activeOrder {
+    try {
+      return _orders.firstWhere((o) => o.status == 'accepted' || o.status == 'picked_up');
+    } catch (_) {
+      return null;
+    }
+  }
   
   String get pickupAddress => _pickupAddress;
   double get pickupLat => _pickupLat;
@@ -167,10 +175,12 @@ class OrderProvider with ChangeNotifier {
   Future<OrderModel?> fetchOrderDetails(String orderId) async {
     _isLoading = true;
     _error = null;
+    debugPrint('Fetching details for Order ID: $orderId');
     notifyListeners();
 
     try {
       final response = await _apiClient.get('/orders/$orderId');
+      debugPrint('Order Detail Response: $response');
       if (response['success'] != false && response['order'] != null) {
         final order = OrderModel.fromJson(response['order']);
         _isLoading = false;
@@ -183,6 +193,7 @@ class OrderProvider with ChangeNotifier {
         return null;
       }
     } catch (e) {
+      debugPrint('Error fetching order details: $e');
       _error = 'Failed to fetch order details';
       _isLoading = false;
       notifyListeners();
@@ -390,6 +401,37 @@ class OrderProvider with ChangeNotifier {
       }
     } catch (e) {
       _error = 'Failed to confirm delivery';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ============================================
+  // API CALL: Toggle Online Status (Rider)
+  // ============================================
+  Future<bool> toggleOnline(bool isOnline) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.post('/users/toggle-online', {
+        'isOnline': isOnline,
+      });
+
+      if (response['success'] != false) {
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _error = response['message'];
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = 'Failed to update online status';
       _isLoading = false;
       notifyListeners();
       return false;

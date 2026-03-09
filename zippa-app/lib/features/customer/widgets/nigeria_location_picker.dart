@@ -80,11 +80,11 @@ class _NigeriaLocationPickerState extends State<NigeriaLocationPicker> {
             ),
             const SizedBox(height: 16),
   
-            // 3. WARD/TOWN SELECTOR
-            const Text('3. Select Town / Ward', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            // 3. AREA SELECTOR
+            const Text('3. Select Area / Town', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
             const SizedBox(height: 8),
             _buildDropdown<WardData>(
-              hint: _selectedLga == null ? 'Select LGA first' : 'Choose Town/Ward',
+              hint: _selectedLga == null ? 'Select LGA first' : 'Choose Area/Town',
               value: _selectedWard,
               items: _selectedLga?.wards.map((ward) => DropdownMenuItem(value: ward, child: Text(ward.name))).toList(),
               onChanged: _selectedLga == null ? null : (value) {

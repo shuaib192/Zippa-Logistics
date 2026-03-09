@@ -23,7 +23,7 @@ const getProfile = async (req, res) => {
             `SELECT u.id, u.email, u.phone, u.full_name, u.role, u.secondary_role,
               u.kyc_status, u.avatar_url, u.is_online, u.created_at,
               p.date_of_birth, p.gender, p.address, p.city, p.state,
-              p.vehicle_type, p.vehicle_plate, p.guarantor_name, p.guarantor_phone,
+              payout_bank_name, payout_account_number, payout_account_name, payout_bank_code,
               p.business_name, p.business_address, p.business_reg_number,
               p.default_pickup_address,
               w.balance as wallet_balance
@@ -70,6 +70,11 @@ const getProfile = async (req, res) => {
                     vehiclePlate: profile.vehicle_plate,
                     guarantorName: profile.guarantor_name,
                     guarantorPhone: profile.guarantor_phone,
+                    // Payout info
+                    payoutBankName: profile.payout_bank_name,
+                    payoutAccountNumber: profile.payout_account_number,
+                    payoutAccountName: profile.payout_account_name,
+                    payoutBankCode: profile.payout_bank_code,
                     // Vendor-specific
                     businessName: profile.business_name,
                     businessAddress: profile.business_address,
@@ -100,6 +105,7 @@ const updateProfile = async (req, res) => {
             fullName, email, avatarUrl,
             dateOfBirth, gender, address, city, state,
             vehicleType, vehiclePlate, guarantorName, guarantorPhone,
+            payoutBankName, payoutAccountNumber, payoutAccountName, payoutBankCode,
             businessName, businessAddress, businessRegNumber, defaultPickupAddress,
         } = req.body;
 
@@ -145,6 +151,10 @@ const updateProfile = async (req, res) => {
             vehicle_plate: vehiclePlate,
             guarantor_name: guarantorName,
             guarantor_phone: guarantorPhone,
+            payout_bank_name: payoutBankName,
+            payout_account_number: payoutAccountNumber,
+            payout_account_name: payoutAccountName,
+            payout_bank_code: payoutBankCode,
             business_name: businessName,
             business_address: businessAddress,
             business_reg_number: businessRegNumber,
@@ -240,4 +250,26 @@ const changePassword = async (req, res) => {
     }
 };
 
-module.exports = { getProfile, updateProfile, changePassword };
+const toggleOnline = async (req, res) => {
+    try {
+        const { isOnline } = req.body;
+        
+        await db.query(
+            'UPDATE users SET is_online = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+            [isOnline, req.user.id]
+        );
+
+        res.status(200).json({
+            success: true,
+            message: `You are now ${isOnline ? 'online' : 'offline'}.`,
+        });
+    } catch (err) {
+        console.error('Toggle online error:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update online status.',
+        });
+    }
+};
+
+module.exports = { getProfile, updateProfile, changePassword, toggleOnline };

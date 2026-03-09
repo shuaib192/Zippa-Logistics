@@ -88,7 +88,7 @@ const estimateFare = async (req, res) => {
 // Creates a new delivery order.
 // ============================================
 const createOrder = async (req, res) => {
-    const client = await db.pool.connect();
+    const client = await db.connect();
     try {
         const {
             pickup_address, pickup_lat, pickup_lng,
@@ -150,8 +150,9 @@ const createOrder = async (req, res) => {
                 dropoff_address, dropoff_latitude, dropoff_longitude,
                 dropoff_contact_name, dropoff_contact_phone,
                 package_type, package_size, package_description,
-                base_fare, distance_fare, platform_fee, subtotal, total_fare, rider_earning,
-                distance_km, payment_method, status, payment_status, customer_notes
+                distance_fare, platform_fee, subtotal, total_fare, rider_earning,
+                distance_km, payment_method, status, payment_status, customer_notes,
+                is_marketplace
             ) VALUES (
                 $1, $2, $3, $4,
                 $5, $6, $7,
@@ -159,7 +160,7 @@ const createOrder = async (req, res) => {
                 $11, $12,
                 $13, $14, $15,
                 $16, $17, $18, $19, $20, $21,
-                $22, $23, 'pending', 'held', $24
+                $22, $23, 'pending', 'held', $24, $25
             ) RETURNING *, 
                 pickup_latitude as pickup_lat, pickup_longitude as pickup_lng, 
                 dropoff_latitude as dropoff_lat, dropoff_longitude as dropoff_lng,
@@ -176,6 +177,7 @@ const createOrder = async (req, res) => {
                 fare.base_fare, fare.distance_fare, fare.platform_fee, fare.subtotal, fare.total_fare, fare.rider_earning,
                 fare.distance_km, payment_method || 'wallet',
                 customer_notes || null,
+                vendor_id ? true : false,
             ],
         );
 
@@ -227,9 +229,11 @@ const getOrders = async (req, res) => {
                 o.pickup_latitude as pickup_lat, o.pickup_longitude as pickup_lng, 
                 o.dropoff_latitude as dropoff_lat, o.dropoff_longitude as dropoff_lng,
                 o.dropoff_contact_name as recipient_name, o.dropoff_contact_phone as recipient_phone,
-                u.full_name as rider_name, u.phone as rider_phone
+                u.full_name as rider_name, u.phone as rider_phone,
+                vp.business_name as vendor_name
                 FROM orders o
                 LEFT JOIN users u ON u.id = o.rider_id
+                LEFT JOIN user_profiles vp ON vp.user_id = o.vendor_id
                 WHERE o.customer_id = $1
                 ${status ? 'AND o.status = $2' : ''}
                 ORDER BY o.created_at DESC
@@ -242,9 +246,11 @@ const getOrders = async (req, res) => {
                 o.pickup_latitude as pickup_lat, o.pickup_longitude as pickup_lng, 
                 o.dropoff_latitude as dropoff_lat, o.dropoff_longitude as dropoff_lng,
                 o.dropoff_contact_name as recipient_name, o.dropoff_contact_phone as recipient_phone,
-                u.full_name as customer_name, u.phone as customer_phone
+                u.full_name as customer_name, u.phone as customer_phone,
+                vp.business_name as vendor_name
                 FROM orders o
                 LEFT JOIN users u ON u.id = o.customer_id
+                LEFT JOIN user_profiles vp ON vp.user_id = o.vendor_id
                 WHERE (o.rider_id = $1 OR (o.status = 'pending' AND o.rider_id IS NULL))
                 ${status ? 'AND o.status = $2' : ''}
                 ORDER BY o.created_at DESC
@@ -292,6 +298,7 @@ const getOrderById = async (req, res) => {
     try {
         const { id } = req.params;
         const { id: userId, role } = req.user;
+        console.log(`[DEBUG] getOrderById: id=${id}, userId=${userId}, role=${role}`);
 
         const result = await db.query(
             `SELECT o.*,
@@ -299,15 +306,18 @@ const getOrderById = async (req, res) => {
                 o.dropoff_latitude as dropoff_lat, o.dropoff_longitude as dropoff_lng,
                 o.dropoff_contact_name as recipient_name, o.dropoff_contact_phone as recipient_phone,
                 c.full_name as customer_name, c.phone as customer_phone, c.avatar_url as customer_avatar,
-                r.full_name as rider_name, r.phone as rider_phone, r.avatar_url as rider_avatar
+                r.full_name as rider_name, r.phone as rider_phone, r.avatar_url as rider_avatar,
+                vp.business_name as vendor_name
             FROM orders o
             LEFT JOIN users c ON c.id = o.customer_id
             LEFT JOIN users r ON r.id = o.rider_id
+            LEFT JOIN user_profiles vp ON vp.user_id = o.vendor_id
             WHERE o.id::text = $1 OR o.order_number = $1`,
             [id],
         );
 
         if (result.rows.length === 0) {
+            console.warn(`[DEBUG] getOrderById: Order with ID/Number ${id} NOT FOUND in DB.`);
             return res.status(404).json({ success: false, message: 'Order not found.' });
         }
 
@@ -318,7 +328,8 @@ const getOrderById = async (req, res) => {
             order.customer_id === userId ||
             order.rider_id === userId ||
             order.vendor_id === userId ||
-            role === 'admin';
+            role === 'admin' ||
+            (role === 'rider' && order.status === 'pending');
 
         if (!canView) {
             return res.status(403).json({ success: false, message: 'Access denied.' });
@@ -352,8 +363,8 @@ const updateOrderStatus = async (req, res) => {
             });
         }
 
-        // Fetch the order
-        const orderResult = await db.query('SELECT * FROM orders WHERE id = $1 OR order_number = $1', [id]);
+        // Fetch the order (Use ::text casting to allow comparison with order_number if id is not a UUID)
+        const orderResult = await db.query('SELECT * FROM orders WHERE id::text = $1 OR order_number = $1', [id]);
         if (orderResult.rows.length === 0) {
             return res.status(404).json({ success: false, message: 'Order not found.' });
         }
@@ -482,7 +493,7 @@ const cancelOrder = async (req, res) => {
  */
 const confirmOrderDelivery = async (req, res) => {
     const { id } = req.params;
-    const client = await db.pool.connect();
+    const client = await db.connect();
 
     try {
         await client.query('BEGIN');
