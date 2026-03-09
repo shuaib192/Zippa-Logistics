@@ -1,5 +1,5 @@
-/// PRODUCT MODEL (product_model.dart)
-/// Represents a listing from a vendor.
+// PRODUCT MODEL (product_model.dart)
+// Represents a listing from a vendor.
 
 class Product {
   final String id;

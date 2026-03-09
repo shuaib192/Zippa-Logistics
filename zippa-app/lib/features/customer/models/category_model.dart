@@ -1,5 +1,5 @@
-/// CATEGORY MODEL (category_model.dart)
-/// Represents a marketplace category (e.g., Groceries, Pharmacy).
+// CATEGORY MODEL (category_model.dart)
+// Represents a marketplace category (e.g., Groceries, Pharmacy).
 
 class Category {
   final String id;
