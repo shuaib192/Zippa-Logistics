@@ -65,8 +65,10 @@ const getBalance = async (req, res) => {
                     await db.query('UPDATE wallets SET virtual_account_error = $1 WHERE user_id = $2', [wallet.virtual_account_error, req.user.id]);
                 }
             } catch (pErr) {
-                console.error('Paystack Auto-Generation Fatal Error:', pErr.message);
-                wallet.virtual_account_error = 'System error generating funding account.';
+                const errorDetail = pErr.response?.data?.message || pErr.message;
+                console.error('Paystack Auto-Generation Fatal Error:', errorDetail);
+                wallet.virtual_account_error = `System error: ${errorDetail}`;
+                await db.query('UPDATE wallets SET virtual_account_error = $1 WHERE user_id = $2', [wallet.virtual_account_error, req.user.id]);
             }
         }
         
