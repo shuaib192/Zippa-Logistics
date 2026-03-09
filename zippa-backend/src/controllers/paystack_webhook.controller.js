@@ -22,59 +22,73 @@ const handleWebhook = async (req, res) => {
         // 2. Handle Events
         if (event.event === 'charge.success') {
             const data = event.data;
+            let walletUserId = null;
+            let description = '';
             
-            // Dedicated Virtual Account (NUBAN) payments
-            if (data.channel === 'dedicated_nuban' || data.authorization.channel === 'dedicated_nuban') {
-                const amountKobo = data.amount;
-                const amountNaira = amountKobo / 100;
+            // Branch A: Dedicated Virtual Account (NUBAN) payments
+            if (data.channel === 'dedicated_nuban' || (data.authorization && data.authorization.channel === 'dedicated_nuban')) {
                 const customerCode = data.customer.customer_code;
-                const reference = data.reference;
-
-                console.log(`Processing DVA funding for ${customerCode}: N${amountNaira}`);
-
-                // Find the wallet tied to this customer
                 const walletRes = await db.query(
-                    'SELECT id, user_id FROM wallets WHERE paystack_customer_code = $1',
+                    'SELECT user_id FROM wallets WHERE paystack_customer_code = $1',
                     [customerCode]
                 );
-
                 if (walletRes.rows.length > 0) {
-                    const wallet = walletRes.rows[0];
-                    const client = await db.pool.connect();
-                    try {
-                        await client.query('BEGIN');
+                    walletUserId = walletRes.rows[0].user_id;
+                    description = `Bank Transfer Funding via ${data.authorization ? data.authorization.bank : 'NUBAN'}`;
+                }
+            } 
+            // Branch B: Standard Checkout (Card, USSD, etc.)
+            else if (data.metadata && data.metadata.type === 'wallet_funding' && data.metadata.user_id) {
+                walletUserId = data.metadata.user_id;
+                description = `Wallet Funding via ${data.channel || 'Paystack'}`;
+            }
 
-                        // Check if transaction already processed (idempotency)
-                        const checkTxn = await client.query(
-                            'SELECT id FROM wallet_transactions WHERE reference = $1',
-                            [reference]
-                        );
+            if (walletUserId) {
+                const amountNaira = data.amount / 100;
+                const reference = data.reference;
 
-                        if (checkTxn.rows.length === 0) {
-                            // Update balance
+                console.log(`Processing funding for User ${walletUserId}: N${amountNaira}`);
+
+                const client = await db.pool.connect();
+                try {
+                    await client.query('BEGIN');
+
+                    // Check if transaction already processed (idempotency)
+                    const checkTxn = await client.query(
+                        'SELECT id FROM wallet_transactions WHERE reference = $1',
+                        [reference]
+                    );
+
+                    if (checkTxn.rows.length === 0) {
+                        // 1. Get Wallet ID
+                        const walletRes = await client.query('SELECT id FROM wallets WHERE user_id = $1', [walletUserId]);
+                        if (walletRes.rows.length > 0) {
+                            const walletId = walletRes.rows[0].id;
+
+                            // 2. Update balance
                             await client.query(
                                 'UPDATE wallets SET balance = balance + $1, updated_at = NOW() WHERE id = $2',
-                                [amountNaira, wallet.id]
+                                [amountNaira, walletId]
                             );
 
-                            // Record transaction
+                            // 3. Record transaction
                             await client.query(
                                 `INSERT INTO wallet_transactions (wallet_id, type, amount, reference, description, status) 
                                  VALUES ($1, 'credit', $2, $3, $4, 'completed')`,
-                                [wallet.id, amountNaira, reference, `Bank Transfer Funding via ${data.authorization.bank || 'NUBAN'}`, 'completed']
+                                [walletId, amountNaira, reference, description, 'completed']
                             );
 
                             await client.query('COMMIT');
-                            console.log(`✅ Wallet ${wallet.id} successfully funded with N${amountNaira}`);
-                        } else {
-                            console.log(`ℹ️ Transaction ${reference} already processed.`);
+                            console.log(`✅ User ${walletUserId} wallet successfully funded with N${amountNaira}`);
                         }
-                    } catch (err) {
-                        await client.query('ROLLBACK');
-                        throw err;
-                    } finally {
-                        client.release();
+                    } else {
+                        console.log(`ℹ️ Transaction ${reference} already processed.`);
                     }
+                } catch (err) {
+                    await client.query('ROLLBACK');
+                    throw err;
+                } finally {
+                    client.release();
                 }
             }
         }

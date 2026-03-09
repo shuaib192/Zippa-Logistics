@@ -9,6 +9,25 @@ const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
  */
 const PaystackService = {
     /**
+     * Initialize a transaction (Standard Checkout)
+     */
+    initializeTransaction: async (email, amount, metadata = {}) => {
+        try {
+            const response = await axios.post('https://api.paystack.co/transaction/initialize', {
+                email,
+                amount: Math.round(amount * 100), // Kobo
+                metadata
+            }, {
+                headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Paystack Initialize Error:', error.response?.data || error.message);
+            throw new Error(error.response?.data?.message || 'Failed to initialize transaction');
+        }
+    },
+
+    /**
      * Create or Fetch a Paystack Customer
      */
     createCustomer: async (email, fullName, phone) => {

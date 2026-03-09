@@ -133,61 +133,44 @@ const getTransactions = async (req, res) => {
 };
 
 /**
- * Fund wallet (Simulated)
+ * Fund wallet (Paystack Initialization)
  * POST /api/wallet/fund
  */
 const fundWallet = async (req, res) => {
-    const { amount } = req.body;
-    
-    if (!amount || amount <= 0) {
-        return res.status(400).json({ success: false, message: 'Invalid amount.' });
-    }
-
-    const client = await db.connect();
     try {
-        await client.query('BEGIN');
-
-        // 1. Get wallet
-        let walletRes = await client.query('SELECT id, balance FROM wallets WHERE user_id = $1', [req.user.id]);
+        const { amount } = req.body;
+        const { id: userId, email } = req.user;
         
-        let walletId;
-        if (walletRes.rows.length === 0) {
-            const newW = await client.query('INSERT INTO wallets (user_id, balance) VALUES ($1, 0) RETURNING id', [req.user.id]);
-            walletId = newW.rows[0].id;
-        } else {
-            walletId = walletRes.rows[0].id;
+        if (!amount || amount < 100) {
+            return res.status(400).json({ success: false, message: 'Minimum funding amount is N100.' });
         }
 
-        // 2. Update balance
-        await client.query(
-            'UPDATE wallets SET balance = balance + $1, updated_at = NOW() WHERE id = $2',
-            [amount, walletId]
-        );
+        // 1. Initialize Transaction on Paystack
+        const metadata = {
+            user_id: userId,
+            type: 'wallet_funding',
+            custom_fields: [
+                { display_name: "Action", variable_name: "action", value: "fund_wallet" },
+                { display_name: "User ID", variable_name: "user_id", value: userId }
+            ]
+        };
 
-        // 3. Record transaction
-        const reference = `FUND-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-        await client.query(
-            `INSERT INTO wallet_transactions (wallet_id, type, amount, reference, description, status) 
-             VALUES ($1, 'credit', $2, $3, $4, 'completed')`,
-            [walletId, amount, reference, 'Simulated Wallet Funding', 'completed']
-        );
+        const result = await PaystackService.initializeTransaction(email, amount, metadata);
 
-        await client.query('COMMIT');
-        
-        const finalBalance = await client.query('SELECT balance FROM wallets WHERE id = $1', [walletId]);
-
+        // 2. Return Access Code and Auth URL to Frontend
         res.status(200).json({ 
             success: true, 
-            message: `Successfully funded wallet with N${amount}`,
-            balance: finalBalance.rows[0].balance
+            message: 'Transaction initialized.',
+            data: {
+                authorization_url: result.data.authorization_url,
+                access_code: result.data.access_code,
+                reference: result.data.reference
+            }
         });
 
     } catch (err) {
-        await client.query('ROLLBACK');
-        console.error('Fund wallet error:', err);
-        res.status(500).json({ success: false, message: 'Funding failed. Please try again.' });
-    } finally {
-        client.release();
+        console.error('Fund wallet initialization error:', err);
+        res.status(500).json({ success: false, message: err.message || 'Failed to initialize payment.' });
     }
 };
 
