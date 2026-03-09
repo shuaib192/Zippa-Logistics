@@ -188,8 +188,49 @@ const fundWallet = async (req, res) => {
     }
 };
 
+/**
+ * Refresh wallet balance (Manual Requery)
+ * POST /api/wallet/refresh
+ */
+const refreshBalance = async (req, res) => {
+    try {
+        const { id: userId } = req.user;
+        
+        // 1. Get wallet info
+        const result = await db.query(
+            'SELECT virtual_account_number, virtual_bank_name FROM wallets WHERE user_id = $1',
+            [userId]
+        );
+
+        if (result.rows.length === 0 || !result.rows[0].virtual_account_number) {
+            return res.status(400).json({ success: false, message: 'No virtual account found to refresh.' });
+        }
+
+        const wallet = result.rows[0];
+        // We need the provider slug. Wema is usually 'wema-bank'.
+        const providerSlug = 'wema-bank'; 
+
+        // 2. Trigger Paystack Requery
+        // This triggers the charge.success webhook if any new payments are found
+        const requery = await PaystackService.requeryDedicatedAccount(
+            wallet.virtual_account_number,
+            providerSlug
+        );
+
+        res.status(200).json({ 
+            success: true, 
+            message: 'Refresh requested. If new payments are found, your balance will update in a few moments.',
+            requery: requery
+        });
+    } catch (err) {
+        console.error('Refresh balance error:', err);
+        res.status(500).json({ success: false, message: 'Failed to refresh balance.' });
+    }
+};
+
 module.exports = {
     getBalance,
     getTransactions,
-    fundWallet
+    fundWallet,
+    refreshBalance
 };

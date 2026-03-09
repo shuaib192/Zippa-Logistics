@@ -41,6 +41,7 @@ const walletRoutes = require('./routes/wallet.routes');
 const whatsappRoutes = require('./routes/whatsapp.routes');
 const vendorRoutes = require('./routes/vendor.routes');
 const productRoutes = require('./routes/product.routes');
+const webhookRoutes = require('./routes/webhook.routes');
 
 // Create the Express application
 const app = express();
@@ -121,6 +122,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/vendors', vendorRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/webhooks', webhookRoutes);
 
 // ============================================
 // ERROR HANDLING

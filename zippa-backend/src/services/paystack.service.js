@@ -36,14 +36,54 @@ const PaystackService = {
         try {
             const response = await axios.post('https://api.paystack.co/dedicated_account', {
                 customer: customerCode,
-                preferred_bank: 'wema-bank' // Example bank, depends on Paystack setup
+                preferred_bank: 'wema-bank' 
             }, {
                 headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` }
             });
-            return response.data;
+            return { success: true, data: response.data.data };
         } catch (error) {
             console.error('Paystack Dedicated Account Error:', error.response?.data || error.message);
-            throw new Error(error.response?.data?.message || 'Failed to create dedicated virtual account');
+            return { success: false, message: error.response?.data?.message || 'Failed to create dedicated virtual account' };
+        }
+    },
+
+    /**
+     * Single-step DVA Assignment
+     * Creates customer and assigns DVA in one go (requires more data for some businesses)
+     */
+    assignDedicatedAccount: async (data) => {
+        try {
+            const response = await axios.post('https://api.paystack.co/dedicated_account/assign', {
+                email: data.email,
+                first_name: data.firstName,
+                last_name: data.lastName,
+                phone: data.phone,
+                preferred_bank: 'wema-bank',
+                country: 'NG'
+            }, {
+                headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` }
+            });
+            return { success: true, data: response.data.data };
+        } catch (error) {
+            console.error('Paystack Assign DVA Error:', error.response?.data || error.message);
+            return { success: false, message: error.response?.data?.message || 'Failed to assign dedicated virtual account' };
+        }
+    },
+
+    /**
+     * Requery Dedicated Virtual Account
+     * Triggers a manual sync for a specific account and date
+     */
+    requeryDedicatedAccount: async (accountNumber, providerSlug, date) => {
+        try {
+            const formattedDate = date || new Date().toISOString().split('T')[0];
+            const response = await axios.get(`https://api.paystack.co/dedicated_account/requery?account_number=${accountNumber}&provider_slug=${providerSlug}&date=${formattedDate}`, {
+                headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` }
+            });
+            return { success: true, data: response.data };
+        } catch (error) {
+            console.error('Paystack Requery Error:', error.response?.data || error.message);
+            return { success: false, message: error.response?.data?.message || 'Requery failed' };
         }
     },
 
