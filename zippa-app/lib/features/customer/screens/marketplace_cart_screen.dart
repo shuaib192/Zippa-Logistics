@@ -7,6 +7,7 @@ import 'package:zippa_app/features/customer/widgets/nigeria_location_picker.dart
 import 'package:zippa_app/core/utils/currency_formatter.dart';
 import 'package:zippa_app/data/models/order_model.dart';
 import 'package:zippa_app/features/customer/screens/order_success_screen.dart';
+import 'package:zippa_app/features/customer/providers/wallet_provider.dart';
 
 class MarketplaceCartScreen extends StatefulWidget {
   final Map<String, dynamic> vendor;
@@ -253,7 +254,98 @@ class _MarketplaceCartScreenState extends State<MarketplaceCartScreen> {
               value: marketplace.cartTotal + double.parse((estimate?['total_fare'] ?? 0).toString()),
               isTotal: true,
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 16),
+
+            // Wallet Check
+            Consumer<WalletProvider>(
+              builder: (context, wallet, _) {
+                final total = marketplace.cartTotal + double.parse((estimate?['total_fare'] ?? 0).toString());
+                final bool hasInsufficient = wallet.balance < total;
+                
+                if (hasInsufficient) {
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.orange.shade100),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.warning_amber_rounded, color: Colors.orange.shade800, size: 20),
+                            const SizedBox(width: 8),
+                            Text('Insufficient Balance', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange.shade900)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Your balance is ${CurrencyFormatter.format(wallet.balance)}. You need ${CurrencyFormatter.format(total - wallet.balance)} more to place this order.',
+                          style: TextStyle(fontSize: 12, color: Colors.orange.shade900),
+                        ),
+                        const SizedBox(height: 16),
+                        if (wallet.virtualAccount != null) ...[
+                          const Text('Transfer to your Zippa Account:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(wallet.virtualAccount!['bank_name'] ?? 'Wema Bank', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                  Text(wallet.virtualAccount!['account_number'] ?? '---', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+                                ],
+                              ),
+                              ElevatedButton(
+                                onPressed: () async {
+                                  final scaffoldMessenger = ScaffoldMessenger.of(context);
+                                  await wallet.refreshBalance();
+                                  scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Checking for new payments...')));
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.orange,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: const Text('I\'ve Paid', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                        ] else ...[
+                          Text(
+                            wallet.virtualAccountMessage ?? 'Generating your unique funding account...',
+                            style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                }
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Wallet Balance: ${CurrencyFormatter.format(wallet.balance)} (Sufficient)',
+                        style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 32),
 
             // Place Order Button
             SizedBox(

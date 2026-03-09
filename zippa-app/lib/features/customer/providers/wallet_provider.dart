@@ -102,4 +102,29 @@ class WalletProvider with ChangeNotifier {
       return false;
     }
   }
+
+  // ============================================
+  // API CALL: Refresh Balance (Manual Requery)
+  // ============================================
+  Future<void> refreshBalance() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.post('/wallet/refresh', {});
+      if (response['success'] == false) {
+        _error = response['message'];
+      }
+      // Re-fetch transactions and balance after a short delay
+      await Future.delayed(const Duration(seconds: 2));
+      await fetchBalance();
+      await fetchTransactions();
+    } catch (e) {
+      _error = 'Failed to refresh balance. Try again later.';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }
