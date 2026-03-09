@@ -197,8 +197,6 @@ CREATE TABLE IF NOT EXISTS orders (
     -- OR: pending → cancelled
     
     payment_method   VARCHAR(20),    -- 'cash', 'card', 'wallet', 'bank_transfer'
-    payment_status   VARCHAR(20) DEFAULT 'pending',
-    -- 'pending', 'paid', 'failed', 'refunded'
     
     -- Scheduling
     is_scheduled     BOOLEAN DEFAULT false,
