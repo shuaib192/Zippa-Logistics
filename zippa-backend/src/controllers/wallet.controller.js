@@ -55,18 +55,18 @@ const getBalance = async (req, res) => {
                         `UPDATE wallets SET 
                          virtual_account_number = $1, 
                          virtual_bank_name = $2, 
-                         virtual_account_name = $3 
+                         virtual_account_name = $3,
+                         virtual_account_error = NULL
                          WHERE user_id = $4`,
                         [wallet.virtual_account_number, wallet.virtual_bank_name, wallet.virtual_account_name, req.user.id]
                     );
+                } else {
+                    wallet.virtual_account_error = account.message || 'Failed to generate virtual account details.';
+                    await db.query('UPDATE wallets SET virtual_account_error = $1 WHERE user_id = $2', [wallet.virtual_account_error, req.user.id]);
                 }
             } catch (pErr) {
-                console.error('Paystack Auto-Generation Error:', pErr.message);
-                // Special handling for Test accounts or unverified businesses
-                if (pErr.message.includes('not available')) {
-                    wallet.virtual_account_error = 'Dedicated NUBAN not enabled for this Paystack account.';
-                }
-                // Continue without virtual account info, user can try later
+                console.error('Paystack Auto-Generation Fatal Error:', pErr.message);
+                wallet.virtual_account_error = 'System error generating funding account.';
             }
         }
         
@@ -163,10 +163,11 @@ const fundWallet = async (req, res) => {
         );
 
         // 3. Record transaction
+        const reference = `FUND-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         await client.query(
-            `INSERT INTO wallet_transactions (wallet_id, type, amount, description, status) 
-             VALUES ($1, 'credit', $2, 'Wallet funding', 'completed')`,
-            [walletId, amount]
+            `INSERT INTO wallet_transactions (wallet_id, type, amount, reference, description, status) 
+             VALUES ($1, 'credit', $2, $3, $4, 'completed')`,
+            [walletId, amount, reference, 'Simulated Wallet Funding', 'completed']
         );
 
         await client.query('COMMIT');
