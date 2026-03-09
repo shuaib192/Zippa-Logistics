@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:zippa_app/features/customer/providers/wallet_provider.dart';
 import 'package:zippa_app/core/utils/currency_formatter.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CustomerWalletScreen extends StatefulWidget {
   const CustomerWalletScreen({super.key});
@@ -301,11 +302,19 @@ class _CustomerWalletScreenState extends State<CustomerWalletScreen> {
                   if (amount != null && amount > 0) {
                     final scaffoldMessenger = ScaffoldMessenger.of(context);
                     Navigator.pop(context);
-                    final success = await wallet.fundWallet(amount);
-                    if (success) {
-                      scaffoldMessenger.showSnackBar(
-                        SnackBar(content: Text('Successfully funded wallet with N$amount')),
-                      );
+                    final data = await wallet.fundWallet(amount);
+                    if (data != null && data['authorization_url'] != null) {
+                      final url = Uri.parse(data['authorization_url']);
+                      if (await canLaunchUrl(url)) {
+                        await launchUrl(url, mode: LaunchMode.externalApplication);
+                        scaffoldMessenger.showSnackBar(
+                          const SnackBar(content: Text('Redirecting to secure payment...')),
+                        );
+                      } else {
+                        scaffoldMessenger.showSnackBar(
+                          const SnackBar(content: Text('Could not launch payment URL.')),
+                        );
+                      }
                     } else {
                       scaffoldMessenger.showSnackBar(
                         SnackBar(content: Text(wallet.error ?? 'Funding failed')),

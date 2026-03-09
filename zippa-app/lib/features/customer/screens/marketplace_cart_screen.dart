@@ -8,6 +8,7 @@ import 'package:zippa_app/core/utils/currency_formatter.dart';
 import 'package:zippa_app/data/models/order_model.dart';
 import 'package:zippa_app/features/customer/screens/order_success_screen.dart';
 import 'package:zippa_app/features/customer/providers/wallet_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MarketplaceCartScreen extends StatefulWidget {
   final Map<String, dynamic> vendor;
@@ -286,39 +287,78 @@ class _MarketplaceCartScreenState extends State<MarketplaceCartScreen> {
                           style: TextStyle(fontSize: 12, color: Colors.orange.shade900),
                         ),
                         const SizedBox(height: 16),
-                        if (wallet.virtualAccount != null) ...[
-                          const Text('Transfer to your Zippa Account:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(wallet.virtualAccount!['bank_name'] ?? 'Wema Bank', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                  Text(wallet.virtualAccount!['account_number'] ?? '---', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
-                                ],
-                              ),
-                              ElevatedButton(
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
                                 onPressed: () async {
+                                  final shortfall = total - wallet.balance;
                                   final scaffoldMessenger = ScaffoldMessenger.of(context);
-                                  await wallet.refreshBalance();
-                                  scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Checking for new payments...')));
+                                  
+                                  final data = await wallet.fundWallet(shortfall);
+                                  if (data != null && data['authorization_url'] != null) {
+                                    final url = Uri.parse(data['authorization_url']);
+                                    if (await canLaunchUrl(url)) {
+                                      await launchUrl(url, mode: LaunchMode.externalApplication);
+                                      scaffoldMessenger.showSnackBar(
+                                        const SnackBar(content: Text('Opening secure payment...')),
+                                      );
+                                    }
+                                  } else {
+                                    scaffoldMessenger.showSnackBar(
+                                      SnackBar(content: Text(wallet.error ?? 'Payment initialization failed')),
+                                    );
+                                  }
                                 },
+                                icon: const Icon(Icons.credit_card_rounded, size: 14),
+                                label: const Text('Pay Now', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.orange,
+                                  backgroundColor: ZippaColors.primary,
                                   foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
                                   minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 ),
-                                child: const Text('I\'ve Paid', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                               ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (wallet.virtualAccount != null)
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () async {
+                                    final scaffoldMessenger = ScaffoldMessenger.of(context);
+                                    await wallet.refreshBalance();
+                                    scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Checking for new payments...')));
+                                  },
+                                  icon: const Icon(Icons.refresh_rounded, size: 14),
+                                  label: const Text('I\'ve Paid', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: ZippaColors.primary,
+                                    side: const BorderSide(color: ZippaColors.primary),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    minimumSize: Size.zero,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        if (wallet.virtualAccount != null) ...[
+                          const SizedBox(height: 16),
+                          const Divider(),
+                          const SizedBox(height: 8),
+                          const Text('Or Bank Transfer to Zippa Account:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                          const SizedBox(height: 8),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(wallet.virtualAccount!['bank_name'] ?? 'Wema Bank', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              Text(wallet.virtualAccount!['account_number'] ?? '---', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
                             ],
                           ),
                         ] else ...[
+                          const SizedBox(height: 8),
                           Text(
-                            wallet.virtualAccountMessage ?? 'Generating your unique funding account...',
+                            wallet.virtualAccountMessage ?? 'Dedicated funding account not yet available.',
                             style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic),
                           ),
                         ],

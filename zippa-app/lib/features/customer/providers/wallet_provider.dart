@@ -74,9 +74,9 @@ class WalletProvider with ChangeNotifier {
   }
 
   // ============================================
-  // API CALL: Fund Wallet
+  // API CALL: Fund Wallet (Returns Data for Checkout)
   // ============================================
-  Future<bool> fundWallet(double amount) async {
+  Future<Map<String, dynamic>?> fundWallet(double amount) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -84,22 +84,20 @@ class WalletProvider with ChangeNotifier {
     try {
       final response = await _apiClient.post('/wallet/fund', {'amount': amount});
       if (response['success'] != false) {
-        _balance = double.tryParse(response['balance']?.toString() ?? _balance.toString()) ?? _balance;
-        await fetchTransactions(); // Refresh history
         _isLoading = false;
         notifyListeners();
-        return true;
+        return Map<String, dynamic>.from(response['data'] ?? {});
       } else {
         _error = response['message'];
         _isLoading = false;
         notifyListeners();
-        return false;
+        return null;
       }
     } catch (e) {
       _error = 'Funding failed';
       _isLoading = false;
       notifyListeners();
-      return false;
+      return null;
     }
   }
 
