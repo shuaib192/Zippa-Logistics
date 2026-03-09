@@ -74,7 +74,20 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- =============================================
--- TABLE 2: user_profiles
+-- TABLE 2: vendor_categories
+-- Groups vendors into categories like 'Groceries', 'Pharmacy'.
+-- =============================================
+CREATE TABLE IF NOT EXISTS vendor_categories (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name        VARCHAR(100) UNIQUE NOT NULL,
+    icon_name   VARCHAR(50), -- Flutter icon name
+    image_url   TEXT,
+    is_active   BOOLEAN DEFAULT true,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- TABLE 3: user_profiles
 -- Extra details for each user type.
 -- Separated from users table to keep things clean.
 -- =============================================
@@ -115,7 +128,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 );
 
 -- =============================================
--- TABLE 3: orders
+-- TABLE 4: orders
 -- Every delivery request is stored here.
 -- This is the HEART of the logistics system.
 -- =============================================
@@ -214,7 +227,7 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 
 -- =============================================
--- TABLE 4: wallets
+-- TABLE 5: wallets
 -- Every user has a wallet for storing money.
 -- Used for: rider earnings, customer payments, vendor payouts.
 -- =============================================
@@ -238,7 +251,7 @@ CREATE TABLE IF NOT EXISTS wallets (
 );
 
 -- =============================================
--- TABLE 5: wallet_transactions
+-- TABLE 6: wallet_transactions
 -- Every money movement is recorded here.
 -- This is like a bank statement — crucial for auditing.
 -- We use "double-entry" principles: every debit has a credit.
@@ -272,7 +285,7 @@ CREATE TABLE IF NOT EXISTS wallet_transactions (
 );
 
 -- =============================================
--- TABLE 6: kyc_documents
+-- TABLE 7: kyc_documents
 -- Stores identity documents uploaded by users.
 -- Critical for trust and regulatory compliance.
 -- =============================================
@@ -307,7 +320,7 @@ CREATE TABLE IF NOT EXISTS kyc_documents (
 );
 
 -- =============================================
--- TABLE 7: ratings
+-- TABLE 8: ratings
 -- After delivery, customers rate riders (1-5 stars).
 -- Riders can also rate customers.
 -- =============================================
@@ -327,7 +340,7 @@ CREATE TABLE IF NOT EXISTS ratings (
 );
 
 -- =============================================
--- TABLE 8: notifications
+-- TABLE 9: notifications
 -- In-app notifications for all users.
 -- Push notifications are sent via Firebase, but
 -- we also store them here so users can see history.
@@ -347,7 +360,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 -- =============================================
--- TABLE 9: refresh_tokens
+-- TABLE 10: refresh_tokens
 -- Stores refresh tokens for secure re-authentication.
 -- When an access token expires, the app uses the refresh
 -- token to get a new one without asking for password again.
@@ -362,7 +375,7 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 );
 
 -- =============================================
--- TABLE 10: audit_logs
+-- TABLE 11: audit_logs
 -- Records important actions for security & compliance.
 -- Who did what and when — essential for a financial platform.
 -- =============================================
@@ -382,7 +395,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 
 -- =============================================
--- TABLE 11: chat_messages
+-- TABLE 12: chat_messages
 -- AI chatbot conversation history.
 -- We store conversations so the AI has context.
 -- =============================================
@@ -400,7 +413,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 );
 
 -- =============================================
--- TABLE 12: whatsapp_sessions
+-- TABLE 13: whatsapp_sessions
 -- Tracks the multi-step conversation state for the WhatsApp Bot.
 -- This allows the AI to "remember" the previous step in a flow.
 -- =============================================
@@ -443,18 +456,7 @@ CREATE INDEX IF NOT EXISTS idx_kyc_user ON kyc_documents(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_chat_user_session ON chat_messages(user_id, session_id);
 
--- =============================================
--- TABLE 13: vendor_categories
--- Groups vendors into categories like 'Groceries', 'Pharmacy'.
--- =============================================
-CREATE TABLE IF NOT EXISTS vendor_categories (
-    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name        VARCHAR(100) UNIQUE NOT NULL,
-    icon_name   VARCHAR(50), -- Flutter icon name
-    image_url   TEXT,
-    is_active   BOOLEAN DEFAULT true,
-    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- (Table 14: products follows)
 
 -- =============================================
 -- TABLE 14: products
