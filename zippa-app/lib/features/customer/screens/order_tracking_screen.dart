@@ -46,6 +46,26 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     }
   }
 
+  Future<void> _confirmDelivery() async {
+    final provider = Provider.of<OrderProvider>(context, listen: false);
+    setState(() => _isLoading = true);
+    
+    final success = await provider.confirmDelivery(widget.orderId);
+    if (mounted) {
+      setState(() => _isLoading = false);
+      if (success) {
+        _loadOrderDetails(); // Reload to get updated status
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Delivery confirmed and payments released!')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(provider.error ?? 'Failed to confirm delivery.')),
+        );
+      }
+    }
+  }
+
   Future<void> _cancelOrder() async {
     final provider = Provider.of<OrderProvider>(context, listen: false);
     setState(() => _isLoading = true);
@@ -238,6 +258,77 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                       _buildTimeline(),
                       const SizedBox(height: 24),
                       _buildRiderInfo(),
+                      
+                      // Escrow Confirmation Button
+                      if (_order!.status == 'delivered' && !_order!.customerConfirmed) ...[
+                        const SizedBox(height: 24),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: ZippaColors.primary.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: ZippaColors.primary.withOpacity(0.1)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.shield_rounded, color: ZippaColors.primary, size: 20),
+                                  SizedBox(width: 8),
+                                  Text('Payment Held in Escrow', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'The rider has marked this as delivered. Please confirm you have received your package to release payment to the vendor and rider.',
+                                style: TextStyle(fontSize: 12, color: ZippaColors.textSecondary),
+                              ),
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 54,
+                                child: ElevatedButton(
+                                  onPressed: _confirmDelivery,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: ZippaColors.primary,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                    elevation: 0,
+                                  ),
+                                  child: const Text('Confirm & Release Payment', style: TextStyle(fontWeight: FontWeight.bold)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else if (_order!.customerConfirmed) ...[
+                        const SizedBox(height: 24),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: ZippaColors.success.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: ZippaColors.success.withOpacity(0.2)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.check_circle_rounded, color: ZippaColors.success, size: 24),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: const [
+                                    Text('Payment Settled', style: TextStyle(fontWeight: FontWeight.bold, color: ZippaColors.success)),
+                                    Text('Funds have been released to the vendor and rider.', style: TextStyle(fontSize: 12, color: ZippaColors.textSecondary)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

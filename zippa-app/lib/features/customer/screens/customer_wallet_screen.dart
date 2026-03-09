@@ -28,133 +28,115 @@ class _CustomerWalletScreenState extends State<CustomerWalletScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      drawer: const AppDrawer(),
-      appBar: AppBar(
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu_rounded),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
-        title: const Text('My Wallet', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        foregroundColor: ZippaColors.textPrimary,
-        elevation: 0,
-      ),
-      body: Consumer<WalletProvider>(
-        builder: (context, wallet, child) {
-          return RefreshIndicator(
-            onRefresh: () async {
-              await wallet.fetchBalance();
-              await wallet.fetchTransactions();
-            },
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      gradient: ZippaColors.primaryGradient,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(color: ZippaColors.primary.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8)),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Total Balance', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                        const SizedBox(height: 8),
-                        Text(
-                          CurrencyFormatter.formatWithComma(wallet.balance), 
-                          style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)
-                        ),
-                        const SizedBox(height: 24),
-                        Row(
-                          children: [
-                            _ActionBtn(
-                              icon: Icons.add, 
-                              label: 'Add Money',
-                              onTap: () => _showFundDialog(context),
-                            ),
-                            const SizedBox(width: 16),
-                            _ActionBtn(
-                              icon: Icons.arrow_outward_rounded, 
-                              label: 'Withdraw',
-                              onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Withdrawal coming soon!'))
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Recent Transactions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      Text('See all', style: TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.w600)),
+    return Consumer<WalletProvider>(
+      builder: (context, wallet, child) {
+        return RefreshIndicator(
+          onRefresh: () async {
+            await wallet.fetchBalance();
+            await wallet.fetchTransactions();
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: ZippaColors.primaryGradient,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(color: ZippaColors.primary.withValues(alpha: 0.3), blurRadius: 15, offset: const Offset(0, 8)),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  if (wallet.isLoading && wallet.transactions.isEmpty)
-                    const Center(child: Padding(padding: EdgeInsets.only(top: 40), child: CircularProgressIndicator()))
-                  else if (wallet.transactions.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 40),
-                      child: Text('No transactions yet', style: TextStyle(color: ZippaColors.textSecondary)),
-                    )
-                  else
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: wallet.transactions.length,
-                      itemBuilder: (context, index) {
-                        final tx = wallet.transactions[index];
-                        final isCredit = tx['type'] == 'credit';
-                        final date = DateTime.parse(tx['created_at']);
-                        
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: (isCredit ? Colors.green : Colors.red).withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              isCredit ? Icons.add_rounded : Icons.remove_rounded,
-                              color: isCredit ? Colors.green : Colors.red,
-                              size: 20,
-                            ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Total Balance', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                      const SizedBox(height: 8),
+                      Text(
+                        CurrencyFormatter.formatWithComma(wallet.balance), 
+                        style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          _ActionBtn(
+                            icon: Icons.add, 
+                            label: 'Add Money',
+                            onTap: () => _showFundDialog(context),
                           ),
-                          title: Text(tx['description'] ?? 'Wallet Transaction', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                          subtitle: Text(DateFormat('MMM dd, yyyy • hh:mm a').format(date.toLocal()), style: const TextStyle(fontSize: 12)),
-                          trailing: Text(
-                            '${isCredit ? '+' : '-'}${CurrencyFormatter.formatWithComma(double.parse(tx['amount'].toString()))}',
-                            style: TextStyle(
-                              color: isCredit ? Colors.green : Colors.red,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                            ),
+                          const SizedBox(width: 16),
+                          _ActionBtn(
+                            icon: Icons.arrow_outward_rounded, 
+                            label: 'Withdraw',
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Withdrawal coming soon!'))
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
-                ],
-              ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Recent Transactions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text('See all', style: TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                if (wallet.isLoading && wallet.transactions.isEmpty)
+                  const Center(child: Padding(padding: EdgeInsets.only(top: 40), child: CircularProgressIndicator()))
+                else if (wallet.transactions.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 40),
+                    child: Text('No transactions yet', style: TextStyle(color: ZippaColors.textSecondary)),
+                  )
+                else
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: wallet.transactions.map((tx) {
+                      final isCredit = tx['type'] == 'credit';
+                      final date = DateTime.parse(tx['created_at']);
+                      
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: (isCredit ? Colors.green : Colors.red).withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isCredit ? Icons.add_rounded : Icons.remove_rounded,
+                            color: isCredit ? Colors.green : Colors.red,
+                            size: 20,
+                          ),
+                        ),
+                        title: Text(tx['description'] ?? 'Wallet Transaction', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        subtitle: Text(DateFormat('MMM dd, yyyy • hh:mm a').format(date.toLocal()), style: const TextStyle(fontSize: 12)),
+                        trailing: Text(
+                          '${isCredit ? '+' : '-'}${CurrencyFormatter.formatWithComma(double.parse(tx['amount'].toString()))}',
+                          style: TextStyle(
+                            color: isCredit ? Colors.green : Colors.red,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+              ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -215,7 +197,7 @@ class _ActionBtn extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
+          color: Colors.white.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(

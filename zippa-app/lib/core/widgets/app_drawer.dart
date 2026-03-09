@@ -7,6 +7,8 @@ import 'package:provider/provider.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/features/auth/providers/auth_provider.dart';
 import 'package:zippa_app/core/providers/navigation_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:zippa_app/core/constants/app_constants.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -95,6 +97,21 @@ class AppDrawer extends StatelessWidget {
                       applicationVersion: '1.0.0',
                       applicationIcon: const Icon(Icons.local_shipping_rounded, color: ZippaColors.primary),
                     );
+                  },
+                ),
+                const Divider(indent: 20, endIndent: 20),
+                ListTile(
+                  leading: const Icon(Icons.chat_bubble_rounded, color: Color(0xFF25D366)),
+                  title: const Text(
+                    'Book on WhatsApp',
+                    style: TextStyle(color: Color(0xFF25D366), fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final Uri whatsappUri = Uri.parse("https://wa.me/${AppConstants.whatsappNumber}?text=Hello ZipBot, I want to send a package.");
+                    if (await canLaunchUrl(whatsappUri)) {
+                      await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
+                    }
                   },
                 ),
               ],

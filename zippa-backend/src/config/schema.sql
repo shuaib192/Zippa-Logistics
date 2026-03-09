@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     business_name       VARCHAR(255),
     business_address    TEXT,
     business_reg_number VARCHAR(100),  -- CAC registration number
+    business_category_id UUID REFERENCES vendor_categories(id) ON DELETE SET NULL,
     default_pickup_address TEXT,       -- Default address for pickups
     
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -147,6 +148,11 @@ CREATE TABLE IF NOT EXISTS orders (
     package_size     VARCHAR(20),    -- 'small', 'medium', 'large'
     package_weight   DECIMAL(10, 2), -- Weight in kg
     package_value    DECIMAL(12, 2), -- Declared value in Naira
+    
+    -- Escrow & Payment Details
+    item_price          DECIMAL(12, 2) DEFAULT 0,
+    payment_status      VARCHAR(20) DEFAULT 'held', -- 'pending', 'held', 'released', 'refunded'
+    customer_confirmed  BOOLEAN DEFAULT FALSE,
     package_description TEXT,
     
     -- Pricing
@@ -379,6 +385,31 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 );
 
 -- =============================================
+-- TABLE 12: whatsapp_sessions
+-- Tracks the multi-step conversation state for the WhatsApp Bot.
+-- This allows the AI to "remember" the previous step in a flow.
+-- =============================================
+CREATE TABLE IF NOT EXISTS whatsapp_sessions (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    phone_number    VARCHAR(20) UNIQUE NOT NULL,
+    user_id         UUID REFERENCES users(id) ON DELETE SET NULL,
+    
+    current_flow    VARCHAR(50) DEFAULT 'idle',
+    -- 'idle', 'booking', 'tracking', 'support'
+    
+    flow_step       VARCHAR(50) DEFAULT 'none',
+    -- e.g., 'awaiting_pickup', 'awaiting_dropoff', 'awaiting_confirmation'
+    
+    flow_data       JSONB DEFAULT '{}',
+    -- Temporary data like pickup location or package type
+    
+    last_interaction TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_whatsapp_phone ON whatsapp_sessions(phone_number);
+
+-- =============================================
 -- INDEXES
 -- Indexes make database queries MUCH faster.
 -- Think of them like the index at the back of a book —
@@ -396,3 +427,40 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_kyc_user ON kyc_documents(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_chat_user_session ON chat_messages(user_id, session_id);
+
+-- =============================================
+-- TABLE 13: vendor_categories
+-- Groups vendors into categories like 'Groceries', 'Pharmacy'.
+-- =============================================
+CREATE TABLE IF NOT EXISTS vendor_categories (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name        VARCHAR(100) UNIQUE NOT NULL,
+    icon_name   VARCHAR(50), -- Flutter icon name
+    image_url   TEXT,
+    is_active   BOOLEAN DEFAULT true,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- TABLE 14: products
+-- Items listed by vendors for the marketplace.
+-- =============================================
+CREATE TABLE IF NOT EXISTS products (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    vendor_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    category_id     UUID REFERENCES vendor_categories(id) ON DELETE SET NULL,
+    
+    name            VARCHAR(255) NOT NULL,
+    description     TEXT,
+    price           DECIMAL(12, 2) NOT NULL,
+    image_url       TEXT,
+    
+    is_available    BOOLEAN DEFAULT true,
+    stock_quantity  INTEGER DEFAULT 0,
+    
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_products_vendor ON products(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);

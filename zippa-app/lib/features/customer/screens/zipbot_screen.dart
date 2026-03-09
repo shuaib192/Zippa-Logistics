@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/data/api/api_client.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:zippa_app/core/constants/app_constants.dart';
 
 class ZipBotScreen extends StatefulWidget {
   const ZipBotScreen({super.key});
@@ -72,110 +73,116 @@ class _ZipBotScreenState extends State<ZipBotScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(color: ZippaColors.primary, shape: BoxShape.circle),
-              child: const Icon(Icons.psychology, color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 12),
-            const Text('ZipBot AI', style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        backgroundColor: Colors.white,
-        foregroundColor: ZippaColors.textPrimary,
-        elevation: 0,
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final msg = _messages[index];
-                final isUser = msg['role'] == 'user';
-                
-                return Align(
-                  alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-                    decoration: BoxDecoration(
-                      color: isUser ? ZippaColors.primary : Colors.grey[100],
-                      borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(16),
-                        topRight: const Radius.circular(16),
-                        bottomLeft: Radius.circular(isUser ? 16 : 0),
-                        bottomRight: Radius.circular(isUser ? 0 : 16),
-                      ),
-                    ),
-                    child: Text(
-                      msg['content'] ?? '',
-                      style: TextStyle(
-                        color: isUser ? Colors.white : ZippaColors.textPrimary,
-                        fontSize: 14,
-                        height: 1.4,
-                      ),
-                    ),
-                  ).animate().fadeIn(duration: 300.ms).slideX(begin: isUser ? 0.1 : -0.1, end: 0),
-                );
-              },
-            ),
-          ),
-          if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 8.0),
-              child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-            ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -2))],
-            ),
-            child: SafeArea(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: TextField(
-                        controller: _controller,
-                        decoration: const InputDecoration(
-                          hintText: 'Ask ZipBot anything...',
-                          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                          border: InputSide.none,
-                          enabledBorder: InputSide.none,
-                          focusedBorder: InputSide.none,
-                        ),
-                        onSubmitted: (_) => _sendMessage(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  CircleAvatar(
-                    backgroundColor: ZippaColors.primary,
-                    child: IconButton(
-                      icon: const Icon(Icons.send_rounded, color: Colors.white),
-                      onPressed: _sendMessage,
-                    ),
-                  ),
-                ],
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          color: const Color(0xFF25D366).withOpacity(0.1),
+          child: Row(
+            children: [
+              const Icon(Icons.chat_rounded, color: Color(0xFF25D366), size: 20),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Prefer WhatsApp booking?',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF25D366)),
+                ),
               ),
+              TextButton(
+                onPressed: () async {
+                   final Uri whatsappUri = Uri.parse("https://wa.me/${AppConstants.whatsappNumber}?text=Hello ZipBot, I want to send a package.");
+                   if (await canLaunchUrl(whatsappUri)) {
+                      await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
+                   }
+                },
+                child: const Text('Chat Now', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF25D366))),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.all(16),
+            itemCount: _messages.length,
+            itemBuilder: (context, index) {
+              final msg = _messages[index];
+              final isUser = msg['role'] == 'user';
+              
+              return Align(
+                alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+                  decoration: BoxDecoration(
+                    color: isUser ? ZippaColors.primary : Colors.grey[100],
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(16),
+                      topRight: const Radius.circular(16),
+                      bottomLeft: Radius.circular(isUser ? 16 : 0),
+                      bottomRight: Radius.circular(isUser ? 0 : 16),
+                    ),
+                  ),
+                  child: Text(
+                    msg['content'] ?? '',
+                    style: TextStyle(
+                      color: isUser ? Colors.white : ZippaColors.textPrimary,
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        if (_isLoading)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8.0),
+            child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+          ),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -2))],
+          ),
+          child: SafeArea(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: TextField(
+                      controller: _controller,
+                      decoration: const InputDecoration(
+                        hintText: 'Ask ZipBot anything...',
+                        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        border: InputSide.none,
+                        enabledBorder: InputSide.none,
+                        focusedBorder: InputSide.none,
+                      ),
+                      onSubmitted: (_) => _sendMessage(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                CircleAvatar(
+                  backgroundColor: ZippaColors.primary,
+                  child: IconButton(
+                    icon: const Icon(Icons.send_rounded, color: Colors.white),
+                    onPressed: _sendMessage,
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

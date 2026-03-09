@@ -12,6 +12,7 @@ const {
     getOrderById,
     updateOrderStatus,
     cancelOrder,
+    confirmOrderDelivery,
 } = require('../controllers/order.controller');
 
 // All order routes require authentication
@@ -34,5 +35,8 @@ router.put('/:id/status', authorize('rider', 'admin'), updateOrderStatus);
 
 // PUT  /api/orders/:id/cancel — Cancel pending order (customer)
 router.put('/:id/cancel', authorize('customer'), cancelOrder);
+
+// PUT  /api/orders/:id/confirm — Confirm delivery and release funds (customer)
+router.put('/:id/confirm', authorize('customer'), confirmOrderDelivery);
 
 module.exports = router;

@@ -15,10 +15,11 @@ import 'package:zippa_app/features/customer/screens/zipbot_screen.dart';
 import 'package:zippa_app/core/providers/navigation_provider.dart';
 import 'package:zippa_app/features/customer/screens/customer_profile_screen.dart';
 import 'package:zippa_app/features/customer/providers/wallet_provider.dart';
+import 'package:zippa_app/features/customer/providers/marketplace_provider.dart';
+import 'package:zippa_app/features/customer/screens/vendor_list_screen.dart';
+import 'package:zippa_app/features/customer/screens/vendor_details_screen.dart';
 import 'package:zippa_app/core/utils/currency_formatter.dart';
 import 'package:zippa_app/core/widgets/app_drawer.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:zippa_app/core/constants/app_constants.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
   const CustomerHomeScreen({super.key});
@@ -29,24 +30,67 @@ class CustomerHomeScreen extends StatefulWidget {
 
 class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
-  final List<Widget> _screens = [
-    const _HomeContent(),
-    const CustomerOrdersScreen(),
-    const CustomerWalletScreen(),
-    const ZipBotScreen(),
-    const CustomerProfileScreen(),
-  ];
+  String _getAppBarTitle(int index) {
+    switch (index) {
+      case 0: return 'Dashboard';
+      case 1: return 'My Orders';
+      case 2: return 'My Wallet';
+      case 3: return 'ZipBot AI';
+      case 4: return 'Profile';
+      default: return 'Zippa';
+    }
+  }
+
+  Widget _getScreen(int index) {
+    switch (index) {
+      case 0: return const _HomeContent();
+      case 1: return const CustomerOrdersScreen();
+      case 2: return const CustomerWalletScreen();
+      case 3: return const ZipBotScreen();
+      case 4: return const CustomerProfileScreen();
+      default: return const _HomeContent();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final navProvider = Provider.of<NavigationProvider>(context);
 
+    final user = Provider.of<AuthProvider>(context).user;
+    final currentIndex = navProvider.currentIndex;
+
     return Scaffold(
-      drawer: const AppDrawer(),
-      body: IndexedStack(
-        index: navProvider.currentIndex,
-        children: _screens,
+      drawer: AppDrawer(),
+      appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu_rounded),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+        title: Text(_getAppBarTitle(currentIndex), style: const TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        foregroundColor: ZippaColors.textPrimary,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () => Navigator.pushNamed(context, '/notifications'),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: ZippaColors.primary.withOpacity(0.12),
+              child: Text(
+                user?.fullName.isNotEmpty == true ? user!.fullName[0].toUpperCase() : 'C',
+                style: const TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
       ),
+      body: _getScreen(currentIndex),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: navProvider.currentIndex,
         onTap: (index) => navProvider.setIndex(index),
@@ -69,7 +113,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             foregroundColor: Colors.white,
             icon: const Icon(Icons.add_rounded),
             label: const Text('Send Package'),
-          ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.2, end: 0)
+          )
         : null,
     );
   }
@@ -89,100 +133,196 @@ class _HomeContentState extends State<_HomeContent> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<OrderProvider>(context, listen: false).fetchOrders();
       Provider.of<WalletProvider>(context, listen: false).fetchBalance();
+      Provider.of<MarketplaceProvider>(context, listen: false).fetchCategories();
+      Provider.of<MarketplaceProvider>(context, listen: false).fetchFeaturedVendors();
+      Provider.of<MarketplaceProvider>(context, listen: false).fetchFavorites();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = Provider.of<AuthProvider>(context).user;
+    final marketplace = Provider.of<MarketplaceProvider>(context);
 
-    return Scaffold(
-      backgroundColor: ZippaColors.background,
-      drawer: const AppDrawer(),
-      appBar: AppBar(
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu_rounded),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Hello, ${user?.fullName.split(' ').first ?? 'Customer'}',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _WalletCard(),
+          const SizedBox(height: 16),
+          
+          // Search Bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade100),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
+              ],
             ),
-            const Text(
-              'Where are you sending today?',
-              style: TextStyle(fontSize: 11, color: ZippaColors.textSecondary),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined), 
-            onPressed: () => Navigator.pushNamed(context, '/notifications'),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: ZippaColors.primary.withOpacity( 0.12),
-              child: Text(
-                user?.fullName.isNotEmpty == true ? user!.fullName[0].toUpperCase() : 'C',
-                style: const TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.bold),
+            child: TextField(
+              onSubmitted: (query) {
+                if (query.trim().isNotEmpty) {
+                  marketplace.searchProducts(query);
+                  Navigator.push(
+                    context, 
+                    MaterialPageRoute(builder: (context) => ProductSearchScreen(query: query))
+                  );
+                }
+              },
+              decoration: InputDecoration(
+                hintText: 'Search for "Bread", "Milk", "Rice"...',
+                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                prefixIcon: const Icon(Icons.search_rounded, color: ZippaColors.primary),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _WalletCard().animate().fadeIn(duration: 500.ms).slideY(begin: 0.08, end: 0),
-            const SizedBox(height: 24),
-            const Text('Quick Actions', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
-            const SizedBox(height: 14),
-            Row(
+          ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.1, end: 0),
+          
+          const SizedBox(height: 16),
+          
+          // Safety & Escrow Banner
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: ZippaColors.primary.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: ZippaColors.primary.withValues(alpha: 0.1)),
+            ),
+            child: Row(
               children: [
-                Expanded(child: _QuickAction(icon: Icons.send_rounded, label: 'Send Package', color: ZippaColors.primary, onTap: () => Navigator.pushNamed(context, '/order-create'))),
+                const Icon(Icons.verified_user_rounded, color: ZippaColors.primary, size: 24),
                 const SizedBox(width: 12),
-                Expanded(child: _QuickAction(
-                  icon: Icons.track_changes_rounded, 
-                  label: 'Track Order', 
-                  color: ZippaColors.info, 
-                  onTap: () {
-                    final provider = Provider.of<OrderProvider>(context, listen: false);
-                    if (provider.orders.isNotEmpty) {
-                      // Navigate to the most recent order for tracking
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => OrderTrackingScreen(orderId: provider.orders.first.id ?? ''),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('No active orders to track.')),
-                      );
-                    }
-                  }
-                )),
-                const SizedBox(width: 12),
-                Expanded(child: _QuickAction(
-                  icon: Icons.history_rounded, 
-                  label: 'History', 
-                  color: ZippaColors.accent, 
-                  onTap: () => Provider.of<NavigationProvider>(context, listen: false).setIndex(1),
-                )),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Secure Escrow Payments',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: ZippaColors.textPrimary),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Funds are held safely and only released when you confirm delivery.',
+                        style: TextStyle(fontSize: 11, color: ZippaColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
               ],
-            ).animate().fadeIn(delay: 150.ms, duration: 400.ms),
+            ),
+          ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.1, end: 0),
+          
+          const SizedBox(height: 24),
+          
+          // Marketplace Categories
+          const Text('Marketplace', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 90,
+            child: marketplace.isLoading && marketplace.categories.isEmpty
+              ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
+              : ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: marketplace.categories.length,
+                  itemBuilder: (context, index) {
+                    final category = marketplace.categories[index];
+                    return _CategoryItem(category: category);
+                  },
+                ),
+          ),
+          
+          const SizedBox(height: 24),
+
+          // Favorite Stores
+          if (marketplace.favorites.isNotEmpty) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Your Favorites', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
+                TextButton(onPressed: () {}, child: const Text('See All')),
+              ],
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 150,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: marketplace.favorites.length,
+                itemBuilder: (context, index) {
+                  final vendor = marketplace.favorites[index];
+                  return _FavoriteVendorCard(vendor: vendor);
+                },
+              ),
+            ),
             const SizedBox(height: 24),
-            _WhatsAppBookingCard().animate().fadeIn(delay: 200.ms, duration: 400.ms).slideX(begin: 0.1, end: 0),
-            const SizedBox(height: 24),
+          ],
+          
+          const Text('Quick Actions', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(child: _QuickAction(icon: Icons.send_rounded, label: 'Send Package', color: ZippaColors.primary, onTap: () => Navigator.pushNamed(context, '/order-create'))),
+              const SizedBox(width: 12),
+              Expanded(child: _QuickAction(
+                icon: Icons.track_changes_rounded, 
+                label: 'Track Order', 
+                color: ZippaColors.info, 
+                onTap: () {
+                  final provider = Provider.of<OrderProvider>(context, listen: false);
+                  if (provider.orders.isNotEmpty) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => OrderTrackingScreen(orderId: provider.orders.first.id ?? ''),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('No active orders to track.')),
+                    );
+                  }
+                }
+              )),
+              const SizedBox(width: 12),
+              Expanded(child: _QuickAction(
+                icon: Icons.history_rounded, 
+                label: 'History', 
+                color: ZippaColors.accent, 
+                onTap: () => Provider.of<NavigationProvider>(context, listen: false).setIndex(1),
+              )),
+            ],
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Featured Vendors
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Top Shops', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
+              TextButton(onPressed: () {}, child: const Text('See All')),
+            ],
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 180,
+            child: marketplace.featuredVendors.isEmpty
+              ? _NoVendorsPlaceholder()
+              : ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: marketplace.featuredVendors.length,
+                  itemBuilder: (context, index) {
+                    final vendor = marketplace.featuredVendors[index];
+                    return _VendorCard(vendor: vendor);
+                  },
+                ),
+          ),
+          
+          const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -213,46 +353,40 @@ class _HomeContentState extends State<_HomeContent> {
                           style: TextStyle(color: ZippaColors.textLight, fontSize: 13)),
                       ],
                     ),
-                  ).animate().fadeIn(delay: 300.ms);
+                  );
                 }
 
-                return ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: provider.orders.length > 3 ? 3 : provider.orders.length,
-                  itemBuilder: (context, index) {
-                    final order = provider.orders[index];
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: ZippaColors.primary.withOpacity( 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.local_shipping_outlined, color: ZippaColors.primary, size: 20),
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: provider.orders.take(3).map((order) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: ZippaColors.primary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
                       ),
-                      title: Text('Order #${order.orderNumber}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      subtitle: Text(order.status[0].toUpperCase() + order.status.substring(1), 
-                        style: TextStyle(fontSize: 12, color: order.status == 'delivered' ? ZippaColors.success : ZippaColors.warning)),
-                      trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => OrderTrackingScreen(orderId: order.id ?? ''),
-                          ),
-                        );
-                      },
-                    );
-                  },
+                      child: const Icon(Icons.local_shipping_outlined, color: ZippaColors.primary, size: 20),
+                    ),
+                    title: Text('Order #${order.orderNumber}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    subtitle: Text(order.status[0].toUpperCase() + order.status.substring(1), 
+                      style: TextStyle(fontSize: 12, color: order.status == 'delivered' ? ZippaColors.success : ZippaColors.warning)),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => OrderTrackingScreen(orderId: order.id ?? ''),
+                        ),
+                      );
+                    },
+                  )).toList(),
                 );
               },
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 }
 
@@ -265,7 +399,7 @@ class _WalletCard extends StatelessWidget {
         gradient: ZippaColors.primaryGradient,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: ZippaColors.primary.withOpacity( 0.35), blurRadius: 20, offset: const Offset(0, 8)),
+          BoxShadow(color: ZippaColors.primary.withValues(alpha: 0.35), blurRadius: 20, offset: const Offset(0, 8)),
         ],
       ),
       child: Column(
@@ -316,7 +450,7 @@ class _WalletAction extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity( 0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: Colors.white, size: 18),
@@ -353,7 +487,7 @@ class _QuickAction extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(11),
               decoration: BoxDecoration(
-                color: color.withOpacity( 0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 22),
@@ -367,67 +501,282 @@ class _QuickAction extends StatelessWidget {
   }
 }
 
-class _WhatsAppBookingCard extends StatelessWidget {
+class _CategoryItem extends StatelessWidget {
+  final dynamic category;
+  const _CategoryItem({required this.category});
+
+  IconData _getIcon(String? iconName) {
+    switch (iconName) {
+      case 'shopping_basket_rounded': return Icons.shopping_basket_rounded;
+      case 'medical_services_rounded': return Icons.medical_services_rounded;
+      case 'restaurant_rounded': return Icons.restaurant_rounded;
+      case 'devices_rounded': return Icons.devices_rounded;
+      default: return Icons.more_horiz_rounded;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => VendorListScreen(category: category)),
+        );
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 80,
+        margin: const EdgeInsets.only(right: 12),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: ZippaColors.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(_getIcon(category.iconName), color: ZippaColors.primary, size: 28),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              category.name,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: ZippaColors.textPrimary),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _VendorCard extends StatelessWidget {
+  final dynamic vendor;
+  const _VendorCard({required this.vendor});
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      width: 140,
+      margin: const EdgeInsets.only(right: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF25D366).withOpacity(0.1),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF25D366).withOpacity(0.3)),
+        border: Border.all(color: Colors.grey.shade100),
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: Color(0xFF25D366),
-              shape: BoxShape.circle,
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => VendorDetailsScreen(vendorId: vendor['id'])),
+          );
+        },
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              child: Container(
+                height: 90,
+                width: double.infinity,
+                color: ZippaColors.primary.withOpacity(0.05),
+                child: const Icon(Icons.store_rounded, color: ZippaColors.primary, size: 40),
+              ),
             ),
-            child: const Icon(Icons.chat_rounded, color: Colors.white, size: 28),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    vendor['business_name'] ?? 'Shop Name',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    vendor['category_name'] ?? 'Store',
+                    style: const TextStyle(color: ZippaColors.textSecondary, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NoVendorsPlaceholder extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: ZippaColors.surface,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Center(
+        child: Text('No shops available nearby yet', style: TextStyle(color: ZippaColors.textLight, fontSize: 13)),
+      ),
+    );
+  }
+}
+
+class _FavoriteVendorCard extends StatelessWidget {
+  final dynamic vendor;
+  const _FavoriteVendorCard({required this.vendor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 120,
+      margin: const EdgeInsets.only(right: 16),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => VendorDetailsScreen(vendorId: vendor['id'])),
+              );
+            },
+            child: Stack(
               children: [
-                const Text(
-                  'Book via WhatsApp',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary),
+                Container(
+                  height: 100,
+                  width: 100,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: ZippaColors.primary.withOpacity(0.1), width: 3),
+                    image: DecorationImage(
+                      image: (vendor['avatar_url'] != null && vendor['avatar_url'].toString().startsWith('http'))
+                        ? NetworkImage(vendor['avatar_url'])
+                        : const AssetImage('assets/images/default_avatar.png') as ImageProvider,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Chat with ZipBot to send packages instantly.',
-                  style: TextStyle(fontSize: 13, color: ZippaColors.textSecondary.withOpacity(0.8)),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                    child: const Icon(Icons.favorite_rounded, color: Colors.pink, size: 18),
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: () async {
-              final Uri whatsappUri = Uri.parse("https://wa.me/${AppConstants.whatsappNumber}?text=Hello ZipBot, I want to send a package.");
-              if (await canLaunchUrl(whatsappUri)) {
-                await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
-              } else {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Could not launch WhatsApp. Please check if it is installed.')),
-                  );
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF25D366),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              elevation: 0,
-            ),
-            child: const Text('Chat Now', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text(
+            vendor['business_name'] ?? 'Shop',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class ProductSearchScreen extends StatelessWidget {
+  final String query;
+  const ProductSearchScreen({super.key, required this.query});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Search: "$query"'),
+        backgroundColor: Colors.white,
+        foregroundColor: ZippaColors.textPrimary,
+        elevation: 0,
+      ),
+      body: Consumer<MarketplaceProvider>(
+        builder: (context, marketplace, _) {
+          if (marketplace.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (marketplace.productSearchResults.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.search_off_rounded, size: 80, color: Colors.grey.shade300),
+                  const SizedBox(height: 16),
+                  const Text('No products found', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text('Try searching for something else', style: TextStyle(color: Colors.grey.shade600)),
+                ],
+              ),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: marketplace.productSearchResults.length,
+            itemBuilder: (context, index) {
+              final product = marketplace.productSearchResults[index];
+              return Card(
+                elevation: 0,
+                margin: const EdgeInsets.only(bottom: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(color: Colors.grey.shade100),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(12),
+                  leading: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      product.imageUrl ?? '',
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 60, height: 60, color: Colors.grey.shade100,
+                        child: const Icon(Icons.image_not_supported_outlined),
+                      ),
+                    ),
+                  ),
+                  title: Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(
+                    CurrencyFormatter.formatWithComma(product.price),
+                    style: const TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.w600),
+                  ),
+                  trailing: ElevatedButton(
+                    onPressed: () => marketplace.addToCart(product),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ZippaColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    child: const Text('Add', style: TextStyle(fontSize: 12)),
+                  ),
+                  onTap: () {
+                    // Navigate to VendorDetailsScreen or ProductDetails
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => VendorDetailsScreen(vendorId: product.vendorId)),
+                    );
+                  },
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }

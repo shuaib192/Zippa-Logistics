@@ -88,13 +88,15 @@ const estimateFare = async (req, res) => {
 // Creates a new delivery order.
 // ============================================
 const createOrder = async (req, res) => {
+    const client = await db.pool.connect();
     try {
         const {
             pickup_address, pickup_lat, pickup_lng,
             dropoff_address, dropoff_lat, dropoff_lng,
             recipient_name, recipient_phone,
             package_type, package_size, package_description,
-            payment_method,
+            payment_method, vendor_id, item_price = 0,
+            customer_notes
         } = req.body;
 
         // Validate required fields
@@ -114,6 +116,26 @@ const createOrder = async (req, res) => {
             : 5; // default fallback
 
         const fare = calculateFare(distanceKm, package_size);
+        const totalAmount = parseFloat(fare.total_fare) + parseFloat(item_price);
+
+        await client.query('BEGIN');
+
+        // Check Wallet Balance if payment method is wallet
+        if (payment_method !== 'cash') {
+            const walletRes = await client.query('SELECT balance FROM wallets WHERE user_id = $1', [req.user.id]);
+            if (walletRes.rows.length === 0 || parseFloat(walletRes.rows[0].balance) < totalAmount) {
+                await client.query('ROLLBACK');
+                return res.status(400).json({ success: false, message: 'Insufficient wallet balance.' });
+            }
+
+            // Debit Wallet
+            await client.query('UPDATE wallets SET balance = balance - $1 WHERE user_id = $2', [totalAmount, req.user.id]);
+            await client.query(
+                `INSERT INTO wallet_transactions (wallet_id, type, amount, description, status) 
+                 SELECT id, 'debit', $1, $2, 'completed' FROM wallets WHERE user_id = $3`,
+                [totalAmount, `Escrow payment for order (Item: ${item_price}, Delivery: ${fare.total_fare})`, req.user.id]
+            );
+        }
 
         // Generate unique order number: ZLP-YYYYMMDD-XXXX
         const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -121,23 +143,23 @@ const createOrder = async (req, res) => {
         const orderNumber = `ZLP-${datePart}-${randomPart}`;
 
         // Create the order
-        const result = await db.query(
+        const result = await client.query(
             `INSERT INTO orders (
-                order_number, customer_id, vendor_id,
+                order_number, customer_id, vendor_id, item_price,
                 pickup_address, pickup_latitude, pickup_longitude,
                 dropoff_address, dropoff_latitude, dropoff_longitude,
                 dropoff_contact_name, dropoff_contact_phone,
                 package_type, package_size, package_description,
                 base_fare, distance_fare, platform_fee, subtotal, total_fare, rider_earning,
-                distance_km, payment_method, status
+                distance_km, payment_method, status, payment_status, customer_notes
             ) VALUES (
-                $1, $2, $3,
-                $4, $5, $6,
-                $7, $8, $9,
-                $10, $11,
-                $12, $13, $14,
-                $15, $16, $17, $18, $19, $20,
-                $21, $22, 'pending'
+                $1, $2, $3, $4,
+                $5, $6, $7,
+                $8, $9, $10,
+                $11, $12,
+                $13, $14, $15,
+                $16, $17, $18, $19, $20, $21,
+                $22, $23, 'pending', 'held', $24
             ) RETURNING *, 
                 pickup_latitude as pickup_lat, pickup_longitude as pickup_lng, 
                 dropoff_latitude as dropoff_lat, dropoff_longitude as dropoff_lng,
@@ -145,15 +167,19 @@ const createOrder = async (req, res) => {
             [
                 orderNumber,
                 req.user.role === 'customer' ? req.user.id : null,
-                req.user.role === 'vendor' ? req.user.id : null,
+                vendor_id || (req.user.role === 'vendor' ? req.user.id : null),
+                item_price,
                 pickup_address, pickup_lat || null, pickup_lng || null,
                 dropoff_address, dropoff_lat || null, dropoff_lng || null,
                 recipient_name, recipient_phone,
                 package_type, package_size, package_description || null,
                 fare.base_fare, fare.distance_fare, fare.platform_fee, fare.subtotal, fare.total_fare, fare.rider_earning,
                 fare.distance_km, payment_method || 'wallet',
+                customer_notes || null,
             ],
         );
+
+        await client.query('COMMIT');
 
         const order = result.rows[0];
 
@@ -173,8 +199,11 @@ const createOrder = async (req, res) => {
         });
 
     } catch (err) {
+        if (client) await client.query('ROLLBACK');
         console.error('Create order error:', err);
         res.status(500).json({ success: false, message: 'Failed to create order. Please try again.' });
+    } finally {
+        if (client) client.release();
     }
 };
 
@@ -447,6 +476,119 @@ const cancelOrder = async (req, res) => {
     }
 };
 
+/**
+ * Confirm delivery and release funds from Escrow (Customer only)
+ * PUT /api/orders/:id/confirm
+ */
+const confirmOrderDelivery = async (req, res) => {
+    const { id } = req.params;
+    const client = await db.pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        // 1. Fetch the order with security checks
+        const orderResult = await client.query(
+            `SELECT * FROM orders 
+             WHERE (id = $1 OR order_number = $1) AND customer_id = $2`,
+            [id, req.user.id]
+        );
+
+        if (orderResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ success: false, message: 'Order not found or access denied.' });
+        }
+
+        const order = orderResult.rows[0];
+
+        // 2. Validate order status for confirmation
+        if (order.status !== 'delivered') {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ success: false, message: 'Order must be in "delivered" status to confirm.' });
+        }
+
+        if (order.customer_confirmed) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ success: false, message: 'Order has already been confirmed.' });
+        }
+
+        // 3. Update Order Status
+        await client.query(
+            `UPDATE orders 
+             SET customer_confirmed = TRUE, payment_status = 'released', updated_at = NOW() 
+             WHERE id = $1`,
+            [order.id]
+        );
+
+        // 4. SETTLEMENT LOGIC (Automatic Wallet Splitting)
+        
+        // A. Payout to VENDOR (Item Price)
+        if (order.vendor_id && parseFloat(order.item_price) > 0) {
+            // Get or create vendor wallet
+            let vendorWallet = await client.query('SELECT id FROM wallets WHERE user_id = $1', [order.vendor_id]);
+            let vwId;
+            if (vendorWallet.rows.length === 0) {
+                const newW = await client.query('INSERT INTO wallets (user_id, balance) VALUES ($1, 0) RETURNING id', [order.vendor_id]);
+                vwId = newW.rows[0].id;
+            } else {
+                vwId = vendorWallet.rows[0].id;
+            }
+
+            // Credit vendor wallet
+            await client.query('UPDATE wallets SET balance = balance + $1, updated_at = NOW() WHERE id = $2', [order.item_price, vwId]);
+            await client.query(
+                `INSERT INTO wallet_transactions (wallet_id, type, amount, description, status) 
+                 VALUES ($1, 'credit', $2, $3, 'completed')`,
+                [vwId, order.item_price, `Marketplace payout for order #${order.order_number}`]
+            );
+        }
+
+        // B. Payout to RIDER (Rider Earning)
+        if (order.rider_id && parseFloat(order.rider_earning) > 0) {
+            // Get or create rider wallet
+            let riderWallet = await client.query('SELECT id FROM wallets WHERE user_id = $1', [order.rider_id]);
+            let rwId;
+            if (riderWallet.rows.length === 0) {
+                const newW = await client.query('INSERT INTO wallets (user_id, balance) VALUES ($1, 0) RETURNING id', [order.rider_id]);
+                rwId = newW.rows[0].id;
+            } else {
+                rwId = riderWallet.rows[0].id;
+            }
+
+            // Credit rider wallet
+            await client.query('UPDATE wallets SET balance = balance + $1, updated_at = NOW() WHERE id = $2', [order.rider_earning, rwId]);
+            await client.query(
+                `INSERT INTO wallet_transactions (wallet_id, type, amount, description, status) 
+                 VALUES ($1, 'credit', $2, $3, 'completed')`,
+                [rwId, order.rider_earning, `Delivery earning for order #${order.order_number}`]
+            );
+        }
+
+        await client.query('COMMIT');
+
+        // Create notification for Rider and Vendor
+        if (order.rider_id) {
+            await createNotification(order.rider_id, 'Payment Received!', `Funds for order #${order.order_number} have been released to your wallet.`, 'wallet', order.id);
+        }
+        if (order.vendor_id) {
+            await createNotification(order.vendor_id, 'Payment Received!', `Item cost for order #${order.order_number} has been released to your wallet.`, 'wallet', order.id);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Order confirmed and payments released successfully.',
+            order: { ...order, customer_confirmed: true, payment_status: 'released' }
+        });
+
+    } catch (err) {
+        if (client) await client.query('ROLLBACK');
+        console.error('Confirm order delivery error:', err);
+        res.status(500).json({ success: false, message: 'Failed to confirm order.' });
+    } finally {
+        if (client) client.release();
+    }
+};
+
 module.exports = {
     estimateFare,
     createOrder,
@@ -454,4 +596,5 @@ module.exports = {
     getOrderById,
     updateOrderStatus,
     cancelOrder,
+    confirmOrderDelivery,
 };

@@ -13,121 +13,100 @@ class CustomerProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = Provider.of<AuthProvider>(context).user;
     
-    return Scaffold(
-      drawer: const AppDrawer(),
-      appBar: AppBar(
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu_rounded),
-            onPressed: () => Scaffold.of(context).openDrawer(),
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          const SizedBox(height: 24),
+          Center(
+            child: Stack(
+              children: [
+                CircleAvatar(
+                  radius: 50,
+                  backgroundColor: ZippaColors.primary.withValues(alpha: 0.1),
+                  child: const Icon(Icons.person_rounded, size: 50, color: ZippaColors.primary),
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(color: ZippaColors.primary, shape: BoxShape.circle),
+                    child: const Icon(Icons.edit, color: Colors.white, size: 16),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        title: const Text('Profile', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        foregroundColor: ZippaColors.textPrimary,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () {},
+          const SizedBox(height: 16),
+          Text(user?.fullName ?? 'Guest User', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(user?.email ?? '', style: const TextStyle(color: ZippaColors.textSecondary)),
+          const SizedBox(height: 32),
+          _ProfileItem(
+            icon: Icons.person_outline, 
+            label: 'Edit Profile',
+            onTap: () => _showEditProfileDialog(context, user),
+          ),
+          _ProfileItem(
+            icon: Icons.notifications_none, 
+            label: 'Notifications',
+            onTap: () => Navigator.pushNamed(context, '/notifications'),
+          ),
+          _ProfileItem(
+            icon: Icons.security_outlined, 
+            label: 'Security',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
+              );
+            },
+          ),
+          _ProfileItem(
+            icon: Icons.help_outline, 
+            label: 'Help Center',
+            onTap: () {
+              showAboutDialog(
+                context: context,
+                applicationName: 'Zippa Logistics',
+                applicationVersion: '1.0.0',
+                applicationIcon: const FlutterLogo(),
+                children: [
+                  const Text('Zippa is your premium logistics partner in Nigeria.'),
+                  const SizedBox(height: 8),
+                  const Text('For support, contact: support@zippalogistics.com'),
+                ],
+              );
+            },
+          ),
+          const Divider(height: 32, indent: 24, endIndent: 24),
+          _ProfileItem(
+            icon: Icons.logout_rounded, 
+            label: 'Logout', 
+            color: Colors.red,
+            onTap: () async {
+               final auth = Provider.of<AuthProvider>(context, listen: false);
+               final nav = Navigator.of(context);
+               final shouldLogout = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Logout'),
+                    content: const Text('Are you sure you want to logout?'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Logout', style: TextStyle(color: Colors.red)),
+                      ),
+                    ],
+                  ),
+                );
+                if (shouldLogout == true) {
+                  await auth.logout();
+                  nav.pushNamedAndRemoveUntil('/login', (r) => false);
+                }
+            },
           ),
         ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(height: 24),
-            Center(
-              child: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundColor: ZippaColors.primary.withOpacity(0.1),
-                    child: const Icon(Icons.person_rounded, size: 50, color: ZippaColors.primary),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(color: ZippaColors.primary, shape: BoxShape.circle),
-                      child: const Icon(Icons.edit, color: Colors.white, size: 16),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(user?.fullName ?? 'Guest User', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            Text(user?.email ?? '', style: const TextStyle(color: ZippaColors.textSecondary)),
-            const SizedBox(height: 32),
-            _ProfileItem(
-              icon: Icons.person_outline, 
-              label: 'Edit Profile',
-              onTap: () => _showEditProfileDialog(context, user),
-            ),
-            _ProfileItem(
-              icon: Icons.notifications_none, 
-              label: 'Notifications',
-              onTap: () => Navigator.pushNamed(context, '/notifications'),
-            ),
-            _ProfileItem(
-              icon: Icons.security_outlined, 
-              label: 'Security',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
-                );
-              },
-            ),
-            _ProfileItem(
-              icon: Icons.help_outline, 
-              label: 'Help Center',
-              onTap: () {
-                showAboutDialog(
-                  context: context,
-                  applicationName: 'Zippa Logistics',
-                  applicationVersion: '1.0.0',
-                  applicationIcon: const FlutterLogo(),
-                  children: [
-                    const Text('Zippa is your premium logistics partner in Nigeria.'),
-                    const SizedBox(height: 8),
-                    const Text('For support, contact: support@zippalogistics.com'),
-                  ],
-                );
-              },
-            ),
-            const Divider(height: 32, indent: 24, endIndent: 24),
-            _ProfileItem(
-              icon: Icons.logout_rounded, 
-              label: 'Logout', 
-              color: Colors.red,
-              onTap: () async {
-                 final auth = Provider.of<AuthProvider>(context, listen: false);
-                 final nav = Navigator.of(context);
-                 final shouldLogout = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Logout'),
-                      content: const Text('Are you sure you want to logout?'),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Logout', style: TextStyle(color: Colors.red)),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (shouldLogout == true) {
-                    await auth.logout();
-                    nav.pushNamedAndRemoveUntil('/login', (r) => false);
-                  }
-              },
-            ),
-          ],
-        ),
       ),
     );
   }

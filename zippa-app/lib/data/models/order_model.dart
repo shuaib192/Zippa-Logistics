@@ -26,6 +26,7 @@ class OrderModel {
   final String recipientPhone;
   
   // Pricing
+  final double itemPrice;
   final double subtotal;
   final double platformFee;
   final double totalFare;
@@ -36,6 +37,7 @@ class OrderModel {
   // Status & Timestamps
   final String status; // pending, accepted, picked_up, delivered, cancelled
   final String? paymentStatus;
+  final bool customerConfirmed;
   final String? paymentMethod;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -65,8 +67,10 @@ class OrderModel {
     required this.platformFee,
     required this.totalFare,
     required this.riderEarnings,
+    this.itemPrice = 0.0,
     this.status = 'pending',
     this.paymentStatus = 'unpaid',
+    this.customerConfirmed = false,
     this.paymentMethod = 'cash',
     this.createdAt,
     this.updatedAt,
@@ -83,22 +87,24 @@ class OrderModel {
       customerId: json['customer_id']?.toString() ?? '',
       riderId: json['rider_id']?.toString(),
       pickupAddress: json['pickup_address'],
-      pickupLat: double.tryParse(json['pickup_lat'].toString()) ?? 0.0,
-      pickupLng: double.tryParse(json['pickup_lng'].toString()) ?? 0.0,
+      pickupLat: double.tryParse(json['pickup_lat']?.toString() ?? '0') ?? 0.0,
+      pickupLng: double.tryParse(json['pickup_lng']?.toString() ?? '0') ?? 0.0,
       dropoffAddress: json['dropoff_address'],
-      dropoffLat: double.tryParse(json['dropoff_lat'].toString()) ?? 0.0,
-      dropoffLng: double.tryParse(json['dropoff_lng'].toString()) ?? 0.0,
+      dropoffLat: double.tryParse(json['dropoff_lat']?.toString() ?? '0') ?? 0.0,
+      dropoffLng: double.tryParse(json['dropoff_lng']?.toString() ?? '0') ?? 0.0,
       packageSize: json['package_size'] ?? 'medium',
       packageType: json['package_type'] ?? 'parcel',
       packageDescription: json['package_description'],
       recipientName: json['recipient_name'] ?? json['dropoff_contact_name'] ?? '',
       recipientPhone: json['recipient_phone'] ?? json['dropoff_contact_phone'] ?? '',
+      itemPrice: double.tryParse(json['item_price']?.toString() ?? '0') ?? 0.0,
       subtotal: double.tryParse(json['subtotal']?.toString() ?? '0') ?? 0.0,
       platformFee: double.tryParse(json['platform_fee']?.toString() ?? '0') ?? 0.0,
       totalFare: double.tryParse(json['total_fare']?.toString() ?? '0') ?? 0.0,
       riderEarnings: double.tryParse(json['rider_earning']?.toString() ?? '0') ?? 0.0,
       status: json['status'] ?? 'pending',
       paymentStatus: json['payment_status'],
+      customerConfirmed: json['customer_confirmed'] == true,
       paymentMethod: json['payment_method'],
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,

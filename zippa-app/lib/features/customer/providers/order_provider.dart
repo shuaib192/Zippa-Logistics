@@ -331,4 +331,68 @@ class OrderProvider with ChangeNotifier {
       return false;
     }
   }
+
+  // ============================================
+  // API CALL: Confirm Delivery & Release Funds
+  // ============================================
+  Future<bool> confirmDelivery(String orderId) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.put('/orders/$orderId/confirm', {});
+      if (response['success'] != false) {
+        // Find and update local order
+        final index = _orders.indexWhere((o) => o.id == orderId);
+        if (index != -1) {
+          final oldOrder = _orders[index];
+          _orders[index] = OrderModel(
+            id: oldOrder.id,
+            orderNumber: oldOrder.orderNumber,
+            customerId: oldOrder.customerId,
+            riderId: oldOrder.riderId,
+            pickupAddress: oldOrder.pickupAddress,
+            pickupLat: oldOrder.pickupLat,
+            pickupLng: oldOrder.pickupLng,
+            dropoffAddress: oldOrder.dropoffAddress,
+            dropoffLat: oldOrder.dropoffLat,
+            dropoffLng: oldOrder.dropoffLng,
+            packageSize: oldOrder.packageSize,
+            packageType: oldOrder.packageType,
+            packageDescription: oldOrder.packageDescription,
+            recipientName: oldOrder.recipientName,
+            recipientPhone: oldOrder.recipientPhone,
+            itemPrice: oldOrder.itemPrice,
+            subtotal: oldOrder.subtotal,
+            platformFee: oldOrder.platformFee,
+            totalFare: oldOrder.totalFare,
+            riderEarnings: oldOrder.riderEarnings,
+            status: oldOrder.status,
+            paymentStatus: 'released',
+            customerConfirmed: true,
+            paymentMethod: oldOrder.paymentMethod,
+            createdAt: oldOrder.createdAt,
+            updatedAt: DateTime.now(),
+            riderName: oldOrder.riderName,
+            riderPhone: oldOrder.riderPhone,
+            riderAvatar: oldOrder.riderAvatar,
+          );
+        }
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _error = response['message'];
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = 'Failed to confirm delivery';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
 }

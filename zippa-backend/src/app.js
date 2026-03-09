@@ -39,6 +39,8 @@ const chatRoutes = require('./routes/chat.routes');
 const orderRoutes = require('./routes/order.routes');
 const walletRoutes = require('./routes/wallet.routes');
 const whatsappRoutes = require('./routes/whatsapp.routes');
+const vendorRoutes = require('./routes/vendor.routes');
+const productRoutes = require('./routes/product.routes');
 
 // Create the Express application
 const app = express();
@@ -117,6 +119,8 @@ app.use('/api/ratings', ratingRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/vendors', vendorRoutes);
+app.use('/api/products', productRoutes);
 
 // ============================================
 // ERROR HANDLING

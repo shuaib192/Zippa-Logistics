@@ -38,6 +38,7 @@ import 'features/customer/screens/zipbot_screen.dart';
 import 'features/customer/providers/order_provider.dart';
 import 'features/customer/providers/wallet_provider.dart';
 import 'features/customer/providers/notification_provider.dart';
+import 'features/customer/providers/marketplace_provider.dart';
 import 'core/providers/navigation_provider.dart';
 
 // ============================================
@@ -76,6 +77,7 @@ class ZippaApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => OrderProvider()),
         ChangeNotifierProvider(create: (_) => WalletProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        ChangeNotifierProvider(create: (_) => MarketplaceProvider()),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
       ],
       child: MaterialApp(

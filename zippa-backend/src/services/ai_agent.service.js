@@ -1,17 +1,12 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const axios = require('axios');
 const db = require('../config/database');
 const whatsappService = require('./whatsapp.service');
 const landmarkService = require('./landmark.service');
 const { calculateFare } = require('../utils/fare_calculator');
 
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
 /**
  * AI AGENT SERVICE (ai_agent.service.js)
- * The "brain" of the WhatsApp Chatbot.
+ * The "brain" of the WhatsApp Chatbot. Powered by Groq (Llama 3).
  */
 
 const processWhatsAppMessage = async (from, message) => {
@@ -25,22 +20,22 @@ const processWhatsAppMessage = async (from, message) => {
         if (message.type === 'text') {
             userText = message.text.body;
         } else if (message.type === 'audio') {
-            console.log(`Analyzing voice note from ${from}...`);
-            userText = await transcribeAudio(message.audio.id);
+            // Audio support requires Gemini/Whisper — fallback for now
+            return whatsappService.sendMessage(from, 'I currently only support text messages for booking. Voice note support is coming soon! 🎤');
         } else {
-            return whatsappService.sendMessage(from, 'I\'m still learning! For now, I only understand text and voice notes. 🎤');
+            return whatsappService.sendMessage(from, 'I\'m still learning! For now, I only understand text messages. 🚚');
         }
 
-        // 3. Extract intent using Gemini
+        // 3. Extract intent using Groq
         const intent = await extractIntent(userText, session);
         
         console.log(`User Intent for ${from}:`, intent);
 
-        // 3. Act on intent
+        // 4. Act on intent
         await handleIntent(from, session, intent);
 
     } catch (err) {
-        console.error('AI Agent Error:', err);
+        console.error('AI Agent Error:', err.message);
         await whatsappService.sendMessage(from, 'ZipBot is having a quick nap. Please try again in a moment!');
     }
 };
@@ -49,6 +44,7 @@ const processWhatsAppMessage = async (from, message) => {
  * HELPER: Identify session
  */
 const getOrCreateSession = async (phoneNumber) => {
+    // Try to find existing session
     const result = await db.query(
         'SELECT * FROM whatsapp_sessions WHERE phone_number = $1',
         [phoneNumber]
@@ -59,10 +55,16 @@ const getOrCreateSession = async (phoneNumber) => {
     }
 
     // Check if user already exists in Zippa (Lookup by phone)
-    const userResult = await db.query(
-        'SELECT id FROM users WHERE phone = $1',
-        [phoneNumber]
-    );
+    let userResult;
+    try {
+        userResult = await db.query(
+            'SELECT id FROM users WHERE phone = $1',
+            [phoneNumber]
+        );
+    } catch (e) {
+        userResult = { rows: [] };
+    }
+    
     const userId = userResult.rows.length > 0 ? userResult.rows[0].id : null;
 
     // Create new session
@@ -74,18 +76,22 @@ const getOrCreateSession = async (phoneNumber) => {
 };
 
 /**
- * HELPER: Extract Intent using Gemini
+ * HELPER: Extract Intent using Groq (Llama 3.3)
  */
 const extractIntent = async (text, session) => {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) throw new Error('Groq API Key not found');
+
     const systemPrompt = `
         You are the Intent Extractor for Zippa Logistics WhatsApp AI.
+        Zippa is a premium delivery service in Nigeria.
         Current context: User is in flow "${session.current_flow}" at step "${session.flow_step}".
         
         Tasks:
         1. Identify if the user wants to: 'book_ride', 'track_order', 'check_balance', 'save_landmark', or 'general_query'.
         2. Extract entities: 'pickup_location', 'dropoff_location', 'package_type'.
         
-        Respond ONLY in JSON format:
+        Respond ONLY in valid JSON format:
         {
             "intent": "string",
             "entities": {
@@ -97,10 +103,31 @@ const extractIntent = async (text, session) => {
         }
     `;
 
-    const result = await model.generateContent([systemPrompt, text]);
-    const response = await result.response;
-    const jsonStr = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(jsonStr);
+    try {
+        const response = await axios.post(
+            'https://api.groq.com/openai/v1/chat/completions',
+            {
+                model: 'llama-3.3-70b-versatile',
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: text }
+                ],
+                response_format: { type: 'json_object' }
+            },
+            {
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        return JSON.parse(response.data.choices[0].message.content);
+    } catch (err) {
+        console.error('Groq Intent Extraction Error:', err.message);
+        // Fallback intent if AI fails
+        return { intent: 'general_query', entities: {}, confidence: 0 };
+    }
 };
 
 /**
@@ -114,11 +141,11 @@ const handleIntent = async (from, session, intent) => {
     }
 
     // Default response
-    await whatsappService.sendMessage(from, 'Welcome to Zippa! I can help you book a ride or track a package. What would you like to do? (You can even send a voice note!)');
+    await whatsappService.sendMessage(from, 'Welcome to Zippa! I can help you book a ride or track a package. What would you like to do?');
 };
 
 /**
- * BOOKING FLOW LOGIC (The multi-step conversation)
+ * BOOKING FLOW LOGIC
  */
 const handleBookingFlow = async (from, session, entities) => {
     let { pickup, dropoff, package: pkgType } = entities;
@@ -130,35 +157,21 @@ const handleBookingFlow = async (from, session, entities) => {
         await updateSession(from, 'awaiting_pickup', initialData);
 
         if (!pickup) {
-            // Suggest previous landmarks if available
-            const landmarkMsg = user_id ? ' (I can also see your saved landmarks!)' : '';
-            return whatsappService.sendMessage(from, `Sure! Where should the rider pick up the package?${landmarkMsg}`);
+            return whatsappService.sendMessage(from, `Sure! I can help with a booking. Where should the rider pick up the package?`);
         }
     }
 
     // 2. State-based processing
     if (flow_step === 'awaiting_pickup') {
-        // Check if user mentioned a landmark
-        const landmark = await landmarkService.findLandmark(user_id, pickup || '');
-        if (landmark) {
-            pickup = `${landmark.name} (${landmark.description})`;
-            console.log(`Matched landmark: ${landmark.name}`);
-        }
-
         const updatedData = { ...flow_data, pickup: pickup || flow_data.pickup };
         await updateSession(from, 'awaiting_dropoff', updatedData);
         return whatsappService.sendMessage(from, `Got it. Pickup is at ${updatedData.pickup}.\n\nNow, where are we delivering it to?`);
     }
 
     if (flow_step === 'awaiting_dropoff') {
-        const landmark = await landmarkService.findLandmark(user_id, dropoff || '');
-        if (landmark) {
-            dropoff = `${landmark.name} (${landmark.description})`;
-        }
-
         const updatedData = { ...flow_data, dropoff: dropoff || flow_data.dropoff };
         
-        // Calculate price (using a default 5km for the AI until we add full Geocoding)
+        // Calculate price (Simulated distance for AI demo)
         const fareInfo = calculateFare(5, updatedData.package || 'small'); 
         updatedData.price = fareInfo.total_fare;
 
@@ -170,12 +183,12 @@ const handleBookingFlow = async (from, session, entities) => {
             `🎯 To: ${updatedData.dropoff}\n` +
             `📦 Package: ${updatedData.package || 'Standard'}\n` +
             `💰 Estimated Fare: ₦${updatedData.price.toLocaleString()}\n\n` +
-            'Should I go ahead and book this for you? (Reply \'YES\', \'OK\', or \'CANCEL\')'
+            'Should I go ahead and book this for you? (Reply \'YES\' or \'CANCEL\')'
         );
     }
 
     if (flow_step === 'awaiting_confirmation') {
-        const response = (pickup || '').toLowerCase(); // entities.pickup often contains the full text in this simple extractor
+        const response = (pickup || '').toLowerCase(); // Simple extraction for now
 
         if (response.includes('yes') || response.includes('ok')) {
              await updateSession(from, 'idle', {}, 'none');
@@ -197,44 +210,6 @@ const updateSession = async (from, step, data, flow = 'booking') => {
         'UPDATE whatsapp_sessions SET flow_step = $1, flow_data = $2, current_flow = $3, last_interaction = CURRENT_TIMESTAMP WHERE phone_number = $4',
         [step, JSON.stringify(data), flow, from]
     );
-};
-
-/**
- * HELPER: Transcribe Audio using Gemini Multimodal
- */
-const transcribeAudio = async (mediaId) => {
-    try {
-        const token = process.env.WHATSAPP_ACCESS_TOKEN;
-        
-        // 1. Get media URL from Meta
-        const mediaRes = await axios.get(`https://graph.facebook.com/v19.0/${mediaId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const mediaUrl = mediaRes.data.url;
-
-        // 2. Download audio bytes
-        const audioRes = await axios.get(mediaUrl, {
-            headers: { 'Authorization': `Bearer ${token}` },
-            responseType: 'arraybuffer'
-        });
-        const audioData = Buffer.from(audioRes.data).toString('base64');
-
-        // 3. Send to Gemini for transcription
-        const result = await model.generateContent([
-            'Transcribe this Nigerian voice note exactly. It might be in English, Pidgin, or a local language. If it\'s a booking request, capture the locations.',
-            {
-                inlineData: {
-                    data: audioData,
-                    mimeType: 'audio/mp3' // Meta usually sends .ogg/mp4 but Gemini expects mime
-                }
-            }
-        ]);
-        
-        return result.response.text();
-    } catch (err) {
-        console.error('Transcription Error:', err);
-        return '';
-    }
 };
 
 module.exports = {
