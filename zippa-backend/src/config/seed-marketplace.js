@@ -125,7 +125,7 @@ async function seedMarketplace() {
 
             // Create Wallet
             await pool.query(
-                `INSERT INTO wallets (user_id, balance) VALUES ($1, 0) ON CONFLICT (user_id) DO NOTHING`,
+                'INSERT INTO wallets (user_id, balance) VALUES ($1, 0) ON CONFLICT (user_id) DO NOTHING',
                 [userId]
             );
 

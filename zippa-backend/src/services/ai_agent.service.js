@@ -1,7 +1,6 @@
 const axios = require('axios');
 const db = require('../config/database');
 const whatsappService = require('./whatsapp.service');
-const landmarkService = require('./landmark.service');
 const { calculateFare } = require('../utils/fare_calculator');
 
 /**
@@ -149,7 +148,7 @@ const handleIntent = async (from, session, intent) => {
  */
 const handleBookingFlow = async (from, session, entities) => {
     let { pickup, dropoff, package: pkgType } = entities;
-    let { flow_step, flow_data, user_id } = session;
+    let { flow_step, flow_data } = session;
 
     // 1. Initial State: Start booking
     if (session.current_flow !== 'booking') {
@@ -157,7 +156,7 @@ const handleBookingFlow = async (from, session, entities) => {
         await updateSession(from, 'awaiting_pickup', initialData);
 
         if (!pickup) {
-            return whatsappService.sendMessage(from, `Sure! I can help with a booking. Where should the rider pick up the package?`);
+            return whatsappService.sendMessage(from, 'Sure! I can help with a booking. Where should the rider pick up the package?');
         }
     }
 
