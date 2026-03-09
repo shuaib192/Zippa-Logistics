@@ -129,11 +129,12 @@ const createOrder = async (req, res) => {
             }
 
             // Debit Wallet
+            const reference = `ORD-${orderNumber}`;
             await client.query('UPDATE wallets SET balance = balance - $1 WHERE user_id = $2', [totalAmount, req.user.id]);
             await client.query(
-                `INSERT INTO wallet_transactions (wallet_id, type, amount, description, status) 
-                 SELECT id, 'debit', $1, $2, 'completed' FROM wallets WHERE user_id = $3`,
-                [totalAmount, `Escrow payment for order (Item: ${item_price}, Delivery: ${fare.total_fare})`, req.user.id]
+                `INSERT INTO wallet_transactions (wallet_id, type, amount, reference, description, status) 
+                 SELECT id, 'debit', $1, $2, $3, 'completed' FROM wallets WHERE user_id = $4`,
+                [totalAmount, reference, `Escrow payment for order (Item: ${item_price}, Delivery: ${fare.total_fare})`, req.user.id]
             );
         }
 
@@ -546,11 +547,12 @@ const confirmOrderDelivery = async (req, res) => {
             }
 
             // Credit vendor wallet
+            const vRef = `PYO-V-${order.order_number}`;
             await client.query('UPDATE wallets SET balance = balance + $1, updated_at = NOW() WHERE id = $2', [order.item_price, vwId]);
             await client.query(
-                `INSERT INTO wallet_transactions (wallet_id, type, amount, description, status) 
-                 VALUES ($1, 'credit', $2, $3, 'completed')`,
-                [vwId, order.item_price, `Marketplace payout for order #${order.order_number}`]
+                `INSERT INTO wallet_transactions (wallet_id, type, amount, reference, description, status) 
+                 VALUES ($1, 'credit', $2, $3, $4, 'completed')`,
+                [vwId, order.item_price, vRef, `Marketplace payout for order #${order.order_number}`]
             );
         }
 
@@ -567,11 +569,12 @@ const confirmOrderDelivery = async (req, res) => {
             }
 
             // Credit rider wallet
+            const rRef = `PYO-R-${order.order_number}`;
             await client.query('UPDATE wallets SET balance = balance + $1, updated_at = NOW() WHERE id = $2', [order.rider_earning, rwId]);
             await client.query(
-                `INSERT INTO wallet_transactions (wallet_id, type, amount, description, status) 
-                 VALUES ($1, 'credit', $2, $3, 'completed')`,
-                [rwId, order.rider_earning, `Delivery earning for order #${order.order_number}`]
+                `INSERT INTO wallet_transactions (wallet_id, type, amount, reference, description, status) 
+                 VALUES ($1, 'credit', $2, $3, $4, 'completed')`,
+                [rwId, order.rider_earning, rRef, `Delivery earning for order #${order.order_number}`]
             );
         }
 
