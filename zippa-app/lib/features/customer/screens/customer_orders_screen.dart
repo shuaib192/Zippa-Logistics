@@ -4,7 +4,6 @@ import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/features/customer/providers/order_provider.dart';
 import 'package:zippa_app/features/customer/screens/order_tracking_screen.dart';
 import 'package:zippa_app/core/utils/currency_formatter.dart';
-import 'package:zippa_app/core/widgets/app_drawer.dart';
 
 class CustomerOrdersScreen extends StatefulWidget {
   const CustomerOrdersScreen({super.key});

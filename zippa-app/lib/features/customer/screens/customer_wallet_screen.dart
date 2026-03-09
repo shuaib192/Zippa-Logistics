@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
-import 'package:zippa_app/core/widgets/app_drawer.dart';
 import 'package:provider/provider.dart';
 import 'package:zippa_app/features/customer/providers/wallet_provider.dart';
 import 'package:zippa_app/core/utils/currency_formatter.dart';

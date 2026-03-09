@@ -3,10 +3,8 @@ import 'package:zippa_app/data/api/api_client.dart';
 import 'package:zippa_app/features/customer/models/category_model.dart';
 import 'package:zippa_app/features/customer/models/product_model.dart';
 
-/**
- * MARKETPLACE PROVIDER (marketplace_provider.dart)
- * Manages state for categories, vendors, products, favorites, and cart.
- */
+/// MARKETPLACE PROVIDER (marketplace_provider.dart)
+/// Manages state for categories, vendors, products, favorites, and cart.
 
 class MarketplaceProvider with ChangeNotifier {
   final ApiClient _apiClient = ApiClient();
@@ -102,7 +100,7 @@ class MarketplaceProvider with ChangeNotifier {
             .toList();
       }
     } catch (e) {
-      print('Fetch categories error: $e');
+      debugPrint('Fetch categories error: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -117,7 +115,7 @@ class MarketplaceProvider with ChangeNotifier {
         _featuredVendors = response['vendors'];
       }
     } catch (e) {
-      print('Fetch featured vendors error: $e');
+      debugPrint('Fetch featured vendors error: $e');
     } finally {
       notifyListeners();
     }
@@ -137,7 +135,7 @@ class MarketplaceProvider with ChangeNotifier {
         _searchResults = response['vendors'];
       }
     } catch (e) {
-      print('Search vendors error: $e');
+      debugPrint('Search vendors error: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -152,7 +150,7 @@ class MarketplaceProvider with ChangeNotifier {
         return response;
       }
     } catch (e) {
-      print('Get vendor details error: $e');
+      debugPrint('Get vendor details error: $e');
     }
     return null;
   }
@@ -166,7 +164,7 @@ class MarketplaceProvider with ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      print('Fetch favorites error: $e');
+      debugPrint('Fetch favorites error: $e');
     }
   }
 
@@ -179,7 +177,7 @@ class MarketplaceProvider with ChangeNotifier {
         return response['is_favorite'] ?? false;
       }
     } catch (e) {
-      print('Toggle favorite error: $e');
+      debugPrint('Toggle favorite error: $e');
     }
     return false;
   }
@@ -196,7 +194,7 @@ class MarketplaceProvider with ChangeNotifier {
             .toList();
       }
     } catch (e) {
-      print('Global product search error: $e');
+      debugPrint('Global product search error: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

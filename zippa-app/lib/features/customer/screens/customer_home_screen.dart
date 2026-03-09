@@ -744,7 +744,7 @@ class ProductSearchScreen extends StatelessWidget {
                       width: 60,
                       height: 60,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                      errorBuilder: (context, error, stackTrace) => Container(
                         width: 60, height: 60, color: Colors.grey.shade100,
                         child: const Icon(Icons.image_not_supported_outlined),
                       ),

@@ -49,6 +49,7 @@ class _MarketplaceCartScreenState extends State<MarketplaceCartScreen> {
     );
 
     if (result != null && result is Map<String, dynamic>) {
+      if (!mounted) return;
       final orderProvider = Provider.of<OrderProvider>(context, listen: false);
       orderProvider.setDropoff(
         result['address'],
@@ -91,10 +92,11 @@ class _MarketplaceCartScreenState extends State<MarketplaceCartScreen> {
       'customer_notes': _notesController.text,
     });
 
+    if (!mounted) return;
+    
     if (success['success'] != false) {
       marketplace.clearCart();
       final newOrder = OrderModel.fromJson(success['order']);
-      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
