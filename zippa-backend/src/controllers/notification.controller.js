@@ -37,12 +37,12 @@ const markAsRead = async (req, res) => {
 /**
  * Create a notification (Internal helper)
  */
-const createNotification = async (userId, title, message, type = 'system', relatedId = null) => {
+const createNotification = async (userId, title, body, type = 'system', relatedId = null) => {
     try {
         await db.query(
-            `INSERT INTO notifications (user_id, title, message, type, related_id) 
+            `INSERT INTO notifications (user_id, title, body, type, data) 
              VALUES ($1, $2, $3, $4, $5)`,
-            [userId, title, message, type, relatedId]
+            [userId, title, body, type, relatedId ? { related_id: relatedId } : null]
         );
         return true;
     } catch (err) {

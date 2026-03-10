@@ -51,6 +51,8 @@ class OrderModel {
   final String? riderName;
   final String? riderPhone;
   final String? riderAvatar;
+  final double? riderLat;
+  final double? riderLng;
 
   OrderModel({
     this.id,
@@ -76,12 +78,14 @@ class OrderModel {
     this.status = 'pending',
     this.paymentStatus = 'unpaid',
     this.customerConfirmed = false,
-    this.paymentMethod = 'cash',
+    this.paymentMethod = 'wallet',
     this.createdAt,
     this.updatedAt,
     this.riderName,
     this.riderPhone,
     this.riderAvatar,
+    this.riderLat,
+    this.riderLng,
     this.customerNotes,
     this.isMarketplace = false,
     this.vendorName,
@@ -119,6 +123,8 @@ class OrderModel {
       riderName: json['rider_name'],
       riderPhone: json['rider_phone'],
       riderAvatar: json['rider_avatar'],
+      riderLat: double.tryParse(json['rider_lat']?.toString() ?? ''),
+      riderLng: double.tryParse(json['rider_lng']?.toString() ?? ''),
       customerNotes: json['customer_notes'],
       isMarketplace: json['is_marketplace'] == true,
       vendorName: json['vendor_name'] ?? json['pickup_contact_name'],

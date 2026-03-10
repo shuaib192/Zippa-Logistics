@@ -118,6 +118,11 @@ const createOrder = async (req, res) => {
         const fare = calculateFare(distanceKm, package_size);
         const totalAmount = parseFloat(fare.total_fare) + parseFloat(item_price);
 
+        // Generate unique order number: ZLP-YYYYMMDD-XXXX
+        const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const orderNumber = `ZLP-${datePart}-${randomPart}`;
+
         await client.query('BEGIN');
 
         // Check Wallet Balance if payment method is wallet
@@ -130,18 +135,24 @@ const createOrder = async (req, res) => {
 
             // Debit Wallet
             const reference = `ORD-${orderNumber}`;
-            await client.query('UPDATE wallets SET balance = balance - $1 WHERE user_id = $2', [totalAmount, req.user.id]);
-            await client.query(
-                `INSERT INTO wallet_transactions (wallet_id, type, amount, reference, description, status) 
-                 SELECT id, 'debit', $1, $2, $3, 'completed' FROM wallets WHERE user_id = $4`,
-                [totalAmount, reference, `Escrow payment for order (Item: ${item_price}, Delivery: ${fare.total_fare})`, req.user.id]
-            );
-        }
+            const oldBalance = parseFloat(walletRes.rows[0].balance);
+            const newBalance = oldBalance - totalAmount;
 
-        // Generate unique order number: ZLP-YYYYMMDD-XXXX
-        const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-        const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
-        const orderNumber = `ZLP-${datePart}-${randomPart}`;
+            await client.query('UPDATE wallets SET balance = $1 WHERE user_id = $2', [newBalance, req.user.id]);
+            await client.query(
+                `INSERT INTO wallet_transactions (wallet_id, type, amount, balance_before, balance_after, reference, description, status) 
+                 SELECT id, 'debit', $1, $2, $3, $4, $5, 'completed' FROM wallets WHERE user_id = $6`,
+                [totalAmount, oldBalance, newBalance, reference, `Escrow payment for order (Item: ${item_price}, Delivery: ${fare.total_fare})`, req.user.id]
+            );
+
+            // Increment Vendor Pending Balance (if applicable)
+            if (vendor_id && parseFloat(item_price) > 0) {
+                await client.query(
+                    'UPDATE wallets SET pending_balance = pending_balance + $1 WHERE user_id = $2',
+                    [item_price, vendor_id]
+                );
+            }
+        }
 
         // Create the order
         const result = await client.query(
@@ -151,7 +162,7 @@ const createOrder = async (req, res) => {
                 dropoff_address, dropoff_latitude, dropoff_longitude,
                 dropoff_contact_name, dropoff_contact_phone,
                 package_type, package_size, package_description,
-                distance_fare, platform_fee, subtotal, total_fare, rider_earning,
+                base_fare, distance_fare, platform_fee, subtotal, total_fare, rider_earning,
                 distance_km, payment_method, status, payment_status, customer_notes,
                 is_marketplace
             ) VALUES (
@@ -168,7 +179,7 @@ const createOrder = async (req, res) => {
                 dropoff_contact_name as recipient_name, dropoff_contact_phone as recipient_phone`,
             [
                 orderNumber,
-                req.user.role === 'customer' ? req.user.id : null,
+                req.user.id, // Primary initiator
                 vendor_id || (req.user.role === 'vendor' ? req.user.id : null),
                 item_price,
                 pickup_address, pickup_lat || null, pickup_lng || null,
@@ -308,10 +319,13 @@ const getOrderById = async (req, res) => {
                 o.dropoff_contact_name as recipient_name, o.dropoff_contact_phone as recipient_phone,
                 c.full_name as customer_name, c.phone as customer_phone, c.avatar_url as customer_avatar,
                 r.full_name as rider_name, r.phone as rider_phone, r.avatar_url as rider_avatar,
-                vp.business_name as vendor_name
+                vp.business_name as vendor_name,
+                rp.current_latitude as rider_lat, rp.current_longitude as rider_lng,
+                rp.last_location_update
             FROM orders o
             LEFT JOIN users c ON c.id = o.customer_id
             LEFT JOIN users r ON r.id = o.rider_id
+            LEFT JOIN user_profiles rp ON rp.user_id = o.rider_id
             LEFT JOIN user_profiles vp ON vp.user_id = o.vendor_id
             WHERE o.id::text = $1 OR o.order_number = $1`,
             [id],
@@ -373,30 +387,57 @@ const updateOrderStatus = async (req, res) => {
         const order = orderResult.rows[0];
 
         // Verify authorization
-        if (role === 'rider' && order.rider_id !== userId) {
-            // Rider accepting a new order (assigned to them)
-            if (status === 'accepted' && order.status === 'pending') {
-                await db.query(
-                    'UPDATE orders SET status = $1, rider_id = $2, accepted_at = CURRENT_TIMESTAMP WHERE id = $3',
-                    ['accepted', userId, order.id],
-                );
+        const isRiderOwner = order.rider_id === userId;
+        const isCustomerOwner = order.customer_id === userId;
+
+        if (role === 'rider') {
+            if (!isRiderOwner) {
+                // Try to accept if it's still pending
+                if (status === 'accepted' && order.status === 'pending') {
+                    // ATOMIC UPDATE: Ensure it's still pending and no rider is assigned
+                    const updateResult = await db.query(
+                        'UPDATE orders SET status = $1, rider_id = $2, accepted_at = CURRENT_TIMESTAMP WHERE id = $3 AND status = \'pending\' AND rider_id IS NULL RETURNING id',
+                        ['accepted', userId, order.id],
+                    );
+                    
+                    if (updateResult.rows.length === 0) {
+                        return res.status(409).json({ success: false, message: 'Too late! This order was just taken by another rider.' });
+                    }
+
+                    // Add to Rider's Pending Balance
+                    if (parseFloat(order.rider_earning) > 0) {
+                        await db.query(
+                            'UPDATE wallets SET pending_balance = pending_balance + $1 WHERE user_id = $2',
+                            [order.rider_earning, userId]
+                        );
+                    }
+                } else {
+                    return res.status(403).json({ success: false, message: 'This order is not assigned to you.' });
+                }
             } else {
-                return res.status(403).json({ success: false, message: 'This order is not assigned to you.' });
+                // Rider owns the order, let them update to picked_up or delivered
+                if (!['arrived', 'picked_up', 'delivered'].includes(status)) {
+                    return res.status(400).json({ success: false, message: 'Invalid next status for this order.' });
+                }
+                
+                const timestamps = { arrived: 'accepted_at', picked_up: 'picked_up_at', delivered: 'delivered_at' };
+                const timestampCol = timestamps[status];
+                
+                await db.query(`UPDATE orders SET status = $1, ${timestampCol} = CURRENT_TIMESTAMP WHERE id = $2`, [status, order.id]);
             }
-        } else {
-            // Build update query with timestamps
-            const timestamps = {
-                accepted: 'accepted_at',
-                picked_up: 'picked_up_at',
-                delivered: 'delivered_at',
-            };
-
-            const timestampCol = timestamps[status];
-            const updateQuery = timestampCol
-                ? `UPDATE orders SET status = $1, ${timestampCol} = CURRENT_TIMESTAMP WHERE id = $2`
-                : 'UPDATE orders SET status = $1 WHERE id = $2';
-
-            await db.query(updateQuery, [status, order.id]);
+        } else if (role === 'customer') {
+            if (!isCustomerOwner) {
+                return res.status(403).json({ success: false, message: 'Access denied. You do not own this order.' });
+            }
+            // Customers can only cancel
+            if (status !== 'cancelled') {
+                return res.status(403).json({ success: false, message: 'Customers can only cancel orders through the /cancel endpoint.' });
+            }
+            // Redirect to cancel logic or allow it if it's pending
+            if (order.status !== 'pending') {
+                return res.status(400).json({ success: false, message: 'Orders can only be cancelled while pending.' });
+            }
+            await db.query('UPDATE orders SET status = \'cancelled\' WHERE id = $1', [order.id]);
         }
 
         // Create notification for customer about status update
@@ -463,10 +504,56 @@ const cancelOrder = async (req, res) => {
         }
 
         // Update status to cancelled
-        await db.query(
-            'UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2',
-            ['cancelled', id]
-        );
+        const client = await db.connect();
+        try {
+            await client.query('BEGIN');
+
+            await client.query(
+                'UPDATE orders SET status = $1, cancelled_at = NOW(), updated_at = NOW() WHERE id = $2',
+                ['cancelled', id]
+            );
+
+            // REFUND LOGIC
+            if (order.payment_method === 'wallet') {
+                const refundAmount = parseFloat(order.total_fare);
+                
+                // 1. Refund Customer
+                await client.query(
+                    'UPDATE wallets SET balance = balance + $1 WHERE user_id = $2',
+                    [refundAmount, order.customer_id]
+                );
+                
+                // 2. Reverse Vendor Pending (if applicable)
+                if (order.vendor_id && parseFloat(order.item_price) > 0) {
+                    await client.query(
+                        'UPDATE wallets SET pending_balance = pending_balance - $1 WHERE user_id = $2',
+                        [order.item_price, order.vendor_id]
+                    );
+                }
+
+                // 3. Reverse Rider Pending (if applicable - though pending status means no rider)
+                if (order.rider_id && parseFloat(order.rider_earning) > 0) {
+                    await client.query(
+                        'UPDATE wallets SET pending_balance = pending_balance - $1 WHERE user_id = $2',
+                        [order.rider_earning, order.rider_id]
+                    );
+                }
+
+                // 4. Record Refund Transaction
+                await client.query(
+                    `INSERT INTO wallet_transactions (wallet_id, type, amount, reference, description, status) 
+                     SELECT id, 'credit', $1, $2, $3, 'completed' FROM wallets WHERE user_id = $4`,
+                    [refundAmount, `RFD-${order.order_number}`, `Refund for cancelled order #${order.order_number}`, order.customer_id]
+                );
+            }
+
+            await client.query('COMMIT');
+        } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+        } finally {
+            client.release();
+        }
 
         // Create notification for customer
         await createNotification(
@@ -546,9 +633,12 @@ const confirmOrderDelivery = async (req, res) => {
                 vwId = vendorWallet.rows[0].id;
             }
 
-            // Credit vendor wallet
+            // Credit vendor wallet (Move from Pending to Available)
             const vRef = `PYO-V-${order.order_number}`;
-            await client.query('UPDATE wallets SET balance = balance + $1, updated_at = NOW() WHERE id = $2', [order.item_price, vwId]);
+            await client.query(
+                'UPDATE wallets SET balance = balance + $1, pending_balance = pending_balance - $1, updated_at = NOW() WHERE id = $2',
+                [order.item_price, vwId]
+            );
             await client.query(
                 `INSERT INTO wallet_transactions (wallet_id, type, amount, reference, description, status) 
                  VALUES ($1, 'credit', $2, $3, $4, 'completed')`,
@@ -568,9 +658,12 @@ const confirmOrderDelivery = async (req, res) => {
                 rwId = riderWallet.rows[0].id;
             }
 
-            // Credit rider wallet
+            // Credit rider wallet (Move from Pending to Available)
             const rRef = `PYO-R-${order.order_number}`;
-            await client.query('UPDATE wallets SET balance = balance + $1, updated_at = NOW() WHERE id = $2', [order.rider_earning, rwId]);
+            await client.query(
+                'UPDATE wallets SET balance = balance + $1, pending_balance = pending_balance - $1, updated_at = NOW() WHERE id = $2',
+                [order.rider_earning, rwId]
+            );
             await client.query(
                 `INSERT INTO wallet_transactions (wallet_id, type, amount, reference, description, status) 
                  VALUES ($1, 'credit', $2, $3, $4, 'completed')`,

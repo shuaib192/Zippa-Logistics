@@ -86,7 +86,7 @@ if (process.env.NODE_ENV !== 'test') {
 // This stops hackers from flooding your server.
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes (in milliseconds)
-    max: 100,                  // Max 100 requests per window
+    max: 1000,                 // Max 1000 requests per window (relaxed for dev)
     message: {
         success: false,
         message: 'Too many requests. Please try again in 15 minutes.',

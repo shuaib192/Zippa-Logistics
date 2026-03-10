@@ -5,7 +5,7 @@ import 'package:zippa_app/features/customer/providers/marketplace_provider.dart'
 import 'package:zippa_app/core/utils/currency_formatter.dart';
 import 'package:zippa_app/features/customer/screens/marketplace_cart_screen.dart';
 import 'package:zippa_app/features/customer/screens/product_details_screen.dart';
-import 'package:zippa_app/features/customer/models/product_model.dart';
+import 'package:zippa_app/data/models/product_model.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 /// VENDOR DETAILS SCREEN (vendor_details_screen.dart)

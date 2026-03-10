@@ -88,6 +88,7 @@ class _MarketplaceCartScreenState extends State<MarketplaceCartScreen> {
         return '${e.value}x ${p?.name ?? "Item"}';
       }).join(', '),
       'item_price': marketplace.cartTotal,
+      'vendor_id': marketplace.cartVendorId,
       'recipient_name': 'Me', // Customer is ordering for themselves
       'recipient_phone': 'N/A',
       'payment_method': 'wallet',

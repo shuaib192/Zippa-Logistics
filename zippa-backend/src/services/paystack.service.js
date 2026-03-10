@@ -128,7 +128,7 @@ const PaystackService = {
         try {
             const response = await axios.post('https://api.paystack.co/transfer', {
                 source: 'balance',
-                amount: amount * 100, // Paystack expects Kobo
+                amount: Math.round(amount * 100), // Paystack expects Kobo
                 recipient: recipientCode,
                 reason: reason
             }, {
@@ -138,6 +138,42 @@ const PaystackService = {
         } catch (error) {
             console.error('Paystack Transfer Error:', error.response?.data || error.message);
             throw new Error(error.response?.data?.message || 'Transfer initiation failed');
+        }
+    },
+
+    /**
+     * Create Transfer Recipient
+     */
+    createTransferRecipient: async (name, accountNumber, bankCode) => {
+        try {
+            const response = await axios.post('https://api.paystack.co/transferrecipient', {
+                type: 'nuban',
+                name: name,
+                account_number: accountNumber,
+                bank_code: bankCode,
+                currency: 'NGN'
+            }, {
+                headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Paystack Create Recipient Error:', error.response?.data || error.message);
+            throw new Error(error.response?.data?.message || 'Failed to create transfer recipient');
+        }
+    },
+
+    /**
+     * List Banks
+     */
+    listBanks: async () => {
+        try {
+            const response = await axios.get('https://api.paystack.co/bank?country=nigeria', {
+                headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Paystack List Banks Error:', error.response?.data || error.message);
+            throw new Error(error.response?.data?.message || 'Failed to load banks');
         }
     }
 };

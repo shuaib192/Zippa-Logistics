@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:zippa_app/data/api/api_client.dart';
 import 'package:zippa_app/features/customer/models/category_model.dart';
-import 'package:zippa_app/features/customer/models/product_model.dart';
+import 'package:zippa_app/data/models/product_model.dart';
 
 /// MARKETPLACE PROVIDER (marketplace_provider.dart)
 /// Manages state for categories, vendors, products, favorites, and cart.

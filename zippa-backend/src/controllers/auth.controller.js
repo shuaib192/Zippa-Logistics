@@ -210,26 +210,23 @@ const login = async (req, res) => {
 
         // Step 2: Find the user by phone or email
         let result;
-        if (phone) {
-            result = await db.query(
-                'SELECT * FROM users WHERE phone = $1',
-                [phone]
-            );
-        } else {
-            result = await db.query(
-                'SELECT * FROM users WHERE email = $1',
-                [email]
-            );
-        }
+        const query = `
+            SELECT u.*, 
+                   p.date_of_birth, p.gender, p.address, p.city, p.state,
+                   p.payout_bank_name, p.payout_account_number, p.payout_account_name, p.payout_bank_code,
+                   p.business_name, p.business_address, p.business_reg_number,
+                   p.default_pickup_address, p.banner_url
+            FROM users u
+            LEFT JOIN user_profiles p ON p.user_id = u.id
+            WHERE ${phone ? 'u.phone = $1' : 'u.email = $1'}
+        `;
+        result = await db.query(query, [phone || email]);
 
         if (result.rows.length === 0) {
             return res.status(401).json({
                 success: false,
                 message: 'Invalid credentials. No account found with this phone/email.',
             });
-            // 401 = Unauthorized
-            // SECURITY TIP: Don't say "wrong password" — that tells hackers
-            // the account exists. Say "invalid credentials" instead.
         }
 
         const user = result.rows[0];
@@ -284,6 +281,17 @@ const login = async (req, res) => {
                     role: user.role,
                     kycStatus: user.kyc_status,
                     isOnline: user.is_online,
+                    // Additional profile fields
+                    business_name: user.business_name,
+                    business_address: user.business_address,
+                    business_reg_number: user.business_reg_number,
+                    default_pickup_address: user.default_pickup_address,
+                    banner_url: user.banner_url,
+                    avatar_url: user.avatar_url,
+                    payout_bank_name: user.payout_bank_name,
+                    payout_account_number: user.payout_account_number,
+                    payout_account_name: user.payout_account_name,
+                    payout_bank_code: user.payout_bank_code,
                 },
                 tokens: {
                     accessToken,

@@ -58,9 +58,23 @@ class RiderEarningsScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Wallet Balance (Settled)', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
-                        const SizedBox(height: 8),
+                        const Text('Available for Payout', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
+                        const SizedBox(height: 4),
                         Text(CurrencyFormatter.formatWithComma(wallet.balance), style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.lock_clock_outlined, color: Colors.white70, size: 16),
+                              const SizedBox(width: 8),
+                              const Text('Upcoming Earnings: ', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                              Text(CurrencyFormatter.formatWithComma(wallet.pendingBalance), style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
                         const SizedBox(height: 24),
                         Row(
                           children: [
@@ -73,10 +87,17 @@ class RiderEarningsScreen extends StatelessWidget {
                               label: 'Deliveries', 
                               value: (summary['today_deliveries'] ?? 0).toString()
                             ),
-                            const SizedBox(width: 24),
-                            _SmallStat(
-                              label: 'Rating', 
-                              value: (summary['today_ratings'] ?? 5.0).toString()
+                            const Spacer(),
+                            ElevatedButton(
+                              onPressed: wallet.balance < 1000 ? null : () => _showWithdrawDialog(context, wallet),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: ZippaColors.primary,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                elevation: 0,
+                              ),
+                              child: const Text('Withdraw', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                             ),
                           ],
                         ),
@@ -115,6 +136,65 @@ class RiderEarningsScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  void _showWithdrawDialog(BuildContext context, WalletProvider wallet) {
+    double amount = wallet.balance;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Withdraw Funds'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Your funds will be sent to your registered bank account immediately.'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: ZippaColors.surface,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Amount:', style: TextStyle(color: ZippaColors.textSecondary)),
+                  Text(CurrencyFormatter.formatWithComma(amount), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                ],
+              ),
+            ),
+            if (wallet.error != null) ...[
+              const SizedBox(height: 12),
+              Text(wallet.error!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: wallet.isLoading ? null : () async {
+              final success = await wallet.withdraw(amount);
+              if (success && context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Withdrawal successful! Your funds are on the way.')),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ZippaColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: wallet.isLoading 
+              ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+              : const Text('Confirm'),
+          ),
+        ],
+      ),
     );
   }
 }

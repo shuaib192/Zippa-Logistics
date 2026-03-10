@@ -111,6 +111,23 @@ class ApiClient {
   }
   
   // ============================================
+  // DELETE request — Remove data from the server
+  // Example: delete('/api/products/123')
+  // ============================================
+  Future<Map<String, dynamic>> delete(String endpoint, {bool auth = true}) async {
+    try {
+      final headers = await _getHeaders(auth: auth);
+      final response = await http.delete(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: headers,
+      );
+      return _handleResponse(response);
+    } catch (e) {
+      return _handleError(e);
+    }
+  }
+  
+  // ============================================
   // Handle the server's response
   // Parse JSON and check for errors
   // ============================================

@@ -101,7 +101,7 @@ class FareSummaryScreen extends StatelessWidget {
                 children: [
                   Icon(Icons.payments_outlined, color: ZippaColors.primary),
                   SizedBox(width: 12),
-                  Text('Payment Method: Cash on Delivery', style: TextStyle(fontWeight: FontWeight.w600, color: ZippaColors.primary)),
+                  Text('Payment Method: Wallet (Escrow)', style: TextStyle(fontWeight: FontWeight.w600, color: ZippaColors.primary)),
                 ],
               ),
             ),

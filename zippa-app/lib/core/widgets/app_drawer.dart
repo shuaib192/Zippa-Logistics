@@ -19,6 +19,7 @@ class AppDrawer extends StatelessWidget {
     final navProvider = Provider.of<NavigationProvider>(context);
     final user = authProvider.user;
     final isRider = user?.role == 'rider';
+    final isVendor = user?.role == 'vendor';
 
     return Drawer(
       backgroundColor: ZippaColors.background,
@@ -56,23 +57,32 @@ class AppDrawer extends StatelessWidget {
                   label: 'My Profile',
                   onTap: () {
                     Navigator.pop(context);
-                    navProvider.setIndex(4); // Profile is index 4
+                    navProvider.setIndex(4); // Profile is index 4 for all shells
                   },
                 ),
                 _DrawerTile(
                   icon: Icons.history_rounded,
-                  label: isRider ? 'Delivery History' : 'Order History',
+                  label: isRider ? 'Delivery History' : (isVendor ? 'Store Orders' : 'Order History'),
                   onTap: () {
                     Navigator.pop(context);
-                    navProvider.setIndex(1); // Orders/Deliveries is index 1
+                    navProvider.setIndex(1); // Orders is index 1 for all shells
                   },
                 ),
+                if (isVendor)
+                  _DrawerTile(
+                    icon: Icons.inventory_2_outlined,
+                    label: 'Product Manager',
+                    onTap: () {
+                      Navigator.pop(context);
+                      navProvider.setIndex(2); // Products is index 2 for vendors
+                    },
+                  ),
                 _DrawerTile(
                   icon: Icons.account_balance_wallet_outlined,
-                  label: 'Zippa Wallet',
+                  label: isVendor ? 'Earnings & Wallet' : 'Zippa Wallet',
                   onTap: () {
                     Navigator.pop(context);
-                    navProvider.setIndex(2); // Wallet index 2
+                    navProvider.setIndex(isVendor ? 3 : 2); // Wallet is 3 for vendors, 2 for others
                   },
                 ),
                 const Divider(indent: 20, endIndent: 20),

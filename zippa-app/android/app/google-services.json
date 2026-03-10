@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "39874778249",
+    "project_id": "zippa-logistics-28e7c",
+    "storage_bucket": "zippa-logistics-28e7c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:39874778249:android:c72eed6c68f4a3ab832258",
+        "android_client_info": {
+          "package_name": "com.zippa.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC__KRPXmSm79anWOxcqtteHRxkRO_Nacc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -13,6 +13,7 @@ import 'package:zippa_app/features/customer/screens/zipbot_screen.dart';
 import 'package:zippa_app/features/rider/screens/rider_profile_screen.dart';
 import 'package:zippa_app/core/providers/navigation_provider.dart';
 import 'package:zippa_app/features/customer/providers/wallet_provider.dart';
+import 'package:zippa_app/core/providers/location_provider.dart';
 import 'package:zippa_app/core/utils/currency_formatter.dart';
 import 'package:zippa_app/features/rider/screens/rider_order_details_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -94,7 +95,8 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
     if (mounted) {
       Provider.of<OrderProvider>(context, listen: false).toggleOnline(_isOnline);
       if (_isOnline) {
-        Provider.of<OrderProvider>(context, listen: false).fetchPendingOrders();
+        Provider.of<OrderProvider>(context, listen: false).fetchOrders();
+        Provider.of<LocationProvider>(context, listen: false).startRiderTracking();
       }
     }
   }
@@ -106,9 +108,13 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
     
     if (mounted) {
       final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+      final locationProvider = Provider.of<LocationProvider>(context, listen: false);
       await orderProvider.toggleOnline(value);
       if (value) {
-        orderProvider.fetchPendingOrders();
+        orderProvider.fetchOrders();
+        locationProvider.startRiderTracking();
+      } else {
+        locationProvider.stopTracking();
       }
     }
   }
@@ -260,14 +266,14 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
             if (_isOnline)
               orderProvider.isLoading 
                 ? const Center(child: Padding(padding: EdgeInsets.only(top: 40), child: CircularProgressIndicator()))
-                : orderProvider.orders.isEmpty
+                : orderProvider.orders.where((o) => o.status == 'pending').isEmpty
                   ? _buildEmptyState()
                   : ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: orderProvider.orders.length,
+                      itemCount: orderProvider.orders.where((o) => o.status == 'pending').length,
                       itemBuilder: (context, index) {
-                        final order = orderProvider.orders[index];
+                        final order = orderProvider.orders.where((o) => o.status == 'pending').toList()[index];
                         return _OrderCard(order: order, currencyFormat: currencyFormat);
                       },
                     )

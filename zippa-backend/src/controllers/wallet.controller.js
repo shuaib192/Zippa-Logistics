@@ -97,6 +97,7 @@ const getBalance = async (req, res) => {
         res.status(200).json({ 
             success: true, 
             balance: wallet.balance,
+            pending_balance: wallet.pending_balance,
             virtual_account: wallet.virtual_account_number ? {
                 account_number: wallet.virtual_account_number,
                 bank_name: wallet.virtual_bank_name,
@@ -214,9 +215,111 @@ const refreshBalance = async (req, res) => {
     }
 };
 
+/**
+ * Request Withdrawal
+ * POST /api/wallet/withdraw
+ */
+const withdraw = async (req, res) => {
+    try {
+        const { amount } = req.body;
+        const { id: userId } = req.user;
+
+        if (!amount || amount < 1000) {
+            return res.status(400).json({ success: false, message: 'Minimum withdrawal amount is N1,000.' });
+        }
+
+        // 1. Get user's wallet and profile (for payout details)
+        const userRes = await db.query(
+            `SELECT w.id as wallet_id, w.balance, up.payout_bank_code, up.payout_account_number, up.payout_account_name, u.full_name
+             FROM wallets w
+             JOIN user_profiles up ON w.user_id = up.user_id
+             JOIN users u ON w.user_id = u.id
+             WHERE w.user_id = $1`,
+            [userId]
+        );
+
+        if (userRes.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Account details not found. Please update your payout info.' });
+        }
+
+        const user = userRes.rows[0];
+
+        // 2. Check balance
+        if (parseFloat(user.balance) < parseFloat(amount)) {
+            return res.status(400).json({ success: false, message: 'Insufficient balance.' });
+        }
+
+        if (!user.payout_bank_code || !user.payout_account_number) {
+            return res.status(400).json({ success: false, message: 'Payout bank details are missing. Please update your profile.' });
+        }
+
+        // 3. Create Transfer Recipient on Paystack
+        const recipient = await PaystackService.createTransferRecipient(
+            user.payout_account_name || user.full_name,
+            user.payout_account_number,
+            user.payout_bank_code
+        );
+
+        if (!recipient.status) {
+            return res.status(500).json({ success: false, message: 'Failed to set up transfer recipient.' });
+        }
+
+        const recipientCode = recipient.data.recipient_code;
+
+        // 4. Initiate Transfer on Paystack
+        const reference = `WDL-${Date.now()}-${userId.substring(0, 5)}`;
+        const transfer = await PaystackService.initiateTransfer(
+            amount,
+            recipientCode,
+            `Zippa Withdrawal - ${reference}`
+        );
+
+        if (!transfer.status) {
+            return res.status(500).json({ success: false, message: 'Transfer initiation failed.' });
+        }
+
+        // 5. Update Database (Atomic Transaction)
+        await db.query('BEGIN');
+        
+        // Deduct balance
+        await db.query(
+            'UPDATE wallets SET balance = balance - $1 WHERE user_id = $2',
+            [amount, userId]
+        );
+
+        // Log transaction
+        await db.query(
+            `INSERT INTO wallet_transactions (wallet_id, amount, type, description, status, reference)
+             VALUES ($1, $2, 'withdrawal', 'Withdrawal to bank account', 'completed', $3)`,
+            [user.wallet_id, -amount, reference]
+        );
+
+        // Log withdrawal
+        await db.query(
+            `INSERT INTO withdrawals (user_id, amount, status, transfer_code, recipient_code, reference, bank_name, account_number)
+             VALUES ($1, $2, 'processing', $3, $4, $5, $6, $7)`,
+            [userId, amount, transfer.data.transfer_code, recipientCode, reference, user.payout_bank_name, user.payout_account_number]
+        );
+
+        await db.query('COMMIT');
+
+        res.status(200).json({
+            success: true,
+            message: 'Withdrawal initiated successfully. Your funds will arrive shortly.',
+            data: { reference }
+        });
+
+    } catch (err) {
+        await db.query('ROLLBACK');
+        console.error('Withdrawal error:', err);
+        res.status(500).json({ success: false, message: err.message || 'Failed to process withdrawal.' });
+    }
+};
+
 module.exports = {
     getBalance,
     getTransactions,
     fundWallet,
-    refreshBalance
+    refreshBalance,
+    withdraw
 };

@@ -20,6 +20,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'firebase_options.dart';
+import 'core/services/fcm_service.dart';
 
 // Our files
 import 'core/theme/app_theme.dart';
@@ -32,7 +36,6 @@ import 'features/auth/screens/register_screen.dart';
 import 'features/customer/screens/customer_home_screen.dart';
 import 'features/customer/screens/order_create_screen.dart';
 import 'features/rider/screens/rider_home_screen.dart';
-import 'features/vendor/screens/vendor_home_screen.dart';
 import 'features/customer/screens/customer_notifications_screen.dart';
 import 'features/customer/screens/zipbot_screen.dart';
 import 'features/customer/providers/order_provider.dart';
@@ -40,13 +43,39 @@ import 'features/customer/providers/wallet_provider.dart';
 import 'features/customer/providers/notification_provider.dart';
 import 'features/customer/providers/marketplace_provider.dart';
 import 'core/providers/navigation_provider.dart';
+import 'core/providers/location_provider.dart';
+import 'features/chat/providers/chat_provider.dart';
+import 'features/vendor/providers/vendor_product_provider.dart';
+import 'features/vendor/screens/vendor_shell.dart';
+
+// ============================================
+// Background FCM Message Handler
+// ============================================
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  debugPrint("📩 Background Message: ${message.messageId}");
+}
 
 // ============================================
 // main() — The very first function that runs
 // ============================================
-void main() {
+void main() async {
   // Ensure Flutter is initialized before running
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  // Set up background message handling
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  
+  // Initialize FCM Service (Permissions & Local Notifications)
+  await FCMService.initialize();
   
   // Set the status bar style (the bar at the top with battery, time, etc.)
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
@@ -79,6 +108,9 @@ class ZippaApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => MarketplaceProvider()),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
+        ChangeNotifierProvider(create: (_) => LocationProvider()),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => VendorProductProvider()),
       ],
       child: MaterialApp(
         // App configuration
@@ -107,7 +139,7 @@ class ZippaApp extends StatelessWidget {
           '/notifications': (_) => const CustomerNotificationsScreen(),
           '/zipbot':        (_) => const ZipBotScreen(),
           '/rider-home':    (_) => const RiderHomeScreen(),
-          '/vendor-home':   (_) => const VendorHomeScreen(),
+          '/vendor-home':   (_) => const VendorShell(),
         },
       ),
     );

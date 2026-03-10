@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
+import 'package:zippa_app/core/widgets/zippa_image.dart';
 import 'package:zippa_app/features/auth/providers/auth_provider.dart';
 import 'package:zippa_app/features/customer/providers/order_provider.dart';
 import 'package:zippa_app/features/customer/screens/order_tracking_screen.dart';
@@ -580,12 +581,19 @@ class _VendorCard extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-              child: Container(
-                height: 90,
-                width: double.infinity,
-                color: ZippaColors.primary.withOpacity(0.05),
-                child: const Icon(Icons.store_rounded, color: ZippaColors.primary, size: 40),
-              ),
+              child: vendor['banner_url'] != null && vendor['banner_url'].toString().isNotEmpty
+                ? ZippaImage(
+                    imageUrl: vendor['banner_url'],
+                    width: double.infinity,
+                    height: 90,
+                    fit: BoxFit.cover,
+                  )
+                : Container(
+                    height: 90,
+                    width: double.infinity,
+                    color: ZippaColors.primary.withOpacity(0.05),
+                    child: const Icon(Icons.store_rounded, color: ZippaColors.primary, size: 40),
+                  ),
             ),
             Padding(
               padding: const EdgeInsets.all(12),

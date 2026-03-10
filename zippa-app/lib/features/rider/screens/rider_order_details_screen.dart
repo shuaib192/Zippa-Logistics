@@ -11,6 +11,7 @@ import 'package:zippa_app/features/customer/providers/order_provider.dart';
 import 'package:zippa_app/core/utils/currency_formatter.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:zippa_app/features/chat/screens/chat_screen.dart';
 
 class RiderOrderDetailsScreen extends StatefulWidget {
   final String orderId;
@@ -35,6 +36,9 @@ class _RiderOrderDetailsScreenState extends State<RiderOrderDetailsScreen> {
     final provider = Provider.of<OrderProvider>(context, listen: false);
     final order = await provider.fetchOrderDetails(widget.orderId);
     if (mounted) {
+      if (order != null) {
+        provider.fetchRoute(order.pickupLat, order.pickupLng, order.dropoffLat, order.dropoffLng);
+      }
       setState(() {
         _order = order;
         _isLoading = false;
@@ -80,6 +84,23 @@ class _RiderOrderDetailsScreenState extends State<RiderOrderDetailsScreen> {
       appBar: AppBar(
         title: Text('Order #${_order!.orderNumber ?? widget.orderId.substring(0, 8)}'),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.chat_outlined),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChatScreen(
+                    orderId: widget.orderId,
+                    recipientName: _order!.recipientName,
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
         backgroundColor: Colors.white,
         foregroundColor: ZippaColors.textPrimary,
       ),
@@ -97,6 +118,17 @@ class _RiderOrderDetailsScreenState extends State<RiderOrderDetailsScreen> {
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.zippa.app',
+                ),
+                Consumer<OrderProvider>(
+                  builder: (context, provider, child) => PolylineLayer(
+                    polylines: [
+                      Polyline(
+                        points: provider.currentRoute,
+                        color: ZippaColors.primary,
+                        strokeWidth: 4,
+                      ),
+                    ],
+                  ),
                 ),
                 MarkerLayer(
                   markers: [

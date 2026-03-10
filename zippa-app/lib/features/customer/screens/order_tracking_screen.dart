@@ -1,7 +1,4 @@
-// ============================================
-// ORDER TRACKING SCREEN (order_tracking_screen.dart)
-// ============================================
-
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
@@ -10,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/data/models/order_model.dart';
 import 'package:zippa_app/features/customer/providers/order_provider.dart';
+import 'package:zippa_app/features/chat/screens/chat_screen.dart';
 
 class OrderTrackingScreen extends StatefulWidget {
   final String orderId;
@@ -24,17 +22,39 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   final MapController _mapController = MapController();
   OrderModel? _order;
   bool _isLoading = true;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _loadOrderDetails();
+    _startPolling();
+  }
+
+  void _startPolling() {
+    _timer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (mounted && _order != null && (_order!.status == 'accepted' || _order!.status == 'picked_up')) {
+        _loadOrderDetails();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadOrderDetails() async {
     final provider = Provider.of<OrderProvider>(context, listen: false);
     final order = await provider.fetchOrderDetails(widget.orderId);
     if (mounted) {
+      if (_order == null || _order!.status != order?.status) {
+         // Fetch route if it's the first load or status changed
+         if (order != null) {
+           provider.fetchRoute(order.pickupLat, order.pickupLng, order.dropoffLat, order.dropoffLng);
+         }
+      }
       bool shouldShowRating = _order?.status != 'delivered' && order?.status == 'delivered';
       setState(() {
         _order = order;
@@ -188,6 +208,24 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
         backgroundColor: Colors.white,
         foregroundColor: ZippaColors.textPrimary,
         elevation: 0,
+        actions: [
+          if (_order!.status == 'accepted' || _order!.status == 'picked_up')
+            IconButton(
+              icon: const Icon(Icons.chat_outlined, color: ZippaColors.primary),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChatScreen(
+                      orderId: widget.orderId,
+                      recipientName: _order!.riderName ?? 'Rider',
+                    ),
+                  ),
+                );
+              },
+            ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -208,6 +246,17 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                       urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'com.zippa.app',
                     ),
+                    Consumer<OrderProvider>(
+                      builder: (context, provider, child) => PolylineLayer(
+                        polylines: [
+                          Polyline(
+                            points: provider.currentRoute,
+                            color: ZippaColors.primary,
+                            strokeWidth: 4,
+                          ),
+                        ],
+                      ),
+                    ),
                     MarkerLayer(
                       markers: [
                         Marker(
@@ -222,6 +271,29 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                           height: 40,
                           child: const Icon(Icons.flag, color: ZippaColors.accent, size: 40),
                         ),
+                        if (_order!.riderLat != null && _order!.riderLng != null)
+                          Marker(
+                            point: ll.LatLng(_order!.riderLat!, _order!.riderLng!),
+                            width: 60,
+                            height: 60,
+                            child: Column(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: ZippaColors.primary,
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                                  ),
+                                  child: const Icon(Icons.delivery_dining, color: Colors.white, size: 24),
+                                ),
+                                const CustomPaint(
+                                  size: Size(15, 10),
+                                  painter: TrianglePainter(color: ZippaColors.primary),
+                                ),
+                              ],
+                            ),
+                          ),
                       ],
                     ),
                   ],
@@ -524,9 +596,15 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
           const SizedBox(width: 8),
           IconButton(
             onPressed: () {
-               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Chat feature coming in Phase 7!')),
-              );
+               Navigator.push(
+                 context,
+                 MaterialPageRoute(
+                   builder: (context) => ChatScreen(
+                     orderId: widget.orderId,
+                     recipientName: _order!.riderName ?? 'Rider',
+                   ),
+                 ),
+               );
             },
             icon: const Icon(Icons.chat_bubble_rounded, color: ZippaColors.primary),
             style: IconButton.styleFrom(backgroundColor: Colors.white),
@@ -535,4 +613,23 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
       ),
     );
   }
+}
+
+class TrianglePainter extends CustomPainter {
+  final Color color;
+  const TrianglePainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+    final path = Path();
+    path.moveTo(0, 0);
+    path.lineTo(size.width, 0);
+    path.lineTo(size.width / 2, size.height);
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

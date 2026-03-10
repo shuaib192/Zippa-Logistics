@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/features/customer/providers/marketplace_provider.dart';
 import 'package:zippa_app/core/utils/currency_formatter.dart';
-import 'package:zippa_app/features/customer/models/product_model.dart';
+import 'package:zippa_app/data/models/product_model.dart';
+import 'package:zippa_app/core/widgets/zippa_image.dart';
 
 /// PRODUCT DETAILS SCREEN (product_details_screen.dart)
 /// Premium view for a single product with image carousel and rich info.
@@ -55,13 +56,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                     itemCount: allImages.length,
                     onPageChanged: (index) => setState(() => _currentPage = index),
                     itemBuilder: (context, index) {
-                      return Image.network(
-                        allImages[index],
+                      return ZippaImage(
+                        imageUrl: allImages[index],
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: ZippaColors.primary.withOpacity(0.05),
-                          child: const Icon(Icons.image_not_supported_rounded, color: ZippaColors.primary, size: 50),
-                        ),
                       );
                     },
                   ),

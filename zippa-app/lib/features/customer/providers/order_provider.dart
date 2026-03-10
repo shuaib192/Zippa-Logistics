@@ -5,6 +5,9 @@
 import 'package:flutter/material.dart';
 import 'package:zippa_app/data/api/api_client.dart';
 import 'package:zippa_app/data/models/order_model.dart';
+import 'package:latlong2/latlong.dart' as ll;
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class OrderProvider with ChangeNotifier {
   final ApiClient _apiClient = ApiClient();
@@ -13,6 +16,7 @@ class OrderProvider with ChangeNotifier {
   String? _error;
   List<OrderModel> _orders = [];
   Map<String, dynamic>? _lastEstimate;
+  List<ll.LatLng> _currentRoute = [];
 
   // Getters
   ApiClient get apiClient => _apiClient;
@@ -20,6 +24,7 @@ class OrderProvider with ChangeNotifier {
   String? get error => _error;
   List<OrderModel> get orders => _orders;
   Map<String, dynamic>? get lastEstimate => _lastEstimate;
+  List<ll.LatLng> get currentRoute => _currentRoute;
 
   OrderModel? get activeOrder {
     try {
@@ -145,7 +150,7 @@ class OrderProvider with ChangeNotifier {
         'package_description': _packageDescription,
         'recipient_name': _recipientName,
         'recipient_phone': _recipientPhone,
-        'payment_method': 'cash', // Default for now
+        'payment_method': 'wallet', // Strictly Escrow now
       });
 
       if (response['success'] != false && response['order'] != null) {
@@ -176,7 +181,7 @@ class OrderProvider with ChangeNotifier {
     _isLoading = true;
     _error = null;
     debugPrint('Fetching details for Order ID: $orderId');
-    notifyListeners();
+    Future.microtask(() => notifyListeners());
 
     try {
       final response = await _apiClient.get('/orders/$orderId');
@@ -184,7 +189,7 @@ class OrderProvider with ChangeNotifier {
       if (response['success'] != false && response['order'] != null) {
         final order = OrderModel.fromJson(response['order']);
         _isLoading = false;
-        notifyListeners();
+        Future.microtask(() => notifyListeners());
         return order;
       } else {
         _error = response['message'];
@@ -436,5 +441,30 @@ class OrderProvider with ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+  // ============================================
+  // API CALL: Fetch Route Polyline (OSRM)
+  // ============================================
+  Future<void> fetchRoute(double startLat, double startLng, double endLat, double endLng) async {
+    try {
+      final url = 'https://router.project-osrm.org/route/v1/driving/$startLng,$startLat;$endLng,$endLat?geometries=geojson';
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['routes'] != null && data['routes'].isNotEmpty) {
+          final List coords = data['routes'][0]['geometry']['coordinates'];
+          _currentRoute = coords.map((c) => ll.LatLng(c[1].toDouble(), c[0].toDouble())).toList();
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching route: $e');
+    }
+  }
+
+  void clearRoute() {
+    _currentRoute = [];
+    notifyListeners();
   }
 }

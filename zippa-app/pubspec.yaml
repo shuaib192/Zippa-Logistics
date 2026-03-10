@@ -53,6 +53,12 @@ dependencies:
   # --- Navigation ---
   go_router: ^14.0.0          # Advanced routing/navigation
 
+  # --- Firebase & Notifications ---
+  firebase_core: ^3.11.0
+  firebase_messaging: ^15.2.10
+  flutter_local_notifications: ^18.0.1
+  image_picker: ^1.1.2         # For product image selection
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

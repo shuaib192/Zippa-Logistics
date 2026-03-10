@@ -25,7 +25,7 @@ const getProfile = async (req, res) => {
               p.date_of_birth, p.gender, p.address, p.city, p.state,
               payout_bank_name, payout_account_number, payout_account_name, payout_bank_code,
               p.business_name, p.business_address, p.business_reg_number,
-              p.default_pickup_address,
+              p.default_pickup_address, p.banner_url,
               w.balance as wallet_balance
        FROM users u
        LEFT JOIN user_profiles p ON p.user_id = u.id
@@ -80,6 +80,7 @@ const getProfile = async (req, res) => {
                     businessAddress: profile.business_address,
                     businessRegNumber: profile.business_reg_number,
                     defaultPickupAddress: profile.default_pickup_address,
+                    bannerUrl: profile.banner_url,
                 },
                 memberSince: profile.created_at,
             },
@@ -107,6 +108,7 @@ const updateProfile = async (req, res) => {
             vehicleType, vehiclePlate, guarantorName, guarantorPhone,
             payoutBankName, payoutAccountNumber, payoutAccountName, payoutBankCode,
             businessName, businessAddress, businessRegNumber, defaultPickupAddress,
+            bannerUrl,
         } = req.body;
 
         // Update user table fields
@@ -159,6 +161,7 @@ const updateProfile = async (req, res) => {
             business_address: businessAddress,
             business_reg_number: businessRegNumber,
             default_pickup_address: defaultPickupAddress,
+            banner_url: bannerUrl,
         };
 
         for (const [key, value] of Object.entries(profileFields)) {
@@ -272,4 +275,38 @@ const toggleOnline = async (req, res) => {
     }
 };
 
-module.exports = { getProfile, updateProfile, changePassword, toggleOnline };
+const updateLocation = async (req, res) => {
+    try {
+        const { latitude, longitude } = req.body;
+        
+        await db.query(
+            `UPDATE user_profiles 
+             SET current_latitude = $1, current_longitude = $2, last_location_update = CURRENT_TIMESTAMP 
+             WHERE user_id = $3`,
+            [latitude, longitude, req.user.id]
+        );
+
+        res.status(200).json({ success: true, message: 'Location updated.' });
+    } catch (err) {
+        console.error('Update location error:', err);
+        res.status(500).json({ success: false, message: 'Failed to update location.' });
+    }
+};
+
+const updateFcmToken = async (req, res) => {
+    try {
+        const { token } = req.body;
+        
+        await db.query(
+            'UPDATE users SET fcm_token = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+            [token, req.user.id]
+        );
+
+        res.status(200).json({ success: true, message: 'FCM token updated.' });
+    } catch (err) {
+        console.error('Update FCM token error:', err);
+        res.status(500).json({ success: false, message: 'Failed to update FCM token.' });
+    }
+};
+
+module.exports = { getProfile, updateProfile, changePassword, toggleOnline, updateLocation, updateFcmToken };

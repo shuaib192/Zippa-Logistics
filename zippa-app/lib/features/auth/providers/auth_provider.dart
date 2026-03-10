@@ -25,6 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zippa_app/data/api/api_client.dart';
 import 'package:zippa_app/core/constants/app_constants.dart';
+import 'package:zippa_app/core/services/fcm_service.dart';
 
 // User model — represents a logged-in user
 class User {
@@ -34,6 +35,8 @@ class User {
   final String fullName;
   final String role;
   final String kycStatus;
+  final bool isOnline;
+  final String? avatarUrl;
   
   // Rider-specific fields
   final String? vehicleType;
@@ -41,6 +44,13 @@ class User {
   final String? payoutBankName;
   final String? payoutAccountNumber;
   final String? payoutAccountName;
+  final String? bannerUrl;
+  
+  // Vendor-specific fields
+  final String? businessName;
+  final String? businessAddress;
+  final String? businessRegNumber;
+  final String? defaultPickupAddress;
   
   User({
     required this.id,
@@ -49,15 +59,25 @@ class User {
     required this.fullName,
     required this.role,
     required this.kycStatus,
+    this.isOnline = false,
+    this.avatarUrl,
     this.vehicleType,
     this.vehiclePlate,
     this.payoutBankName,
     this.payoutAccountNumber,
     this.payoutAccountName,
+    this.bannerUrl,
+    this.businessName,
+    this.businessAddress,
+    this.businessRegNumber,
+    this.defaultPickupAddress,
   });
   
   // Factory constructor — creates a User from JSON (API response)
   factory User.fromJson(Map<String, dynamic> json) {
+    // Backend returns nested profile for some endpoints, flat for others
+    final profile = json['profile'] ?? {};
+    
     return User(
       id: json['id'] ?? '',
       email: json['email'],
@@ -65,11 +85,18 @@ class User {
       fullName: json['fullName'] ?? json['full_name'] ?? '',
       role: json['role'] ?? 'customer',
       kycStatus: json['kycStatus'] ?? json['kyc_status'] ?? 'unverified',
-      vehicleType: json['vehicle_type'],
-      vehiclePlate: json['vehicle_plate'],
-      payoutBankName: json['payout_bank_name'],
-      payoutAccountNumber: json['payout_account_number'],
-      payoutAccountName: json['payout_account_name'],
+      isOnline: json['isOnline'] ?? json['is_online'] ?? false,
+      avatarUrl: json['avatarUrl'] ?? json['avatar_url'],
+      vehicleType: json['vehicle_type'] ?? profile['vehicleType'],
+      vehiclePlate: json['vehicle_plate'] ?? profile['vehiclePlate'],
+      payoutBankName: json['payout_bank_name'] ?? profile['payoutBankName'],
+      payoutAccountNumber: json['payout_account_number'] ?? profile['payoutAccountNumber'],
+      payoutAccountName: json['payout_account_name'] ?? profile['payoutAccountName'],
+      bannerUrl: json['banner_url'] ?? profile['bannerUrl'],
+      businessName: json['business_name'] ?? profile['businessName'],
+      businessAddress: json['business_address'] ?? profile['businessAddress'],
+      businessRegNumber: json['business_reg_number'] ?? profile['businessRegNumber'],
+      defaultPickupAddress: json['default_pickup_address'] ?? profile['defaultPickupAddress'],
     );
   }
   
@@ -81,11 +108,18 @@ class User {
     'fullName': fullName,
     'role': role,
     'kycStatus': kycStatus,
+    'isOnline': isOnline,
+    'avatar_url': avatarUrl,
     'vehicle_type': vehicleType,
     'vehicle_plate': vehiclePlate,
     'payout_bank_name': payoutBankName,
     'payout_account_number': payoutAccountNumber,
     'payout_account_name': payoutAccountName,
+    'banner_url': bannerUrl,
+    'business_name': businessName,
+    'business_address': businessAddress,
+    'business_reg_number': businessRegNumber,
+    'default_pickup_address': defaultPickupAddress,
   };
 }
 
@@ -122,6 +156,10 @@ class AuthProvider extends ChangeNotifier {
       if (token != null && userData != null) {
         _user = User.fromJson(jsonDecode(userData));
         _isAuthenticated = true;
+        
+        // Sync FCM Token
+        FCMService.syncToken();
+        
         notifyListeners();  // Tell all listeners "auth status changed!"
         return true;
       }
@@ -157,6 +195,10 @@ class AuthProvider extends ChangeNotifier {
       if (response['success'] == true) {
         // Save tokens and user data locally
         await _saveAuthData(response['data']);
+        
+        // Sync FCM Token
+        FCMService.syncToken();
+        
         _isLoading = false;
         notifyListeners();
         return true;
@@ -193,6 +235,10 @@ class AuthProvider extends ChangeNotifier {
       
       if (response['success'] == true) {
         await _saveAuthData(response['data']);
+        
+        // Sync FCM Token
+        FCMService.syncToken();
+        
         _isLoading = false;
         notifyListeners();
         return true;
@@ -257,14 +303,14 @@ class AuthProvider extends ChangeNotifier {
     try {
       final response = await _api.get('/users/profile');
       
-      if (response['success'] == true && response['user'] != null) {
+      if (response['success'] == true && response['data'] != null) {
         // Prepare the save data (needs the existing tokens)
         final prefs = await SharedPreferences.getInstance();
         final token = prefs.getString(AppConstants.tokenKey);
         final refreshToken = prefs.getString(AppConstants.refreshTokenKey);
         
         await _saveAuthData({
-          'user': response['user'],
+          'user': response['data'],
           'tokens': {
             'accessToken': token,
             'refreshToken': refreshToken,

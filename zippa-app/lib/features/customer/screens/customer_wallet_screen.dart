@@ -6,6 +6,8 @@ import 'package:zippa_app/features/customer/providers/wallet_provider.dart';
 import 'package:zippa_app/core/utils/currency_formatter.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:zippa_app/features/auth/providers/auth_provider.dart' as zippa_auth;
+import 'package:zippa_app/core/providers/navigation_provider.dart';
 
 class CustomerWalletScreen extends StatefulWidget {
   const CustomerWalletScreen({super.key});
@@ -61,32 +63,43 @@ class _CustomerWalletScreenState extends State<CustomerWalletScreen> {
                         style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)
                       ),
                       const SizedBox(height: 24),
-                      Row(
-                        children: [
-                          _ActionBtn(
-                            icon: Icons.add, 
-                            label: 'Add Money',
-                            onTap: () => _showFundDialog(context, wallet),
-                          ),
-                          const SizedBox(width: 16),
-                          _ActionBtn(
-                            icon: Icons.refresh_rounded, 
-                            label: 'Refresh',
-                            onTap: () async {
-                              final scaffoldMessenger = ScaffoldMessenger.of(context);
-                              await wallet.refreshBalance();
-                              if (wallet.error != null) {
-                                scaffoldMessenger.showSnackBar(
-                                  SnackBar(content: Text(wallet.error!)),
-                                );
-                              } else {
-                                scaffoldMessenger.showSnackBar(
-                                  const SnackBar(content: Text('Balance refresh requested!')),
-                                );
-                              }
-                            },
-                          ),
-                        ],
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _ActionBtn(
+                              icon: Icons.add, 
+                              label: 'Add Money',
+                              onTap: () => _showFundDialog(context, wallet),
+                            ),
+                            const SizedBox(width: 16),
+                            _ActionBtn(
+                              icon: Icons.refresh_rounded, 
+                              label: 'Refresh',
+                              onTap: () async {
+                                final scaffoldMessenger = ScaffoldMessenger.of(context);
+                                await wallet.refreshBalance();
+                                if (wallet.error != null) {
+                                  scaffoldMessenger.showSnackBar(
+                                    SnackBar(content: Text(wallet.error!)),
+                                  );
+                                } else {
+                                  scaffoldMessenger.showSnackBar(
+                                    const SnackBar(content: Text('Balance refresh requested!')),
+                                  );
+                                }
+                              },
+                            ),
+                            if (Provider.of<zippa_auth.AuthProvider>(context, listen: false).user?.role != 'customer') ...[
+                              const SizedBox(width: 16),
+                              _ActionBtn(
+                                icon: Icons.account_balance_rounded, 
+                                label: 'Withdraw',
+                                onTap: () => _showWithdrawDialog(context, wallet),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -198,6 +211,194 @@ class _CustomerWalletScreenState extends State<CustomerWalletScreen> {
           ),
         );
       },
+    );
+  }
+
+  void _showWithdrawDialog(BuildContext context, WalletProvider wallet) {
+    final user = Provider.of<zippa_auth.AuthProvider>(context, listen: false).user;
+    final controller = TextEditingController(text: wallet.balance.toStringAsFixed(0));
+    
+    // Check if payout details are set
+    if (user?.payoutAccountNumber == null || user!.payoutAccountNumber!.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Bank Details Required'),
+          content: const Text('Please set up your bank account details in your profile before making a withdrawal.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Provider.of<NavigationProvider>(context, listen: false).setIndex(4);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ZippaColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Go to Profile'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+            top: 24,
+            left: 24,
+            right: 24,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withAlpha(50),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Withdraw Funds', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                    child: Text(
+                      'Balance: ${CurrencyFormatter.formatWithComma(wallet.balance)}',
+                      style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text('Transfer funds from your Zippa wallet to your bank account.', style: TextStyle(color: ZippaColors.textSecondary, fontSize: 13)),
+              
+              const SizedBox(height: 24),
+              const Text('Destination Account', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: ZippaColors.primary)),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: ZippaColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: ZippaColors.primary.withAlpha(30)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(color: ZippaColors.primary.withOpacity(0.1), shape: BoxShape.circle),
+                      child: const Icon(Icons.account_balance_rounded, color: ZippaColors.primary, size: 20),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(user.payoutAccountName ?? 'Account Name', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          Text('${user.payoutBankName} • ${user.payoutAccountNumber}', style: const TextStyle(color: ZippaColors.textSecondary, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Withdrawal Amount', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: ZippaColors.primary)),
+                  GestureDetector(
+                    onTap: () => controller.text = wallet.balance.toStringAsFixed(0),
+                    child: const Text('Withdraw All', style: TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                decoration: InputDecoration(
+                  prefixText: '₦ ',
+                  prefixStyle: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary),
+                  filled: true,
+                  fillColor: ZippaColors.surface.withAlpha(50),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text('Minimum withdrawal is ₦1,000', style: TextStyle(color: Colors.grey, fontSize: 11)),
+
+              if (wallet.error != null) ...[
+                const SizedBox(height: 16),
+                Text(wallet.error!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+              ],
+
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: wallet.isLoading ? null : () async {
+                    final amount = double.tryParse(controller.text);
+                    if (amount == null || amount < 1000) {
+                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Minimum withdrawal is ₦1,000')));
+                       return;
+                    }
+                    if (amount > wallet.balance) {
+                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Insufficient balance')));
+                       return;
+                    }
+
+                    final success = await wallet.withdraw(amount);
+                    if (success && context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Withdrawal successful! Your funds are on the way.')),
+                      );
+                    }
+                    if (!success && context.mounted) {
+                      setModalState(() {}); // Refresh to show error
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ZippaColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                  child: wallet.isLoading 
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Confirm Withdrawal', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

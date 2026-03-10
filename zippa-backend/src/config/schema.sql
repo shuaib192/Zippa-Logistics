@@ -57,6 +57,9 @@ CREATE TABLE IF NOT EXISTS users (
     
     is_active       BOOLEAN DEFAULT true,
     -- Can disable a user without deleting their data
+
+    fcm_token       TEXT,
+    -- Firebase Cloud Messaging token for push notifications
     
     is_online       BOOLEAN DEFAULT false,
     -- For riders: shows if they're available for deliveries
@@ -220,7 +223,7 @@ CREATE TABLE IF NOT EXISTS orders (
         'cash', 'card', 'wallet', 'bank_transfer'
     )),
     CONSTRAINT valid_payment_status CHECK (payment_status IN (
-        'pending', 'paid', 'failed', 'refunded'
+        'pending', 'paid', 'failed', 'refunded', 'held', 'released'
     ))
 );
 
@@ -234,6 +237,8 @@ CREATE TABLE IF NOT EXISTS wallets (
     user_id     UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     balance     DECIMAL(15, 2) DEFAULT 0.00,
     -- Balance in Nigerian Naira
+    pending_balance DECIMAL(15, 2) DEFAULT 0.00,
+    -- Funds held in escrow (upcoming earnings)
     currency    VARCHAR(3) DEFAULT 'NGN',
     is_locked   BOOLEAN DEFAULT false,
     
@@ -479,3 +484,39 @@ CREATE TABLE IF NOT EXISTS products (
 
 CREATE INDEX IF NOT EXISTS idx_products_vendor ON products(vendor_id);
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
+
+-- =============================================
+-- TABLE 15: order_chat_messages
+-- Real-time chat between Rider and Customer for a specific order.
+-- =============================================
+CREATE TABLE IF NOT EXISTS order_chat_messages (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id        UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    sender_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    message         TEXT NOT NULL,
+    is_read         BOOLEAN DEFAULT false,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_order_chat_order ON order_chat_messages(order_id);
+
+-- =============================================
+-- TABLE 16: withdrawals
+-- Tracks payout requests from vendors and riders.
+-- =============================================
+CREATE TABLE IF NOT EXISTS withdrawals (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    amount          DECIMAL(12, 2) NOT NULL,
+    status          VARCHAR(20) DEFAULT 'pending', -- 'pending', 'processing', 'completed', 'failed'
+    transfer_code   VARCHAR(100), -- From Paystack
+    recipient_code  VARCHAR(100), -- From Paystack
+    reference       VARCHAR(100) UNIQUE,
+    bank_name       VARCHAR(100),
+    account_number  VARCHAR(20),
+    failure_reason  TEXT,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_withdrawals_user ON withdrawals(user_id);

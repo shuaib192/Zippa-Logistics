@@ -5,6 +5,7 @@ class WalletProvider with ChangeNotifier {
   final ApiClient _apiClient = ApiClient();
 
   double _balance = 0.0;
+  double _pendingBalance = 0.0;
   Map<String, dynamic>? _virtualAccount;
   Map<String, dynamic>? _summary;
   String? _virtualAccountMessage;
@@ -13,6 +14,7 @@ class WalletProvider with ChangeNotifier {
   String? _error;
 
   double get balance => _balance;
+  double get pendingBalance => _pendingBalance;
   Map<String, dynamic>? get virtualAccount => _virtualAccount;
   Map<String, dynamic>? get summary => _summary;
   String? get virtualAccountMessage => _virtualAccountMessage;
@@ -32,6 +34,7 @@ class WalletProvider with ChangeNotifier {
       final response = await _apiClient.get('/wallet/balance');
       if (response['success'] != false) {
         _balance = double.tryParse(response['balance']?.toString() ?? '0') ?? 0.0;
+        _pendingBalance = double.tryParse(response['pending_balance']?.toString() ?? '0') ?? 0.0;
         _virtualAccount = response['virtual_account'] != null 
             ? Map<String, dynamic>.from(response['virtual_account']) 
             : null;
@@ -120,6 +123,33 @@ class WalletProvider with ChangeNotifier {
       await fetchTransactions();
     } catch (e) {
       _error = 'Failed to refresh balance. Try again later.';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // ============================================
+  // API CALL: Request Withdrawal
+  // ============================================
+  Future<bool> withdraw(double amount) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.post('/wallet/withdraw', {'amount': amount});
+      if (response['success'] != false) {
+        await fetchBalance();
+        await fetchTransactions();
+        return true;
+      } else {
+        _error = response['message'] ?? 'Withdrawal failed. Check your bank details.';
+        return false;
+      }
+    } catch (e) {
+      _error = 'Connection error. Please try again.';
+      return false;
     } finally {
       _isLoading = false;
       notifyListeners();
