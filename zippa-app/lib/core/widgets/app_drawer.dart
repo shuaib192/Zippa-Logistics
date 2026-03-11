@@ -7,8 +7,6 @@ import 'package:provider/provider.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/features/auth/providers/auth_provider.dart';
 import 'package:zippa_app/core/providers/navigation_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:zippa_app/core/constants/app_constants.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -108,7 +106,6 @@ class AppDrawer extends StatelessWidget {
                       applicationIcon: const Icon(Icons.local_shipping_rounded, color: ZippaColors.primary),
                     );
                   },
-                ),
                 ),
               ],
             ),

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/data/api/api_client.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:zippa_app/core/constants/app_constants.dart';
 
 class ZipBotScreen extends StatefulWidget {
   const ZipBotScreen({super.key});

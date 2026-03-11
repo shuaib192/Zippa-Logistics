@@ -624,50 +624,60 @@ const confirmOrderDelivery = async (req, res) => {
         // A. Payout to VENDOR (Item Price)
         if (order.vendor_id && parseFloat(order.item_price) > 0) {
             // Get or create vendor wallet
-            let vendorWallet = await client.query('SELECT id FROM wallets WHERE user_id = $1', [order.vendor_id]);
-            let vwId;
+            let vendorWallet = await client.query('SELECT id, balance FROM wallets WHERE user_id = $1', [order.vendor_id]);
+            let vwId, vBalanceBefore;
             if (vendorWallet.rows.length === 0) {
-                const newW = await client.query('INSERT INTO wallets (user_id, balance) VALUES ($1, 0) RETURNING id', [order.vendor_id]);
+                const newW = await client.query('INSERT INTO wallets (user_id, balance) VALUES ($1, 0) RETURNING id, balance', [order.vendor_id]);
                 vwId = newW.rows[0].id;
+                vBalanceBefore = parseFloat(newW.rows[0].balance);
             } else {
                 vwId = vendorWallet.rows[0].id;
+                vBalanceBefore = parseFloat(vendorWallet.rows[0].balance);
             }
+
+            const itemPrice = parseFloat(order.item_price);
+            const vBalanceAfter = vBalanceBefore + itemPrice;
 
             // Credit vendor wallet (Move from Pending to Available)
             const vRef = `PYO-V-${order.order_number}`;
             await client.query(
-                'UPDATE wallets SET balance = balance + $1, pending_balance = pending_balance - $1, updated_at = NOW() WHERE id = $2',
-                [order.item_price, vwId]
+                'UPDATE wallets SET balance = $1, pending_balance = pending_balance - $2, updated_at = NOW() WHERE id = $3',
+                [vBalanceAfter, itemPrice, vwId]
             );
             await client.query(
-                `INSERT INTO wallet_transactions (wallet_id, type, amount, reference, description, status) 
-                 VALUES ($1, 'credit', $2, $3, $4, 'completed')`,
-                [vwId, order.item_price, vRef, `Marketplace payout for order #${order.order_number}`]
+                `INSERT INTO wallet_transactions (wallet_id, type, amount, balance_before, balance_after, reference, description, status) 
+                 VALUES ($1, 'credit', $2, $3, $4, $5, $6, 'completed')`,
+                [vwId, itemPrice, vBalanceBefore, vBalanceAfter, vRef, `Marketplace payout for order #${order.order_number}`]
             );
         }
 
         // B. Payout to RIDER (Rider Earning)
         if (order.rider_id && parseFloat(order.rider_earning) > 0) {
             // Get or create rider wallet
-            let riderWallet = await client.query('SELECT id FROM wallets WHERE user_id = $1', [order.rider_id]);
-            let rwId;
+            let riderWallet = await client.query('SELECT id, balance FROM wallets WHERE user_id = $1', [order.rider_id]);
+            let rwId, rBalanceBefore;
             if (riderWallet.rows.length === 0) {
-                const newW = await client.query('INSERT INTO wallets (user_id, balance) VALUES ($1, 0) RETURNING id', [order.rider_id]);
+                const newW = await client.query('INSERT INTO wallets (user_id, balance) VALUES ($1, 0) RETURNING id, balance', [order.rider_id]);
                 rwId = newW.rows[0].id;
+                rBalanceBefore = parseFloat(newW.rows[0].balance);
             } else {
                 rwId = riderWallet.rows[0].id;
+                rBalanceBefore = parseFloat(riderWallet.rows[0].balance);
             }
+
+            const riderEarning = parseFloat(order.rider_earning);
+            const rBalanceAfter = rBalanceBefore + riderEarning;
 
             // Credit rider wallet (Move from Pending to Available)
             const rRef = `PYO-R-${order.order_number}`;
             await client.query(
-                'UPDATE wallets SET balance = balance + $1, pending_balance = pending_balance - $1, updated_at = NOW() WHERE id = $2',
-                [order.rider_earning, rwId]
+                'UPDATE wallets SET balance = $1, pending_balance = pending_balance - $2, updated_at = NOW() WHERE id = $3',
+                [rBalanceAfter, riderEarning, rwId]
             );
             await client.query(
-                `INSERT INTO wallet_transactions (wallet_id, type, amount, reference, description, status) 
-                 VALUES ($1, 'credit', $2, $3, $4, 'completed')`,
-                [rwId, order.rider_earning, rRef, `Delivery earning for order #${order.order_number}`]
+                `INSERT INTO wallet_transactions (wallet_id, type, amount, balance_before, balance_after, reference, description, status) 
+                 VALUES ($1, 'credit', $2, $3, $4, $5, $6, 'completed')`,
+                [rwId, riderEarning, rBalanceBefore, rBalanceAfter, rRef, `Delivery earning for order #${order.order_number}`]
             );
         }
 
