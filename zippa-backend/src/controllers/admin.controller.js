@@ -101,12 +101,6 @@ const updateKYCStatus = async (req, res) => {
             [status, id]
         );
 
-        // Log to audit logs (if we have it, otherwise just proceed)
-        await db.query(
-            'INSERT INTO audit_logs (user_id, action, resource, resource_id, details) VALUES ($1, $2, $3, $4, $5)',
-            [req.user.id, 'kyc_update', 'users', id, JSON.stringify({ status, admin_notes })]
-        ).catch(e => console.log('Audit log failed, skipping...'));
-
         res.status(200).json({ success: true, message: `KYC status updated to ${status}` });
     } catch (err) {
         console.error('KYC update error:', err);
@@ -114,8 +108,72 @@ const updateKYCStatus = async (req, res) => {
     }
 };
 
+/**
+ * List all orders with filtering
+ */
+const getAllOrders = async (req, res) => {
+    const { status, search } = req.query;
+    try {
+        let query = `
+            SELECT o.*, u.full_name as customer_name, r.full_name as rider_name 
+            FROM orders o 
+            LEFT JOIN users u ON o.customer_id = u.id 
+            LEFT JOIN users r ON o.rider_id = r.id 
+            WHERE 1=1
+        `;
+        const params = [];
+
+        if (status) {
+            params.push(status);
+            query += ` AND o.status = $${params.length}`;
+        }
+        if (search) {
+            params.push(`%${search}%`);
+            query += ` AND (o.order_number ILIKE $${params.length} OR u.full_name ILIKE $${params.length})`;
+        }
+
+        query += ' ORDER BY o.created_at DESC';
+        const result = await db.query(query, params);
+        res.status(200).json({ success: true, orders: result.rows });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to fetch orders.' });
+    }
+};
+
+/**
+ * Manage Vendor Categories
+ */
+const getCategories = async (req, res) => {
+    try {
+        const result = await db.query('SELECT * FROM vendor_categories ORDER BY name ASC');
+        res.status(200).json({ success: true, categories: result.rows });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to fetch categories.' });
+    }
+};
+
+/**
+ * Withdrawal Requests
+ */
+const getWithdrawals = async (req, res) => {
+    try {
+        const result = await db.query(
+            `SELECT w.*, u.full_name, u.email 
+             FROM withdrawals w 
+             JOIN users u ON w.user_id = u.id 
+             ORDER BY w.created_at DESC`
+        );
+        res.status(200).json({ success: true, withdrawals: result.rows });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to fetch withdrawals.' });
+    }
+};
+
 module.exports = {
     getDashboardStats,
     getAllUsers,
-    updateKYCStatus
+    updateKYCStatus,
+    getAllOrders,
+    getCategories,
+    getWithdrawals
 };

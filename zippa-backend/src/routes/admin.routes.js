@@ -14,4 +14,13 @@ router.get('/stats', adminController.getDashboardStats);
 router.get('/users', adminController.getAllUsers);
 router.put('/users/:id/kyc', adminController.updateKYCStatus);
 
+// Order Management
+router.get('/orders', adminController.getAllOrders);
+
+// Category Management
+router.get('/categories', adminController.getCategories);
+
+// Withdrawals
+router.get('/withdrawals', adminController.getWithdrawals);
+
 module.exports = router;

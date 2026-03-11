@@ -136,11 +136,269 @@ const routes = {
         `;
         lucide.createIcons();
     },
-    'users': () => {
-        document.getElementById('page-content').innerHTML = '<h1 class="page-title">User Management</h1><p>Feature coming soon...</p>';
+    'users': async () => {
+        const content = document.getElementById('page-content');
+        content.innerHTML = '<div class="loading-state"><div class="spinner"></div><span>Loading Users...</span></div>';
+        
+        const data = await api.get('/admin/users');
+        if (!data || !data.success) return;
+
+        content.innerHTML = `
+            <div class="header-row">
+                <h1 class="page-title">User Management</h1>
+                <div class="filter-group">
+                    <select id="role-filter"><option value="">All Roles</option><option value="customer">Customer</option><option value="rider">Rider</option><option value="vendor">Vendor</option></select>
+                </div>
+            </div>
+            <div class="card">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Phone</th>
+                            <th>KYC Status</th>
+                            <th>Joined</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.users.map(user => `
+                            <tr>
+                                <td>
+                                    <div class="user-cell">
+                                        <div class="initials">${user.full_name?.[0] || 'U'}</div>
+                                        <div class="details">
+                                            <span>${user.full_name}</span>
+                                            <small>${user.email}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="role-badge ${user.role}">${user.role}</span></td>
+                                <td>${user.phone || 'N/A'}</td>
+                                <td><span class="kyc-badge ${user.kyc_status}">${user.kyc_status}</span></td>
+                                <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                                <td><button class="icon-btn small"><i data-lucide="edit-3"></i></button></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+        lucide.createIcons();
     },
-    'orders': () => {
-        document.getElementById('page-content').innerHTML = '<h1 class="page-title">Order Management</h1><p>Feature coming soon...</p>';
+    'orders': async () => {
+        const content = document.getElementById('page-content');
+        content.innerHTML = '<div class="loading-state"><div class="spinner"></div><span>Loading Orders...</span></div>';
+        
+        const data = await api.get('/admin/orders');
+        if (!data || !data.success) return;
+
+        content.innerHTML = `
+            <h1 class="page-title">Order Management</h1>
+            <div class="card">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Order #</th>
+                            <th>Customer</th>
+                            <th>Rider</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.orders.map(order => `
+                            <tr>
+                                <td>#${order.order_number}</td>
+                                <td>${order.customer_name}</td>
+                                <td>${order.rider_name || '<i>Assigning...</i>'}</td>
+                                <td>₦${parseFloat(order.total_fare).toLocaleString()}</td>
+                                <td><span class="badge ${order.status}">${order.status}</span></td>
+                                <td>${new Date(order.created_at).toLocaleDateString()}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+        lucide.createIcons();
+    },
+    'finance': async () => {
+        const content = document.getElementById('page-content');
+        content.innerHTML = '<div class="loading-state"><div class="spinner"></div><span>Loading Financials...</span></div>';
+        
+        const data = await api.get('/admin/withdrawals');
+        if (!data || !data.success) return;
+
+        content.innerHTML = `
+            <h1 class="page-title">Financial Review</h1>
+            <div class="card">
+                <div class="card-header"><h2>Pending Withdrawals</h2></div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Amount</th>
+                            <th>Bank</th>
+                            <th>Account</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.withdrawals.map(w => `
+                            <tr>
+                                <td>${w.full_name}</td>
+                                <td>₦${parseFloat(w.amount).toLocaleString()}</td>
+                                <td>${w.bank_name || 'N/A'}</td>
+                                <td>${w.account_number || 'N/A'}</td>
+                                <td><span class="badge ${w.status}">${w.status}</span></td>
+                                <td><button class="btn-primary small">Review</button></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+        lucide.createIcons();
+    },
+    'categories': async () => {
+        const content = document.getElementById('page-content');
+        content.innerHTML = '<div class="loading-state"><div class="spinner"></div><span>Loading Categories...</span></div>';
+        
+        const data = await api.get('/admin/categories');
+        if (!data || !data.success) return;
+
+        content.innerHTML = `
+            <div class="header-row">
+                <h1 class="page-title">Marketplace Categories</h1>
+                <button class="btn-primary small">+ Add New</button>
+            </div>
+            <div class="grid-3">
+                ${data.categories.map(cat => `
+                    <div class="card cat-card">
+                        <img src="${cat.image_url || '/placeholder.png'}" class="cat-img">
+                        <div class="cat-info">
+                            <h3>${cat.name}</h3>
+                            <div class="cat-actions">
+                                <button class="icon-btn small"><i data-lucide="edit-2"></i></button>
+                                <button class="icon-btn small delete"><i data-lucide="trash-2"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        lucide.createIcons();
+    },
+    'kyc': async () => {
+        const content = document.getElementById('page-content');
+        content.innerHTML = '<div class="loading-state"><div class="spinner"></div><span>Loading KYC Requests...</span></div>';
+        
+        const data = await api.get('/admin/users?kyc_status=pending');
+        if (!data || !data.success) return;
+
+        content.innerHTML = `
+            <h1 class="page-title">KYC Review Queue</h1>
+            <div class="card">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Document Type</th>
+                            <th>Submitted</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.users.map(user => `
+                            <tr>
+                                <td>${user.full_name} (${user.email})</td>
+                                <td>${user.role}</td>
+                                <td>Government ID</td>
+                                <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                                <td>
+                                    <button class="btn-primary small" onclick="reviewKYC('${user.id}', 'verified')">Approve</button>
+                                    <button class="btn-primary small secondary" onclick="reviewKYC('${user.id}', 'rejected')">Reject</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                        ${data.users.length === 0 ? '<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-secondary);">No pending KYC requests</td></tr>' : ''}
+                    </tbody>
+                </table>
+            </div>
+        `;
+        lucide.createIcons();
+        window.reviewKYC = async (id, status) => {
+            if (!confirm(`Are you sure you want to mark this user as ${status}?`)) return;
+            const res = await api.put(`/admin/users/${id}/kyc`, { status });
+            if (res.success) routes.kyc();
+        };
+    },
+    'settings': () => {
+        document.getElementById('page-content').innerHTML = `
+            <div class="header-row">
+                <h1 class="page-title">System Settings</h1>
+                <div class="tab-group">
+                    <button class="tab active">General</button>
+                    <button class="tab" onclick="routes.notify()">Notifications</button>
+                </div>
+            </div>
+            <div class="card settings-card">
+                <div class="setting-item">
+                    <div class="info">
+                        <h3>Service Fee</h3>
+                        <p>Platform percentage commission on every delivery</p>
+                    </div>
+                    <div class="action"><input type="number" value="10"> %</div>
+                </div>
+                <div class="setting-item">
+                    <div class="info">
+                        <h3>Minimum Withdrawal</h3>
+                        <p>Lowest amount riders/vendors can withdraw</p>
+                    </div>
+                    <div class="action">₦ <input type="number" value="1000"></div>
+                </div>
+                <div class="setting-item">
+                    <div class="info">
+                        <h3>Surge Multiplier</h3>
+                        <p>Global multiplier for delivery fares</p>
+                    </div>
+                    <div class="action"><input type="number" value="1.0" step="0.1"> x</div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn-primary">Save Changes</button>
+                </div>
+            </div>
+        `;
+        lucide.createIcons();
+    },
+    'notify': () => {
+        document.getElementById('page-content').innerHTML = `
+            <h1 class="page-title">Push Notification Center</h1>
+            <div class="card settings-card">
+                <div class="card-header"><h2>Broadcast Message</h2></div>
+                <div class="p-24">
+                    <div class="form-group">
+                        <label>Target Audience</label>
+                        <select class="form-select"><option>All Users</option><option>Customers Only</option><option>Riders Only</option><option>Vendors Only</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input type="text" placeholder="e.g. Weekend Promo!">
+                    </div>
+                    <div class="form-group">
+                        <label>Message Content</label>
+                        <textarea rows="4" placeholder="Type your notification message here..."></textarea>
+                    </div>
+                    <button class="btn-primary">Send Broadcast Now</button>
+                </div>
+            </div>
+        `;
+        lucide.createIcons();
     }
 };
 
