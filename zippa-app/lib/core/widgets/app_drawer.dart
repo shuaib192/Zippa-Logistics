@@ -109,20 +109,6 @@ class AppDrawer extends StatelessWidget {
                     );
                   },
                 ),
-                const Divider(indent: 20, endIndent: 20),
-                ListTile(
-                  leading: const Icon(Icons.chat_bubble_rounded, color: Color(0xFF25D366)),
-                  title: const Text(
-                    'Book on WhatsApp',
-                    style: TextStyle(color: Color(0xFF25D366), fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  onTap: () async {
-                    Navigator.pop(context);
-                    final Uri whatsappUri = Uri.parse("https://wa.me/${AppConstants.whatsappNumber}?text=Hello ZipBot, I want to send a package.");
-                    if (await canLaunchUrl(whatsappUri)) {
-                      await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
-                    }
-                  },
                 ),
               ],
             ),

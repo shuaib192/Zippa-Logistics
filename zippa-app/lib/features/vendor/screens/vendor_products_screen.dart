@@ -121,13 +121,15 @@ class _VendorProductsScreenState extends State<VendorProductsScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
-                  Row(
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 4,
                     children: [
                       Text(
                         CurrencyFormatter.formatWithComma(product.price),
                         style: const TextStyle(fontWeight: FontWeight.bold, color: ZippaColors.primary, fontSize: 16),
                       ),
-                      const SizedBox(width: 8),
                       if (product.stockQuantity > 0)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

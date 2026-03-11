@@ -75,31 +75,6 @@ class _ZipBotScreenState extends State<ZipBotScreen> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: const Color(0xFF25D366).withOpacity(0.1),
-          child: Row(
-            children: [
-              const Icon(Icons.chat_rounded, color: Color(0xFF25D366), size: 20),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text(
-                  'Prefer WhatsApp booking?',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF25D366)),
-                ),
-              ),
-              TextButton(
-                onPressed: () async {
-                   final Uri whatsappUri = Uri.parse("https://wa.me/${AppConstants.whatsappNumber}?text=Hello ZipBot, I want to send a package.");
-                   if (await canLaunchUrl(whatsappUri)) {
-                      await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
-                   }
-                },
-                child: const Text('Chat Now', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF25D366))),
-              ),
-            ],
-          ),
-        ),
         Expanded(
           child: ListView.builder(
             controller: _scrollController,
