@@ -131,6 +131,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                     color: Colors.amber,
                     size: 32,
                   ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                   onPressed: () => setState(() => rating = index + 1),
                 )),
               ),

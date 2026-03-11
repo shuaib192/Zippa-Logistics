@@ -589,7 +589,7 @@ const confirmOrderDelivery = async (req, res) => {
         // 1. Fetch the order with security checks
         const orderResult = await client.query(
             `SELECT * FROM orders 
-             WHERE (id = $1 OR order_number = $1) AND customer_id = $2`,
+             WHERE (id::text = $1 OR order_number = $1) AND customer_id = $2`,
             [id, req.user.id]
         );
 
