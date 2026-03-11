@@ -42,6 +42,8 @@ const whatsappRoutes = require('./routes/whatsapp.routes');
 const vendorRoutes = require('./routes/vendor.routes');
 const productRoutes = require('./routes/product.routes');
 const webhookRoutes = require('./routes/webhook.routes');
+const adminRoutes = require('./routes/admin.routes');
+const path = require('path');
 
 // Create the Express application
 const app = express();
@@ -123,6 +125,14 @@ app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/vendors', vendorRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/admin', adminRoutes);
+
+// Static file serving for Admin Dashboard
+app.use('/admin', express.static(path.join(__dirname, '../public/admin')));
+// Support for SPA routing - fallback to index.html for any /admin/* route
+app.get('/admin/*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/admin/index.html'));
+});
 
 // ============================================
 // ERROR HANDLING

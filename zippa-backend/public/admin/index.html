@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zippa Admin Panel</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons (CDN) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="dark-mode">
+    <div id="app">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="/logo.png" alt="Zippa Logo" class="logo" onerror="this.style.display='none'">
+                <span class="brand-name">Zippa Admin</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#/dashboard" class="nav-item active" data-page="dashboard">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#/users" class="nav-item" data-page="users">
+                    <i data-lucide="users"></i>
+                    <span>Users</span>
+                </a>
+                <a href="#/orders" class="nav-item" data-page="shopping-cart">
+                    <i data-lucide="shopping-cart"></i>
+                    <span>Orders</span>
+                </a>
+                <a href="#/vendors" class="nav-item" data-page="store">
+                    <i data-lucide="store"></i>
+                    <span>Vendors</span>
+                </a>
+                <a href="#/finance" class="nav-item" data-page="wallet">
+                    <i data-lucide="wallet"></i>
+                    <span>Finance</span>
+                </a>
+                <a href="#/kyc" class="nav-item" data-page="shield-check">
+                    <i data-lucide="shield-check"></i>
+                    <span>KYC Review</span>
+                </a>
+                <div class="nav-divider"></div>
+                <a href="#/settings" class="nav-item" data-page="settings">
+                    <i data-lucide="settings"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-pill">
+                    <div class="user-avatar" id="admin-avatar-char">A</div>
+                    <div class="user-info">
+                        <span class="user-name" id="admin-name">Admin</span>
+                        <span class="user-role">Super Admin</span>
+                    </div>
+                    <button class="logout-btn" id="logout-btn">
+                        <i data-lucide="log-out"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="top-header">
+                <div class="header-search">
+                    <i data-lucide="search"></i>
+                    <input type="text" placeholder="Search for users, orders, or vendors...">
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn">
+                        <i data-lucide="bell"></i>
+                        <span class="notification-badge"></span>
+                    </button>
+                    <div class="date-display" id="current-date">Mar 11, 2026</div>
+                </div>
+            </header>
+
+            <div id="page-content" class="page-container">
+                <!-- Page content will be injected here via JavaScript -->
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <span>Initializing Dashboard...</span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Login Modal/Overlay (Shown if not authenticated) -->
+    <div id="login-overlay" class="overlay hidden">
+        <div class="login-card">
+            <h1>Welcome Back</h1>
+            <p>Enter your credentials to access the Zippa Admin Panel</p>
+            <form id="login-form">
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="login-email" required placeholder="admin@zippa.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="login-password" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn-primary">Sign In</button>
+                <div id="login-error" class="error-text hidden"></div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/app.js" type="module"></script>
+    <script>
+        // Set initial date
+        const options = { month: 'short', day: 'numeric', year: 'numeric' };
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US', options);
+        // Initialize icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
