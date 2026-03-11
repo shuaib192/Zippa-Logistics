@@ -32,7 +32,15 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
     const _RiderHomeContent(),
     const RiderDeliveriesScreen(),
     const RiderEarningsScreen(),
-    const ZipBotScreen(),
+    Scaffold(
+      appBar: AppBar(
+        title: const Text('ZipBot AI', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        foregroundColor: ZippaColors.textPrimary,
+        elevation: 0,
+      ),
+      body: const ZipBotScreen(),
+    ),
     const RiderProfileScreen(),
   ];
 

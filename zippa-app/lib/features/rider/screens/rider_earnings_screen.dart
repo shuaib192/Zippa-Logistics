@@ -6,8 +6,25 @@ import 'package:zippa_app/features/customer/providers/wallet_provider.dart';
 import 'package:zippa_app/core/utils/currency_formatter.dart';
 import 'package:intl/intl.dart';
 
-class RiderEarningsScreen extends StatelessWidget {
+class RiderEarningsScreen extends StatefulWidget {
   const RiderEarningsScreen({super.key});
+
+  @override
+  State<RiderEarningsScreen> createState() => _RiderEarningsScreenState();
+}
+
+class _RiderEarningsScreenState extends State<RiderEarningsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final wallet = Provider.of<WalletProvider>(context, listen: false);
+        wallet.fetchBalance();
+        wallet.fetchTransactions();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
