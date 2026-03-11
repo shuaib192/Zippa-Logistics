@@ -119,12 +119,11 @@ class WalletProvider with ChangeNotifier {
       }
       // Re-fetch transactions and balance after a short delay
       await Future.delayed(const Duration(seconds: 2));
-      await fetchBalance();
-      await fetchTransactions();
+      await Future.wait([fetchBalance(), fetchTransactions()]);
     } catch (e) {
       _error = 'Failed to refresh balance. Try again later.';
     } finally {
-      _isLoading = false;
+      // fetchBalance/fetchTransactions already set isLoading to false
       notifyListeners();
     }
   }
