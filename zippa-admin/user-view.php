@@ -19,10 +19,27 @@ function statusBdg($s){$m=['pending'=>'badge-yellow','accepted'=>'badge-blue','p
     <a href="users.php" class="btn btn-ghost btn-sm"><i class="fa-solid fa-arrow-left"></i> Back to Users</a>
     <div class="action-row">
         <?php if($u['is_active']):?>
-            <form method="POST" action="actions.php" style="display:inline" onsubmit="return confirm('Ban this user?')"><input type="hidden" name="user_id" value="<?=$u['id']?>"><input type="hidden" name="action" value="ban"><input type="hidden" name="redirect" value="user-view.php?id=<?=$u['id']?>"><button type="submit" class="btn btn-danger btn-sm"><i class="fa-solid fa-ban"></i> Ban Account</button></form>
+            <form method="POST" action="actions.php" style="display:inline" onsubmit="return confirm('Ban this user? They will not be able to login.')">
+                <input type="hidden" name="user_id" value="<?=$u['id']?>">
+                <input type="hidden" name="action" value="ban">
+                <input type="hidden" name="redirect" value="user-view.php?id=<?=$u['id']?>">
+                <button type="submit" class="btn btn-warning btn-sm"><i class="fa-solid fa-ban"></i> Ban Account</button>
+            </form>
         <?php else:?>
-            <form method="POST" action="actions.php" style="display:inline"><input type="hidden" name="user_id" value="<?=$u['id']?>"><input type="hidden" name="action" value="unban"><input type="hidden" name="redirect" value="user-view.php?id=<?=$u['id']?>"><button type="submit" class="btn btn-success btn-sm"><i class="fa-solid fa-check"></i> Restore Account</button></form>
+            <form method="POST" action="actions.php" style="display:inline">
+                <input type="hidden" name="user_id" value="<?=$u['id']?>">
+                <input type="hidden" name="action" value="unban">
+                <input type="hidden" name="redirect" value="user-view.php?id=<?=$u['id']?>">
+                <button type="submit" class="btn btn-success btn-sm"><i class="fa-solid fa-check"></i> Restore Account</button>
+            </form>
         <?php endif;?>
+        
+        <form method="POST" action="actions.php" style="display:inline" onsubmit="return confirm('CRITICAL: Delete this user account and all their data? This action cannot be undone.')">
+            <input type="hidden" name="user_id" value="<?=$u['id']?>">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="redirect" value="users.php">
+            <button type="submit" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i> Delete Account</button>
+        </form>
     </div>
 </div>
 

@@ -17,6 +17,7 @@ import 'package:zippa_app/core/utils/currency_formatter.dart';
 import 'package:zippa_app/features/rider/screens/rider_order_details_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:zippa_app/core/widgets/app_drawer.dart';
+import 'package:zippa_app/features/rider/screens/rider_wallet_screen.dart';
 
 class RiderHomeScreen extends StatefulWidget {
   const RiderHomeScreen({super.key});
@@ -236,77 +237,87 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
                 final todayEarnings = double.tryParse(summary['today_earnings']?.toString() ?? '0') ?? 0;
                 final todayDeliveries = summary['today_deliveries'] ?? 0;
 
-                return Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.grey.shade100),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 8)),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Wallet Balance', style: TextStyle(color: ZippaColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
-                              const SizedBox(height: 4),
-                              Text(CurrencyFormatter.formatWithComma(wallet.balance), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
-                            ],
-                          ),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(color: ZippaColors.success.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
-                            child: const Icon(Icons.account_balance_wallet_rounded, color: ZippaColors.success),
-                          ),
-                        ],
-                      ),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20),
-                        child: Divider(height: 1, color: Color(0xFFF1F5F9)),
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
+                return GestureDetector(
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RiderWalletScreen())),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: Colors.grey.shade100),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 8)),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text("Today's Earnings", style: TextStyle(color: ZippaColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w600)),
+                                const Text('Wallet Balance', style: TextStyle(color: ZippaColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
                                 const SizedBox(height: 4),
-                                Text(CurrencyFormatter.formatWithComma(todayEarnings), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                                Text(CurrencyFormatter.formatWithComma(wallet.balance), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
                               ],
                             ),
-                          ),
-                          Container(width: 1, height: 30, color: Colors.grey.shade100),
-                          const SizedBox(width: 20),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text("Deliveries", style: TextStyle(color: ZippaColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w600)),
-                                const SizedBox(height: 4),
-                                Text(todayDeliveries.toString(), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                              ],
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(color: ZippaColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
+                              child: const Icon(Icons.account_balance_wallet_rounded, color: ZippaColors.primary),
+                            ),
+                          ],
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Divider(height: 1, color: Color(0xFFF1F5F9)),
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text("Today's Earnings", style: TextStyle(color: ZippaColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w600)),
+                                  const SizedBox(height: 4),
+                                  Text(CurrencyFormatter.formatWithComma(todayEarnings), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+                            Container(width: 1, height: 30, color: Colors.grey.shade100),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text("Deliveries", style: TextStyle(color: ZippaColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w600)),
+                                  const SizedBox(height: 4),
+                                  Text(todayDeliveries.toString(), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RiderWalletScreen(showWithdrawDialog: true))),
+                            icon: const Icon(Icons.arrow_upward_rounded, size: 16),
+                            label: const Text('Withdraw Funds', style: TextStyle(fontWeight: FontWeight.bold)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ZippaColors.primary,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          IconButton(
-                            onPressed: () => wallet.fetchBalance(),
-                            icon: const Icon(Icons.refresh_rounded, size: 20, color: ZippaColors.primary),
-                            style: IconButton.styleFrom(
-                              backgroundColor: ZippaColors.primary.withOpacity(0.08),
-                              padding: const EdgeInsets.all(8),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },

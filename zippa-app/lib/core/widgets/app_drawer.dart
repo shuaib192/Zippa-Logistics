@@ -8,6 +8,7 @@ import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/features/auth/providers/auth_provider.dart';
 import 'package:zippa_app/core/providers/navigation_provider.dart';
 import 'package:zippa_app/features/rider/screens/rider_profile_screen.dart';
+import 'package:zippa_app/features/rider/screens/rider_wallet_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -98,7 +99,7 @@ class AppDrawer extends StatelessWidget {
                     Navigator.pop(context);
                     int walletIndex = 2; // Default for Customer
                     if (isRider) {
-                      navProvider.setIndex(0); // For riders, balance is on Home (index 0)
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const RiderWalletScreen()));
                       return;
                     } else if (isVendor) {
                       walletIndex = 3;
