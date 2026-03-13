@@ -8,12 +8,20 @@ const fs = require('fs');
 
 let isInitialized = false;
 
-// Path to the service account key file
-const serviceAccountPath = path.join(__dirname, '../config/firebase-service-account.json');
+// In production, we use environment variables to avoid committing secrets
+const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
 
-if (fs.existsSync(serviceAccountPath)) {
+if (fs.existsSync(serviceAccountPath) || serviceAccountEnv) {
     try {
-        const serviceAccount = require(serviceAccountPath);
+        let serviceAccount;
+        if (serviceAccountEnv) {
+            // Read from environment variable (String -> JSON)
+            serviceAccount = JSON.parse(serviceAccountEnv);
+        } else {
+            // Read from local file
+            serviceAccount = require(serviceAccountPath);
+        }
+
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount)
         });
@@ -23,8 +31,8 @@ if (fs.existsSync(serviceAccountPath)) {
         console.error('❌ Failed to initialize Firebase Admin SDK:', error);
     }
 } else {
-    console.warn('⚠️ Firebase service account file NOT FOUND at:', serviceAccountPath);
-    console.warn('⚠️ Push notifications will be disabled until the file is provided.');
+    console.warn('⚠️ Firebase service account NOT FOUND (checked file and ENV).');
+    console.warn('⚠️ Push notifications will be disabled.');
 }
 
 const NotificationService = {
