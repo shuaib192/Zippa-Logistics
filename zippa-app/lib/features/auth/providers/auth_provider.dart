@@ -170,9 +170,9 @@ class AuthProvider extends ChangeNotifier {
   }
   
   // ============================================
-  // Register a new user
+  // Register a new user — now returns verification data
   // ============================================
-  Future<bool> register({
+  Future<Map<String, dynamic>?> register({
     required String fullName,
     required String phone,
     required String password,
@@ -190,29 +190,24 @@ class AuthProvider extends ChangeNotifier {
         'password': password,
         'email': email,
         'role': role,
-      }, auth: false);  // No auth needed for registration
+      }, auth: false);
       
+      _isLoading = false;
+      notifyListeners();
+
       if (response['success'] == true) {
-        // Save tokens and user data locally
-        await _saveAuthData(response['data']);
-        
-        // Sync FCM Token
-        FCMService.syncToken();
-        
-        _isLoading = false;
-        notifyListeners();
-        return true;
+        // Registration requires email verification now
+        return response['data'];
       } else {
         _error = response['message'] ?? 'Registration failed';
-        _isLoading = false;
         notifyListeners();
-        return false;
+        return null;
       }
     } catch (e) {
       _error = 'Connection error. Please try again.';
       _isLoading = false;
       notifyListeners();
-      return false;
+      return null;
     }
   }
   
@@ -272,6 +267,15 @@ class AuthProvider extends ChangeNotifier {
   }
   
   // ============================================
+  // Complete verification/login flow
+  // Manually update state after special cases like OTP verify
+  // ============================================
+  Future<void> completeAuth(Map<String, dynamic> data) async {
+    await _saveAuthData(data);
+    notifyListeners();
+  }
+  
+  // ============================================
   // Save auth data to local storage
   // Called after successful login/register
   // ============================================
@@ -280,16 +284,85 @@ class AuthProvider extends ChangeNotifier {
     
     // Save tokens
     final tokens = data['tokens'];
-    await prefs.setString(AppConstants.tokenKey, tokens['accessToken']);
-    await prefs.setString(AppConstants.refreshTokenKey, tokens['refreshToken']);
+    if (tokens != null) {
+      await prefs.setString(AppConstants.tokenKey, tokens['accessToken']);
+      await prefs.setString(AppConstants.refreshTokenKey, tokens['refreshToken']);
+    }
     
     // Save user data
     final userData = data['user'];
-    await prefs.setString(AppConstants.userDataKey, jsonEncode(userData));
+    if (userData != null) {
+      await prefs.setString(AppConstants.userDataKey, jsonEncode(userData));
+      _user = User.fromJson(userData);
+    }
     
-    // Update state
-    _user = User.fromJson(userData);
     _isAuthenticated = true;
+  }
+
+  // ============================================
+  // Forgot Password
+  // ============================================
+  Future<bool> forgotPassword(String email) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    
+    try {
+      final response = await _api.post('/auth/forgot-password', {
+        'email': email,
+      }, auth: false);
+      
+      _isLoading = false;
+      if (response['success'] == true) {
+        notifyListeners();
+        return true;
+      } else {
+        _error = response['message'] ?? 'Request failed';
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = 'Connection error. Please try again.';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ============================================
+  // Reset Password
+  // ============================================
+  Future<bool> resetPassword({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    
+    try {
+      final response = await _api.post('/auth/reset-password', {
+        'email': email,
+        'otp': otp,
+        'newPassword': newPassword,
+      }, auth: false);
+      
+      _isLoading = false;
+      if (response['success'] == true) {
+        notifyListeners();
+        return true;
+      } else {
+        _error = response['message'] ?? 'Reset failed';
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = 'Connection error. Please try again.';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
   
   // ============================================

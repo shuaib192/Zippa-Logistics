@@ -20,11 +20,16 @@ const express = require('express');
 const router = express.Router();
 
 // Import controller functions
-const { register, login, refreshToken } = require('../controllers/auth.controller');
+const { register, login, refreshToken, verifyEmail, resendOTP, forgotPassword, resetPassword } = require('../controllers/auth.controller');
 
 // POST /api/auth/register — Create a new account
-// No authentication needed (the user isn't logged in yet!)
 router.post('/register', register);
+
+// POST /api/auth/verify-email — Verify email with OTP
+router.post('/verify-email', verifyEmail);
+
+// POST /api/auth/resend-otp — Resend OTP code
+router.post('/resend-otp', resendOTP);
 
 // POST /api/auth/login — Log in to get tokens
 router.post('/login', login);
@@ -32,4 +37,11 @@ router.post('/login', login);
 // POST /api/auth/refresh-token — Get new access token
 router.post('/refresh-token', refreshToken);
 
+// POST /api/auth/forgot-password — Request reset code
+router.post('/forgot-password', forgotPassword);
+
+// POST /api/auth/reset-password — Reset password with code
+router.post('/reset-password', resetPassword);
+
 module.exports = router;
+

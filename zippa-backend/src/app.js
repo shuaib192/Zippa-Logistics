@@ -127,6 +127,9 @@ app.use('/api/products', productRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/admin', adminRoutes);
 
+// 7. Static file serving for Uploads (KYC, Avatars, etc.)
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 // Static file serving for Admin Dashboard
 app.use('/admin', express.static(path.join(__dirname, '../public/admin')));
 // Support for SPA routing - fallback to index.html for any /admin/* route

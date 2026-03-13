@@ -9,6 +9,9 @@
 
 const bcrypt = require('bcryptjs');
 const db = require('../config/database');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 // ============================================
 // CONTROLLER: getProfile
@@ -309,4 +312,130 @@ const updateFcmToken = async (req, res) => {
     }
 };
 
-module.exports = { getProfile, updateProfile, changePassword, toggleOnline, updateLocation, updateFcmToken };
+// ============================================
+// CONTROLLER: submitKYC
+// POST /api/users/kyc
+// Submit KYC documents for verification
+// ============================================
+const submitKYC = async (req, res) => {
+    try {
+        const { documentType, documentNumber } = req.body;
+        const userId = req.user.id;
+
+        if (!documentType || !documentNumber) {
+            return res.status(400).json({
+                success: false,
+                message: 'Document type and document number are required.',
+            });
+        }
+
+        const validTypes = ['nin', 'drivers_license', 'international_passport', 'voters_card'];
+        if (!validTypes.includes(documentType)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid document type. Must be one of: ${validTypes.join(', ')}`,
+            });
+        }
+
+        // Check if user already has a pending KYC
+        const existing = await db.query(
+            "SELECT id FROM kyc_documents WHERE user_id = $1 AND status = 'pending'",
+            [userId]
+        );
+        if (existing.rows.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'You already have a pending KYC review. Please wait for admin approval.',
+            });
+        }
+
+        // Handle file upload path
+        let documentUrl = 'no-file-uploaded';
+        if (req.file) {
+            documentUrl = `/uploads/kyc/${req.file.filename}`;
+        }
+
+        // Insert KYC document
+        await db.query(
+            `INSERT INTO kyc_documents (user_id, document_type, document_url, document_number) 
+             VALUES ($1, $2, $3, $4)`,
+            [userId, documentType, documentUrl, documentNumber]
+        );
+
+        // Update user's KYC status to pending
+        await db.query(
+            "UPDATE users SET kyc_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
+            [userId]
+        );
+
+        res.status(201).json({
+            success: true,
+            message: 'KYC documents submitted successfully. You will be notified once verified.',
+        });
+
+        console.log(`📋 KYC submitted by user ${userId} (${documentType})`);
+    } catch (err) {
+        console.error('Submit KYC error:', err);
+        res.status(500).json({ success: false, message: 'Failed to submit KYC documents.' });
+    }
+};
+
+// ============================================
+// CONTROLLER: getKYCStatus
+// GET /api/users/kyc
+// Check current KYC status
+// ============================================
+const getKYCStatus = async (req, res) => {
+    try {
+        const result = await db.query(
+            `SELECT u.kyc_status, kd.document_type, kd.status as doc_status, kd.admin_notes, kd.created_at as submitted_at 
+             FROM users u 
+             LEFT JOIN kyc_documents kd ON kd.user_id = u.id 
+             WHERE u.id = $1 
+             ORDER BY kd.created_at DESC LIMIT 1`,
+            [req.user.id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'User not found.' });
+        }
+
+        const data = result.rows[0];
+        res.status(200).json({
+            success: true,
+            data: {
+                kycStatus: data.kyc_status,
+                documentType: data.document_type,
+                documentStatus: data.doc_status,
+                adminNotes: data.admin_notes,
+                submittedAt: data.submitted_at,
+            },
+        });
+    } catch (err) {
+        console.error('Get KYC status error:', err);
+        res.status(500).json({ success: false, message: 'Failed to get KYC status.' });
+    }
+};
+
+// Multer config for KYC file uploads
+const kycUploadDir = path.join(__dirname, '../../uploads/kyc');
+if (!fs.existsSync(kycUploadDir)) {
+    fs.mkdirSync(kycUploadDir, { recursive: true });
+}
+const kycUpload = multer({
+    storage: multer.diskStorage({
+        destination: kycUploadDir,
+        filename: (req, file, cb) => {
+            cb(null, `kyc_${req.user.id}_${Date.now()}${path.extname(file.originalname)}`);
+        },
+    }),
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+    fileFilter: (req, file, cb) => {
+        const allowed = ['.jpg', '.jpeg', '.png', '.pdf'];
+        const ext = path.extname(file.originalname).toLowerCase();
+        if (allowed.includes(ext)) cb(null, true);
+        else cb(new Error('Only JPG, PNG, and PDF files are allowed.'));
+    },
+});
+
+module.exports = { getProfile, updateProfile, changePassword, toggleOnline, updateLocation, updateFcmToken, submitKYC, getKYCStatus, kycUpload };

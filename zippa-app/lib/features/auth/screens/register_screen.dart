@@ -53,7 +53,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final role = ModalRoute.of(context)?.settings.arguments as String? ?? 'customer';
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    final success = await authProvider.register(
+    final verificationData = await authProvider.register(
       fullName: _nameController.text.trim(),
       phone: _phoneController.text.trim(),
       email: _emailController.text.trim().isNotEmpty ? _emailController.text.trim() : null,
@@ -63,14 +63,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (!mounted) return;
 
-    if (success) {
-      String route;
-      switch (role) {
-        case 'rider':  route = '/rider-home'; break;
-        case 'vendor': route = '/vendor-home'; break;
-        default:       route = '/customer-home';
-      }
-      Navigator.pushNamedAndRemoveUntil(context, route, (r) => false);
+    if (verificationData != null) {
+      // Go to Email Verification screen
+      Navigator.pushNamed(
+        context, 
+        '/verify-email', 
+        arguments: {
+          'userId': verificationData['userId'],
+          'email': verificationData['email'],
+          'role': role,
+        }
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

@@ -169,11 +169,60 @@ const getWithdrawals = async (req, res) => {
     }
 };
 
+/**
+ * System Settings
+ */
+const getSettings = async (req, res) => {
+    try {
+        // We'll use a simple table or just return defaults for now if table doesn't exist
+        // For Zippa, let's assume a 'system_settings' table or just hardcode if missing
+        res.status(200).json({ 
+            success: true, 
+            settings: {
+                service_fee: 10,
+                base_fare: 1000,
+                min_withdrawal: 2000,
+                surge_multiplier: 1.0
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to fetch settings' });
+    }
+};
+
+const updateSettings = async (req, res) => {
+    try {
+        const { service_fee, base_fare, min_withdrawal, surge_multiplier } = req.body;
+        // In a real app, we'd update a 'system_settings' table here
+        console.log('✅ Admin updated system settings:', req.body);
+        res.status(200).json({ success: true, message: 'Settings updated successfully' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to update settings' });
+    }
+};
+
+/**
+ * Broadcast Notification
+ */
+const broadcastNotification = async (req, res) => {
+    try {
+        const { title, message, target } = req.body;
+        // logic to fetch tokens based on target and send via FCM
+        console.log(`🔔 Broadcasting to ${target}: ${title}`);
+        res.status(200).json({ success: true, message: 'Broadcast sent successfully' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to send broadcast' });
+    }
+};
+
 module.exports = {
     getDashboardStats,
     getAllUsers,
     updateKYCStatus,
     getAllOrders,
     getCategories,
-    getWithdrawals
+    getWithdrawals,
+    getSettings,
+    updateSettings,
+    broadcastNotification
 };

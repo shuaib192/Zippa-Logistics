@@ -33,6 +33,10 @@ import 'features/auth/screens/onboarding_screen.dart';
 import 'features/auth/screens/role_selection_screen.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/register_screen.dart';
+import 'features/auth/screens/email_verification_screen.dart';
+import 'features/auth/screens/kyc_submission_screen.dart';
+import 'features/auth/screens/forgot_password_screen.dart';
+import 'features/auth/screens/reset_password_screen.dart';
 import 'features/customer/screens/customer_home_screen.dart';
 import 'features/customer/screens/order_create_screen.dart';
 import 'features/rider/screens/rider_home_screen.dart';
@@ -134,6 +138,10 @@ class ZippaApp extends StatelessWidget {
           '/role-select':   (_) => const RoleSelectionScreen(),
           '/login':         (_) => const LoginScreen(),
           '/register':      (_) => const RegisterScreen(),
+          '/verify-email':  (_) => const EmailVerificationScreen(),
+          '/kyc-submit':    (_) => const KYCSubmissionScreen(),
+          '/forgot-password': (_) => const ForgotPasswordScreen(),
+          '/reset-password': (_) => const ResetPasswordScreen(),
           '/customer-home': (_) => const CustomerHomeScreen(),
           '/order-create':  (_) => const OrderCreateScreen(),
           '/notifications': (_) => const CustomerNotificationsScreen(),

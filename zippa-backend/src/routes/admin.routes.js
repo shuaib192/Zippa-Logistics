@@ -17,10 +17,11 @@ router.put('/users/:id/kyc', adminController.updateKYCStatus);
 // Order Management
 router.get('/orders', adminController.getAllOrders);
 
-// Category Management
-router.get('/categories', adminController.getCategories);
+// Settings
+router.get('/settings', adminController.getSettings);
+router.put('/settings', adminController.updateSettings);
 
-// Withdrawals
-router.get('/withdrawals', adminController.getWithdrawals);
+// Notifications
+router.post('/notifications/broadcast', adminController.broadcastNotification);
 
 module.exports = router;

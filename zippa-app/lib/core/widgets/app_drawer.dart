@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/features/auth/providers/auth_provider.dart';
 import 'package:zippa_app/core/providers/navigation_provider.dart';
+import 'package:zippa_app/features/rider/screens/rider_profile_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -55,15 +56,30 @@ class AppDrawer extends StatelessWidget {
                   label: 'My Profile',
                   onTap: () {
                     Navigator.pop(context);
-                    navProvider.setIndex(4); // Profile is index 4 for all shells
+                    if (isRider) {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const RiderProfileScreen()));
+                    } else {
+                      // Dynamically set profile index based on role
+                      int profileIndex = 4; // Default for Customer/Vendor
+                      navProvider.setIndex(profileIndex);
+                    }
                   },
                 ),
+                if (user?.kycStatus != 'verified')
+                  _DrawerTile(
+                    icon: Icons.verified_user_outlined,
+                    label: 'Verify Identity',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, '/kyc-submit');
+                    },
+                  ),
                 _DrawerTile(
                   icon: Icons.history_rounded,
                   label: isRider ? 'Delivery History' : (isVendor ? 'Store Orders' : 'Order History'),
                   onTap: () {
                     Navigator.pop(context);
-                    navProvider.setIndex(1); // Orders is index 1 for all shells
+                    navProvider.setIndex(1); // Orders/Deliveries is index 1 for all shells
                   },
                 ),
                 if (isVendor)
@@ -80,7 +96,14 @@ class AppDrawer extends StatelessWidget {
                   label: isVendor ? 'Earnings & Wallet' : 'Zippa Wallet',
                   onTap: () {
                     Navigator.pop(context);
-                    navProvider.setIndex(isVendor ? 3 : 2); // Wallet is 3 for vendors, 2 for others
+                    int walletIndex = 2; // Default for Customer
+                    if (isRider) {
+                      navProvider.setIndex(0); // For riders, balance is on Home (index 0)
+                      return;
+                    } else if (isVendor) {
+                      walletIndex = 3;
+                    }
+                    navProvider.setIndex(walletIndex);
                   },
                 ),
                 const Divider(indent: 20, endIndent: 20),

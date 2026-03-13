@@ -7,7 +7,6 @@ import 'package:zippa_app/features/customer/providers/order_provider.dart';
 import 'package:zippa_app/data/models/order_model.dart';
 import 'package:intl/intl.dart';
 import 'package:zippa_app/features/rider/screens/rider_deliveries_screen.dart';
-import 'package:zippa_app/features/rider/screens/rider_earnings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zippa_app/features/customer/screens/zipbot_screen.dart';
 import 'package:zippa_app/features/rider/screens/rider_profile_screen.dart';
@@ -31,7 +30,6 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
   final List<Widget> _screens = [
     const _RiderHomeContent(),
     const RiderDeliveriesScreen(),
-    const RiderEarningsScreen(),
     Scaffold(
       appBar: AppBar(
         title: const Text('ZipBot AI', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -41,7 +39,6 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
       ),
       body: const ZipBotScreen(),
     ),
-    const RiderProfileScreen(),
   ];
 
   @override
@@ -64,9 +61,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.delivery_dining_rounded), label: 'Deliveries'),
-          BottomNavigationBarItem(icon: Icon(Icons.monetization_on_rounded), label: 'Earnings'),
           BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline_rounded), label: 'ZipBot'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Profile'),
         ],
       ),
     );
@@ -161,14 +156,17 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
         ),
         actions: [
           IconButton(icon: const Icon(Icons.notifications_outlined), onPressed: () {}),
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: ZippaColors.primary.withOpacity(0.12),
-              child: Text(
-                user?.fullName.isNotEmpty == true ? user!.fullName[0].toUpperCase() : 'R',
-                style: const TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.bold),
+          GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RiderProfileScreen())),
+            child: Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: CircleAvatar(
+                radius: 18,
+                backgroundColor: ZippaColors.primary.withOpacity(0.12),
+                child: Text(
+                  user?.fullName.isNotEmpty == true ? user!.fullName[0].toUpperCase() : 'R',
+                  style: const TextStyle(color: ZippaColors.primary, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ),
@@ -229,37 +227,91 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
 
             const SizedBox(height: 24),
 
-            Text("Today's Summary", style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
-            const SizedBox(height: 14),
+            const SizedBox(height: 24),
+            
+            // Earnings Dashboard Card (New Location)
             Consumer<WalletProvider>(
               builder: (context, wallet, child) {
                 final summary = wallet.summary ?? {};
-                return Row(
-                  children: [
-                    Expanded(child: _StatCard(
-                      icon: Icons.monetization_on_outlined, 
-                      label: 'Earnings', 
-                      value: CurrencyFormatter.formatWithComma(double.tryParse(summary['today_earnings']?.toString() ?? '0') ?? 0), 
-                      color: ZippaColors.success
-                    )),
-                    const SizedBox(width: 12),
-                    Expanded(child: _StatCard(
-                      icon: Icons.local_shipping_outlined, 
-                      label: 'Deliveries', 
-                      value: (summary['today_deliveries'] ?? 0).toString(), 
-                      color: ZippaColors.primary
-                    )),
-                    const SizedBox(width: 12),
-                    Expanded(child: _StatCard(
-                      icon: Icons.star_border_rounded, 
-                      label: 'Rating', 
-                      value: (summary['today_ratings'] ?? 5.0).toString(), 
-                      color: ZippaColors.warning
-                    )),
-                  ],
+                final todayEarnings = double.tryParse(summary['today_earnings']?.toString() ?? '0') ?? 0;
+                final todayDeliveries = summary['today_deliveries'] ?? 0;
+
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.grey.shade100),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 8)),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Wallet Balance', style: TextStyle(color: ZippaColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+                              const SizedBox(height: 4),
+                              Text(CurrencyFormatter.formatWithComma(wallet.balance), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
+                            ],
+                          ),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(color: ZippaColors.success.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
+                            child: const Icon(Icons.account_balance_wallet_rounded, color: ZippaColors.success),
+                          ),
+                        ],
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20),
+                        child: Divider(height: 1, color: Color(0xFFF1F5F9)),
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text("Today's Earnings", style: TextStyle(color: ZippaColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w600)),
+                                const SizedBox(height: 4),
+                                Text(CurrencyFormatter.formatWithComma(todayEarnings), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                          Container(width: 1, height: 30, color: Colors.grey.shade100),
+                          const SizedBox(width: 20),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text("Deliveries", style: TextStyle(color: ZippaColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w600)),
+                                const SizedBox(height: 4),
+                                Text(todayDeliveries.toString(), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          IconButton(
+                            onPressed: () => wallet.fetchBalance(),
+                            icon: const Icon(Icons.refresh_rounded, size: 20, color: ZippaColors.primary),
+                            style: IconButton.styleFrom(
+                              backgroundColor: ZippaColors.primary.withOpacity(0.08),
+                              padding: const EdgeInsets.all(8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 );
-              }
+              },
             ).animate().fadeIn(delay: 150.ms, duration: 400.ms),
+
 
             const SizedBox(height: 24),
 
@@ -430,34 +482,7 @@ class _OrderCard extends StatelessWidget {
   }
 }
 
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-  const _StatCard({required this.icon, required this.label, required this.value, required this.color});
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: ZippaColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 26),
-          const SizedBox(height: 6),
-          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
-          const SizedBox(height: 2),
-          Text(label, style: const TextStyle(fontSize: 10, color: ZippaColors.textSecondary)),
-        ],
-      ),
-    );
-  }
-}
 
 class _ActiveDeliveryCard extends StatelessWidget {
   final OrderModel order;

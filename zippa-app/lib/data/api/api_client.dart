@@ -14,6 +14,7 @@
 // ============================================
 
 import 'dart:convert';  // For JSON encoding/decoding
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zippa_app/core/constants/app_constants.dart';
@@ -127,6 +128,45 @@ class ApiClient {
     }
   }
   
+  // ============================================
+  // Multipart POST — Send files to the server
+  // ============================================
+  Future<Map<String, dynamic>> postMultipart(
+    String endpoint,
+    Map<String, String> fields, {
+    String? filePath,
+    String fileField = 'file',
+    bool auth = true,
+  }) async {
+    try {
+      final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$endpoint'));
+      
+      if (auth) {
+        final token = await _getToken();
+        if (token != null) {
+          request.headers['Authorization'] = 'Bearer $token';
+        }
+      }
+      
+      request.fields.addAll(fields);
+      
+      if (filePath != null && File(filePath).existsSync()) {
+        request.files.add(await http.MultipartFile.fromPath(fileField, filePath));
+      }
+      
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      return _handleResponse(response);
+    } catch (e) {
+      return _handleError(e);
+    }
+  }
+
+  // Helper to access SharedPreferences from screens
+  Future<SharedPreferences> getPrefs() async {
+    return SharedPreferences.getInstance();
+  }
+
   // ============================================
   // Handle the server's response
   // Parse JSON and check for errors

@@ -20,6 +20,7 @@
 const bcrypt = require('bcryptjs');      // For hashing passwords
 const jwt = require('jsonwebtoken');      // For creating JWT tokens
 const db = require('../config/database');
+const { sendOTPEmail, sendPasswordResetEmail, generateOTP } = require('../services/email.service');
 
 // ============================================
 // HELPER: Generate JWT Tokens
@@ -123,64 +124,59 @@ const register = async (req, res) => {
         // 12 is a good balance between security and performance.
         const passwordHash = await bcrypt.hash(password, 12);
 
-        // Step 5: Insert the new user into the database
+        // Step 5: Require email for OTP verification
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email address is required for account verification.',
+            });
+        }
+
+        // Step 6: Insert the new user into the database
+        const otp = generateOTP();
+        const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
         const result = await db.query(
-            `INSERT INTO users (email, phone, password_hash, full_name, role)
-       VALUES ($1, $2, $3, $4, $5)
+            `INSERT INTO users (email, phone, password_hash, full_name, role, email_verified, email_otp, email_otp_expires)
+       VALUES ($1, $2, $3, $4, $5, false, $6, $7)
        RETURNING id, email, phone, full_name, role, kyc_status, created_at`,
-            [email || null, phone, passwordHash, fullName, userRole]
+            [email, phone, passwordHash, fullName, userRole, otp, otpExpires]
         );
-        // RETURNING = gives us back the created row (so we don't need a second query)
 
         const newUser = result.rows[0];
 
-        // Step 6: Create a wallet for the user
+        // Step 7: Create a wallet for the user
         await db.query(
             'INSERT INTO wallets (user_id) VALUES ($1)',
             [newUser.id]
         );
 
-        // Step 7: Create a user profile record
+        // Step 8: Create a user profile record
         await db.query(
             'INSERT INTO user_profiles (user_id) VALUES ($1)',
             [newUser.id]
         );
 
-        // Step 8: Generate tokens
-        const accessToken = generateAccessToken(newUser);
-        const refreshToken = generateRefreshToken(newUser);
+        // Step 9: Send OTP email
+        try {
+            await sendOTPEmail(email, fullName, otp);
+        } catch (emailErr) {
+            console.error('Failed to send OTP email:', emailErr);
+            // Don't fail registration, user can resend
+        }
 
-        // Store refresh token in database (for security)
-        const refreshExpiry = new Date();
-        refreshExpiry.setDate(refreshExpiry.getDate() + 7); // 7 days from now
-        await db.query(
-            'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)',
-            [newUser.id, refreshToken, refreshExpiry]
-        );
-
-        // Step 9: Send success response
-        // 201 = Created (new resource was successfully created)
+        // Step 10: Respond — but do NOT issue tokens yet (email not verified)
         res.status(201).json({
             success: true,
-            message: `Welcome to Zippa, ${fullName}! Account created successfully.`,
+            message: `Verification code sent to ${email}. Please check your inbox.`,
             data: {
-                user: {
-                    id: newUser.id,
-                    email: newUser.email,
-                    phone: newUser.phone,
-                    fullName: newUser.full_name,
-                    role: newUser.role,
-                    kycStatus: newUser.kyc_status,
-                },
-                tokens: {
-                    accessToken,
-                    refreshToken,
-                    expiresIn: process.env.JWT_EXPIRES_IN || '1h',
-                },
+                userId: newUser.id,
+                email: newUser.email,
+                requiresVerification: true,
             },
         });
 
-        console.log(`✅ New ${userRole} registered: ${fullName} (${phone})`);
+        console.log(`✅ New ${userRole} registered: ${fullName} (${phone}) — OTP sent to ${email}`);
 
     } catch (err) {
         console.error('Registration error:', err);
@@ -209,7 +205,10 @@ const login = async (req, res) => {
         }
 
         // Step 2: Find the user by phone or email
-        let result;
+        // Smart detection: if 'phone' contains '@', it's probably an email
+        const identifier = phone || email;
+        const isEmail = identifier.includes('@');
+        
         const query = `
             SELECT u.*, 
                    p.date_of_birth, p.gender, p.address, p.city, p.state,
@@ -218,9 +217,9 @@ const login = async (req, res) => {
                    p.default_pickup_address, p.banner_url
             FROM users u
             LEFT JOIN user_profiles p ON p.user_id = u.id
-            WHERE ${phone ? 'u.phone = $1' : 'u.email = $1'}
+            WHERE ${isEmail ? 'u.email = $1' : 'u.phone = $1'}
         `;
-        result = await db.query(query, [phone || email]);
+        result = await db.query(query, [identifier]);
 
         if (result.rows.length === 0) {
             return res.status(401).json({
@@ -412,4 +411,242 @@ const refreshToken = async (req, res) => {
     }
 };
 
-module.exports = { register, login, refreshToken };
+// ============================================
+// CONTROLLER: verifyEmail
+// POST /api/auth/verify-email
+// Verifies the OTP code sent to user's email.
+// ============================================
+const verifyEmail = async (req, res) => {
+    try {
+        const { userId, otp } = req.body;
+
+        if (!userId || !otp) {
+            return res.status(400).json({
+                success: false,
+                message: 'User ID and OTP code are required.',
+            });
+        }
+
+        // Find user and check OTP
+        const result = await db.query(
+            'SELECT id, email, phone, full_name, role, kyc_status, email_otp, email_otp_expires FROM users WHERE id = $1',
+            [userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'User not found.' });
+        }
+
+        const user = result.rows[0];
+
+        // Check if OTP matches and hasn't expired
+        if (user.email_otp !== otp) {
+            return res.status(400).json({ success: false, message: 'Invalid verification code.' });
+        }
+
+        if (new Date() > new Date(user.email_otp_expires)) {
+            return res.status(400).json({ success: false, message: 'Verification code has expired. Please request a new one.' });
+        }
+
+        // Mark email as verified
+        await db.query(
+            'UPDATE users SET email_verified = true, email_otp = NULL, email_otp_expires = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
+            [userId]
+        );
+
+        // Now issue tokens (user is fully registered)
+        const accessToken = generateAccessToken(user);
+        const refreshToken = generateRefreshToken(user);
+
+        const refreshExpiry = new Date();
+        refreshExpiry.setDate(refreshExpiry.getDate() + 7);
+        await db.query(
+            'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)',
+            [user.id, refreshToken, refreshExpiry]
+        );
+
+        res.status(200).json({
+            success: true,
+            message: `Email verified! Welcome to Zippa, ${user.full_name}!`,
+            data: {
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    phone: user.phone,
+                    fullName: user.full_name,
+                    role: user.role,
+                    kycStatus: user.kyc_status,
+                },
+                tokens: {
+                    accessToken,
+                    refreshToken,
+                    expiresIn: process.env.JWT_EXPIRES_IN || '1h',
+                },
+            },
+        });
+
+        console.log(`✅ Email verified for ${user.full_name}`);
+    } catch (err) {
+        console.error('Verify email error:', err);
+        res.status(500).json({ success: false, message: 'Verification failed. Please try again.' });
+    }
+};
+
+// ============================================
+// CONTROLLER: resendOTP
+// POST /api/auth/resend-otp
+// Resends the OTP code to user's email.
+// ============================================
+const resendOTP = async (req, res) => {
+    try {
+        const { userId } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({ success: false, message: 'User ID is required.' });
+        }
+
+        const result = await db.query(
+            'SELECT id, email, full_name, email_verified FROM users WHERE id = $1',
+            [userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'User not found.' });
+        }
+
+        const user = result.rows[0];
+
+        if (user.email_verified) {
+            return res.status(400).json({ success: false, message: 'Email is already verified.' });
+        }
+
+        const otp = generateOTP();
+        const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+        await db.query(
+            'UPDATE users SET email_otp = $1, email_otp_expires = $2 WHERE id = $3',
+            [otp, otpExpires, userId]
+        );
+
+        await sendOTPEmail(user.email, user.full_name, otp);
+
+        res.status(200).json({
+            success: true,
+            message: `New verification code sent to ${user.email}.`,
+        });
+
+        console.log(`📧 OTP resent to ${user.email}`);
+    } catch (err) {
+        console.error('Resend OTP error:', err);
+        res.status(500).json({ success: false, message: 'Failed to resend code. Please try again.' });
+    }
+};
+
+// ============================================
+// CONTROLLER: forgotPassword
+// POST /api/auth/forgot-password
+// Sends a reset OTP to user's email.
+// ============================================
+const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ success: false, message: 'Email address is required.' });
+        }
+
+        // Find user
+        const result = await db.query(
+            'SELECT id, email, full_name FROM users WHERE email = $1',
+            [email]
+        );
+
+        if (result.rows.length === 0) {
+            // For security, don't reveal if email exists, but we'll be helpful here for dev
+            return res.status(404).json({ success: false, message: 'Account not found.' });
+        }
+
+        const user = result.rows[0];
+        const otp = generateOTP();
+        const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+        // Store OTP
+        await db.query(
+            'UPDATE users SET reset_password_otp = $1, reset_password_expires = $2 WHERE id = $3',
+            [otp, otpExpires, user.id]
+        );
+
+        // Send email
+        await sendPasswordResetEmail(user.email, user.full_name, otp);
+
+        res.status(200).json({
+            success: true,
+            message: `Instructions sent to ${email}.`,
+        });
+
+        console.log(`🔑 Password reset requested for ${email}`);
+    } catch (err) {
+        console.error('Forgot password error:', err);
+        res.status(500).json({ success: false, message: 'Failed to process request. Please try again.' });
+    }
+};
+
+// ============================================
+// CONTROLLER: resetPassword
+// POST /api/auth/reset-password
+// Verifies OTP and updates password.
+// ============================================
+const resetPassword = async (req, res) => {
+    try {
+        const { email, otp, newPassword } = req.body;
+
+        if (!email || !otp || !newPassword) {
+            return res.status(400).json({ success: false, message: 'All fields are required.' });
+        }
+
+        if (newPassword.length < 8) {
+            return res.status(400).json({ success: false, message: 'Password must be at least 8 characters.' });
+        }
+
+        // Find user and verify OTP
+        const result = await db.query(
+            'SELECT id, reset_password_otp, reset_password_expires FROM users WHERE email = $1',
+            [email]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Account not found.' });
+        }
+
+        const user = result.rows[0];
+
+        if (user.reset_password_otp !== otp) {
+            return res.status(400).json({ success: false, message: 'Invalid or incorrect code.' });
+        }
+
+        if (new Date() > new Date(user.reset_password_expires)) {
+            return res.status(400).json({ success: false, message: 'Code has expired.' });
+        }
+
+        // Hash new password
+        const passwordHash = await bcrypt.hash(newPassword, 12);
+
+        // Update password and clear OTP
+        await db.query(
+            'UPDATE users SET password_hash = $1, reset_password_otp = NULL, reset_password_expires = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+            [passwordHash, user.id]
+        );
+
+        res.status(200).json({
+            success: true,
+            message: 'Password updated successfully! You can now log in.',
+        });
+
+        console.log(`✅ Password reset successful for ${email}`);
+    } catch (err) {
+        console.error('Reset password error:', err);
+        res.status(500).json({ success: false, message: 'Failed to reset password.' });
+    }
+};
+
+module.exports = { register, login, refreshToken, verifyEmail, resendOTP, forgotPassword, resetPassword };

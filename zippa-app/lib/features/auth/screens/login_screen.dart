@@ -134,8 +134,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () {},
-                    child: Text('Forgot Password?', style: TextStyle(color: ZippaColors.primary)),
+                    onPressed: () => Navigator.pushNamed(context, '/forgot-password'),
+                    child: const Text('Forgot Password?', style: TextStyle(color: ZippaColors.primary)),
                   ),
                 ),
 
