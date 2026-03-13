@@ -93,7 +93,7 @@ const getAllUsers = async (req, res) => {
  */
 const updateKYCStatus = async (req, res) => {
     const { id } = req.params;
-    const { status, admin_notes } = req.body;
+    const { status } = req.body;
 
     try {
         await db.query(
@@ -192,7 +192,8 @@ const getSettings = async (req, res) => {
 
 const updateSettings = async (req, res) => {
     try {
-        const { service_fee, base_fare, min_withdrawal, surge_multiplier } = req.body;
+        // Destructure only for logging or validation if needed, otherwise ignore if unused
+        // In this case, the linter says they are unused, so we can just use req.body directly
         // In a real app, we'd update a 'system_settings' table here
         console.log('✅ Admin updated system settings:', req.body);
         res.status(200).json({ success: true, message: 'Settings updated successfully' });
@@ -206,7 +207,7 @@ const updateSettings = async (req, res) => {
  */
 const broadcastNotification = async (req, res) => {
     try {
-        const { title, message, target } = req.body;
+        const { title, target } = req.body;
         // logic to fetch tokens based on target and send via FCM
         console.log(`🔔 Broadcasting to ${target}: ${title}`);
         res.status(200).json({ success: true, message: 'Broadcast sent successfully' });

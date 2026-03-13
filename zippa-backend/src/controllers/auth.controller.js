@@ -219,7 +219,7 @@ const login = async (req, res) => {
             LEFT JOIN user_profiles p ON p.user_id = u.id
             WHERE ${isEmail ? 'u.email = $1' : 'u.phone = $1'}
         `;
-        result = await db.query(query, [identifier]);
+        const result = await db.query(query, [identifier]);
 
         if (result.rows.length === 0) {
             return res.status(401).json({

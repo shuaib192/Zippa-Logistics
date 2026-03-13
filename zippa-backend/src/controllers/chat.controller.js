@@ -47,7 +47,6 @@ const ChatController = {
             const savedMsg = msgRes.rows[0];
 
             // 4. Notify recipient via FCM
-            const recipientId = (senderId === order.customer_id) ? order.rider_id : order.customer_id;
             const recipientToken = (senderId === order.customer_id) ? order.rider_token : order.customer_token;
             const senderName = (senderId === order.customer_id) ? order.customer_name : order.rider_name;
 

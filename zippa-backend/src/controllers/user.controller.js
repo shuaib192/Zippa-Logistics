@@ -339,7 +339,7 @@ const submitKYC = async (req, res) => {
 
         // Check if user already has a pending KYC
         const existing = await db.query(
-            "SELECT id FROM kyc_documents WHERE user_id = $1 AND status = 'pending'",
+            'SELECT id FROM kyc_documents WHERE user_id = $1 AND status = \'pending\'',
             [userId]
         );
         if (existing.rows.length > 0) {
@@ -364,7 +364,7 @@ const submitKYC = async (req, res) => {
 
         // Update user's KYC status to pending
         await db.query(
-            "UPDATE users SET kyc_status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
+            'UPDATE users SET kyc_status = \'pending\', updated_at = CURRENT_TIMESTAMP WHERE id = $1',
             [userId]
         );
 
