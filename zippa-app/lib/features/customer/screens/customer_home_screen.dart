@@ -21,6 +21,7 @@ import 'package:zippa_app/features/customer/screens/vendor_list_screen.dart';
 import 'package:zippa_app/features/customer/screens/vendor_details_screen.dart';
 import 'package:zippa_app/core/utils/currency_formatter.dart';
 import 'package:zippa_app/core/widgets/app_drawer.dart';
+import 'package:zippa_app/core/providers/location_provider.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
   const CustomerHomeScreen({super.key});
@@ -137,6 +138,9 @@ class _HomeContentState extends State<_HomeContent> {
       Provider.of<MarketplaceProvider>(context, listen: false).fetchCategories();
       Provider.of<MarketplaceProvider>(context, listen: false).fetchFeaturedVendors();
       Provider.of<MarketplaceProvider>(context, listen: false).fetchFavorites();
+      
+      // Request location permission for better experience
+      Provider.of<LocationProvider>(context, listen: false).requestLocationPermission();
     });
   }
 

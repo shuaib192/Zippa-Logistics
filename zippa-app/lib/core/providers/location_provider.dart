@@ -17,6 +17,19 @@ class LocationProvider with ChangeNotifier {
   bool get isTracking => _isTracking;
 
   // ============================================
+  // Request Location Permission
+  // ============================================
+  Future<void> requestLocationPermission() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return;
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      await Geolocator.requestPermission();
+    }
+  }
+
+  // ============================================
   // Start tracking location (For Riders Only)
   // ============================================
   Future<void> startRiderTracking() async {

@@ -65,10 +65,21 @@ class FCMService {
   // ============================================
   static Future<void> syncToken() async {
     try {
-      String? token = await _messaging.getToken();
-      if (token != null) {
-        debugPrint('🎟️ FCM Token: $token');
-        await _apiClient.put('/users/fcm-token', {'token': token});
+      // Prompt for permissions when syncing token (if not already granted)
+      NotificationSettings settings = await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        String? token = await _messaging.getToken();
+        if (token != null) {
+          debugPrint('🎟️ FCM Token: $token');
+          await _apiClient.put('/users/fcm-token', {'token': token});
+        }
+      } else {
+         debugPrint('⚠️ User declined notification permissions.');
       }
     } catch (e) {
       debugPrint('❌ Error syncing FCM token: $e');
