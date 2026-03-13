@@ -8,7 +8,10 @@ const fs = require('fs');
 
 let isInitialized = false;
 
-// In production, we use environment variables to avoid committing secrets
+// Path to the local service account key file (if it exists)
+const serviceAccountPath = path.join(__dirname, '../config/firebase-service-account.json');
+
+// In production, we prefer environment variables to avoid committing secrets
 const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
 
 if (fs.existsSync(serviceAccountPath) || serviceAccountEnv) {
