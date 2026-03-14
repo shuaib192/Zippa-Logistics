@@ -15,7 +15,7 @@ const setupSettingsTable = async () => {
         `);
         console.log('✅ Settings table created or already exists.');
 
-        // Insert default values
+        // Insert or Update values (UPSERT)
         const defaults = [
             { key: 'base_fare', value: '1000' },
             { key: 'per_km_fare', value: '250' }
@@ -25,11 +25,12 @@ const setupSettingsTable = async () => {
             await pool.query(`
                 INSERT INTO settings (key, value)
                 VALUES ($1, $2)
-                ON CONFLICT (key) DO NOTHING
+                ON CONFLICT (key) 
+                DO UPDATE SET value = $2, updated_at = CURRENT_TIMESTAMP
             `, [item.key, item.value]);
         }
         
-        console.log('✅ Default settings populated.');
+        console.log('✅ Settings synchronized with required values (1000 base, 250 per km).');
         process.exit(0);
     } catch (error) {
         console.error('❌ Setup failed:', error);

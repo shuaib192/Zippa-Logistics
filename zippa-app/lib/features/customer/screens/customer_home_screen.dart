@@ -226,39 +226,6 @@ class _HomeContentState extends State<_HomeContent> {
             },
           ),
           
-          // Search Bar - Professional Pill Design
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: ZippaColors.surface,
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: TextField(
-              controller: _searchController,
-              onSubmitted: (query) {
-                if (query.trim().isNotEmpty) {
-                  marketplace.searchProducts(query);
-                  Navigator.push(
-                    context, 
-                    MaterialPageRoute(builder: (context) => ProductSearchScreen(query: query))
-                  );
-                }
-              },
-              decoration: InputDecoration(
-                hintText: 'Search products or shops...',
-                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-                prefixIcon: const Icon(Icons.search_rounded, color: ZippaColors.primary),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.clear_rounded, color: Colors.grey, size: 20),
-                  onPressed: () => _searchController.clear(),
-                ),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-            ),
-          ),
-          
           const SizedBox(height: 16),
           
           // Safety & Escrow Banner
