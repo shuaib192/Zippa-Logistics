@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const NotificationService = require('../services/notification.service');
 
 /**
  * Get core dashboard stats (KPIs)
@@ -225,11 +226,29 @@ const updateSettings = async (req, res) => {
  */
 const broadcastNotification = async (req, res) => {
     try {
-        const { title, target } = req.body;
-        // logic to fetch tokens based on target and send via FCM
+        const { title, body, target } = req.body;
+        
         console.log(`🔔 Broadcasting to ${target}: ${title}`);
-        res.status(200).json({ success: true, message: 'Broadcast sent successfully' });
+        
+        if (target === 'all') {
+            // Send to topic 'all' if you subscribe everyone, or multicast to all tokens
+            // For now, let's just send to the three main topics
+            NotificationService.sendToTopic('customers', { title, body, data: { type: 'broadcast' } });
+            NotificationService.sendToTopic('riders', { title, body, data: { type: 'broadcast' } });
+            NotificationService.sendToTopic('vendors', { title, body, data: { type: 'broadcast' } });
+        } else if (['customer', 'rider', 'vendor'].includes(target)) {
+            // The targets perfectly match topic names if we pluralize them
+            const topicName = target + 's'; 
+            NotificationService.sendToTopic(topicName, { 
+                title, 
+                body, 
+                data: { type: 'broadcast' } 
+            });
+        }
+        
+        res.status(200).json({ success: true, message: 'Broadcast initiated successfully' });
     } catch (err) {
+        console.error('Broadcast error:', err);
         res.status(500).json({ success: false, message: 'Failed to send broadcast' });
     }
 };

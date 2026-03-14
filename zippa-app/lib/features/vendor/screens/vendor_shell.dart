@@ -24,9 +24,10 @@ class _VendorShellState extends State<VendorShell> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        Future.delayed(const Duration(seconds: 1), () {
+        Future.delayed(const Duration(seconds: 1), () async {
           if (mounted) {
-            FCMService.requestNotificationPermission();
+            await FCMService.syncToken();
+            await FCMService.subscribeToTopic('vendors');
           }
         });
       }

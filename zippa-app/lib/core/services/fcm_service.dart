@@ -54,26 +54,33 @@ class FCMService {
   // ============================================
   static Future<bool> requestNotificationPermission() async {
     try {
-      // For Android 13+ and iOS, we use permission_handler which is more reliable
-      PermissionStatus status = await Permission.notification.status;
+      // 1. Use Firebase's native requestPermission FIRST — this is the most
+      //    reliable way to trigger the Android 13+ system dialog
+      NotificationSettings settings = await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
       
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        debugPrint('✅ Notification permission granted via Firebase');
+        return true;
+      }
+      
+      // 2. Fallback: try permission_handler as a secondary approach
+      PermissionStatus status = await Permission.notification.status;
       if (status.isDenied) {
         status = await Permission.notification.request();
       }
       
       if (status.isGranted) {
-        debugPrint('✅ User granted notification permission via permission_handler');
+        debugPrint('✅ Notification permission granted via permission_handler');
         return true;
       }
       
-      // Fallback to FCM built-in request if permission_handler didn't get it
-      NotificationSettings settings = await _messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
-      
-      return settings.authorizationStatus == AuthorizationStatus.authorized;
+      debugPrint('⚠️ Notification permission not granted. Status: ${settings.authorizationStatus}');
+      return false;
     } catch (e) {
       debugPrint('❌ Error requesting notification permission: $e');
       return false;
@@ -86,16 +93,16 @@ class FCMService {
   static Future<void> syncToken() async {
     try {
       // Prompt for permissions when syncing token (if not already granted)
-      bool granted = await requestNotificationPermission();
+      await requestNotificationPermission();
 
-      if (granted) {
-        String? token = await _messaging.getToken();
-        if (token != null) {
-          debugPrint('🎟️ FCM Token: $token');
-          await _apiClient.put('/users/fcm-token', {'token': token});
-        }
+      // Always try to get the token — on some devices permission is
+      // granted silently and getToken() works even without explicit grant
+      String? token = await _messaging.getToken();
+      if (token != null) {
+        debugPrint('🎟️ FCM Token: $token');
+        await _apiClient.put('/users/fcm-token', {'token': token});
       } else {
-         debugPrint('⚠️ User declined notification permissions.');
+        debugPrint('⚠️ Could not retrieve FCM token.');
       }
     } catch (e) {
       debugPrint('❌ Error syncing FCM token: $e');

@@ -94,6 +94,27 @@ const NotificationService = {
         } catch (error) {
             console.error('Error sending multicast notification:', error);
         }
+    },
+
+    /**
+     * Send notification to a specific topic (e.g., 'riders')
+     */
+    sendToTopic: async (topic, { title, body, data = {} }) => {
+        if (!isInitialized || !topic) return;
+
+        const message = {
+            notification: { title, body },
+            data: data,
+            topic: topic
+        };
+
+        try {
+            const response = await admin.messaging().send(message);
+            console.log(`Successfully sent message to topic ${topic}:`, response);
+            return response;
+        } catch (error) {
+            console.error(`Error sending push to topic ${topic}:`, error);
+        }
     }
 };
 

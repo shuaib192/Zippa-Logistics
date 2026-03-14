@@ -16,6 +16,7 @@
 const db = require('../config/database');
 const { calculateFare } = require('../utils/fare_calculator');
 const { createNotification } = require('./notification.controller');
+const NotificationService = require('../services/notification.service');
 
 
 // ============================================
@@ -204,6 +205,16 @@ const createOrder = async (req, res) => {
             'order',
             order.id
         );
+
+        // Broadcast to all Riders via FCM Topic
+        NotificationService.sendToTopic('riders', {
+            title: 'New Delivery Available!',
+            body: `Package from ${pickup_address} to ${dropoff_address}. Tap to view.`,
+            data: {
+                type: 'new_order',
+                related_id: order.id.toString()
+            }
+        });
 
         res.status(201).json({
             success: true,

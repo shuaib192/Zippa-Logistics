@@ -260,9 +260,13 @@ class AuthProvider extends ChangeNotifier {
     await prefs.remove(AppConstants.refreshTokenKey);
     await prefs.remove(AppConstants.userDataKey);
     
-    // Unsubscribe from topics to stop receiving order alerts after logout
+    // Unsubscribe from all FCM topics on logout
     if (_user?.role == 'rider') {
       FCMService.unsubscribeFromTopic('riders');
+    } else if (_user?.role == 'customer') {
+      FCMService.unsubscribeFromTopic('customers');
+    } else if (_user?.role == 'vendor') {
+      FCMService.unsubscribeFromTopic('vendors');
     }
 
     _user = null;

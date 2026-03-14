@@ -155,7 +155,8 @@ class _HomeContentState extends State<_HomeContent> {
       await Future.delayed(const Duration(milliseconds: 1500));
       
       if (mounted) {
-        await FCMService.requestNotificationPermission();
+        await FCMService.syncToken();
+        await FCMService.subscribeToTopic('customers');
       }
     });
   }

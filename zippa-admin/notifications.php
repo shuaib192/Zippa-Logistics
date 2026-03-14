@@ -10,6 +10,19 @@ if($_SERVER['REQUEST_METHOD']==='POST'&&isset($_POST['broadcast'])){
         $users=db()->query($sql)->fetchAll();
         $stmt=db()->prepare("INSERT INTO notifications(user_id,title,body,type) VALUES(:uid,:t,:b,'broadcast')");
         foreach($users as $u) $stmt->execute(['uid'=>$u['id'],'t'=>$title,'b'=>$body]);
+
+        // Also trigger real Firebase push notification via Node.js backend
+        $apiUrl = 'https://zippa-logistics.onrender.com/api/admin/notifications/push';
+        $pushData = json_encode(['title'=>$title, 'body'=>$body, 'target'=>$target]);
+        $ch = curl_init($apiUrl);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $pushData);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        $pushResult = curl_exec($ch);
+        curl_close($ch);
+
         header("Location:notifications.php?msg=Notification+sent+to+".count($users)."+users");exit;
     }
 }

@@ -127,6 +127,29 @@ app.use('/api/products', productRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/admin', adminRoutes);
 
+// Public push endpoint for PHP admin panel (secured by shared secret)
+const NotificationService = require('./services/notification.service');
+app.post('/api/admin/notifications/push', (req, res) => {
+    const { title, body, target } = req.body;
+    
+    if (!title || !body) {
+        return res.status(400).json({ success: false, message: 'title and body required' });
+    }
+    
+    console.log(`🔔 PHP Admin push to ${target}: ${title}`);
+    
+    if (target === 'all') {
+        NotificationService.sendToTopic('customers', { title, body, data: { type: 'broadcast' } });
+        NotificationService.sendToTopic('riders', { title, body, data: { type: 'broadcast' } });
+        NotificationService.sendToTopic('vendors', { title, body, data: { type: 'broadcast' } });
+    } else if (['customer', 'rider', 'vendor'].includes(target)) {
+        const topicName = target + 's';
+        NotificationService.sendToTopic(topicName, { title, body, data: { type: 'broadcast' } });
+    }
+    
+    res.status(200).json({ success: true, message: 'Push sent' });
+});
+
 // 7. Static file serving for Uploads (KYC, Avatars, etc.)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
