@@ -171,7 +171,7 @@ const handleBookingFlow = async (from, session, entities) => {
         const updatedData = { ...flow_data, dropoff: dropoff || flow_data.dropoff };
         
         // Calculate price (Simulated distance for AI demo)
-        const fareInfo = calculateFare(5, updatedData.package || 'small'); 
+        const fareInfo = await calculateFare(5, updatedData.package || 'small'); 
         updatedData.price = fareInfo.total_fare;
 
         await updateSession(from, 'awaiting_confirmation', updatedData);

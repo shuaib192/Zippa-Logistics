@@ -60,7 +60,7 @@ const estimateFare = async (req, res) => {
             parseFloat(dropoff_lat), parseFloat(dropoff_lng),
         );
 
-        const fare = calculateFare(distanceKm, package_size);
+        const fare = await calculateFare(distanceKm, package_size);
 
         res.status(200).json({
             success: true,
@@ -110,12 +110,11 @@ const createOrder = async (req, res) => {
             }
         }
 
-        // Calculate distance and fare
         const distanceKm = (pickup_lat && dropoff_lat)
             ? calculateDistance(parseFloat(pickup_lat), parseFloat(pickup_lng), parseFloat(dropoff_lat), parseFloat(dropoff_lng))
             : 5; // default fallback
 
-        const fare = calculateFare(distanceKm, package_size);
+        const fare = await calculateFare(distanceKm, package_size);
         const totalAmount = parseFloat(fare.total_fare) + parseFloat(item_price);
 
         // Generate unique order number: ZLP-YYYYMMDD-XXXX

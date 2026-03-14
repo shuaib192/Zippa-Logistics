@@ -1,19 +1,34 @@
+const pool = require('../config/database');
+
 /**
- * FARE CALCULATOR (fare_calculator.js)
- * Shared logic for calculating delivery prices.
+ * Fetch settings from the database
  */
-
-const BASE_FARE = 500;   // Starting price
-const PER_KM = 150;     // Price per kilometer
-
-const sizeMultipliers = {
-    small: 1.0,
-    medium: 1.2,
-    large: 1.5,
-    extra_large: 2.0,
+const getSettings = async () => {
+    try {
+        const result = await pool.query('SELECT key, value FROM settings');
+        const settings = {};
+        result.rows.forEach(row => {
+            settings[row.key] = parseFloat(row.value);
+        });
+        return settings;
+    } catch (error) {
+        console.error('❌ Error fetching settings:', error);
+        return { base_fare: 500, per_km_fare: 150 }; // Fallback
+    }
 };
 
-const calculateFare = (distanceKm, packageSize = 'small') => {
+const calculateFare = async (distanceKm, packageSize = 'small') => {
+    const settings = await getSettings();
+    const BASE_FARE = settings.base_fare || 500;
+    const PER_KM = settings.per_km_fare || 150;
+
+    const sizeMultipliers = {
+        small: 1.0,
+        medium: 1.2,
+        large: 1.5,
+        extra_large: 2.0,
+    };
+
     const multiplier = sizeMultipliers[packageSize] || 1.0;
     const distanceFare = Math.max(0, distanceKm - 1) * PER_KM; // first km already in base
     const rawFare = (BASE_FARE + distanceFare) * multiplier;
