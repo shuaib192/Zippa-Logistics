@@ -1,14 +1,14 @@
-<?php
+ <?php
 /**
  * Database Configuration — Zippa Admin Panel
  * Connects to PostgreSQL via PDO
  */
 
-define('DB_HOST', 'localhost');
+define('DB_HOST', 'aws-1-eu-north-1.pooler.supabase.com');
 define('DB_PORT', '5432');
-define('DB_NAME', 'zippa_logistics');
-define('DB_USER', 'zippa_admin');
-define('DB_PASS', '');
+define('DB_NAME', 'postgres');
+define('DB_USER', 'postgres.laqcdgjjmoxrvfxppzxk');
+define('DB_PASS', 'zippalogistic001');
 
 function db(): PDO {
     static $pdo = null;

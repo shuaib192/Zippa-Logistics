@@ -18,6 +18,7 @@ import 'package:zippa_app/features/rider/screens/rider_order_details_screen.dart
 import 'package:url_launcher/url_launcher.dart';
 import 'package:zippa_app/core/widgets/app_drawer.dart';
 import 'package:zippa_app/features/rider/screens/rider_wallet_screen.dart';
+import 'package:zippa_app/core/services/fcm_service.dart';
 
 class RiderHomeScreen extends StatefulWidget {
   const RiderHomeScreen({super.key});
@@ -86,6 +87,13 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         Provider.of<WalletProvider>(context, listen: false).fetchBalance();
+        
+        // Sequence permissions to avoid collision
+        Future.delayed(const Duration(milliseconds: 1000), () async {
+          if (mounted) {
+            await FCMService.requestNotificationPermission();
+          }
+        });
       }
     });
   }

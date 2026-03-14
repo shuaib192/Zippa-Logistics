@@ -76,6 +76,9 @@ if ($pageTitle === 'index') $pageTitle = 'Dashboard';
             </a>
 
             <div class="nav-divider"></div>
+            <a href="app-settings.php" class="nav-link <?= $currentPage==='app-settings'?'active':'' ?>">
+                <i class="fa-solid fa-money-bill-wave"></i> Service Prices
+            </a>
             <a href="settings.php" class="nav-link <?= $currentPage==='settings'?'active':'' ?>">
                 <i class="fa-solid fa-gear"></i> Settings
             </a>

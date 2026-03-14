@@ -22,6 +22,7 @@ import 'package:zippa_app/features/customer/screens/vendor_details_screen.dart';
 import 'package:zippa_app/core/utils/currency_formatter.dart';
 import 'package:zippa_app/core/widgets/app_drawer.dart';
 import 'package:zippa_app/core/providers/location_provider.dart';
+import 'package:zippa_app/core/services/fcm_service.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
   const CustomerHomeScreen({super.key});
@@ -129,6 +130,14 @@ class _HomeContent extends StatefulWidget {
 }
 
 class _HomeContentState extends State<_HomeContent> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -139,8 +148,15 @@ class _HomeContentState extends State<_HomeContent> {
       Provider.of<MarketplaceProvider>(context, listen: false).fetchFeaturedVendors();
       Provider.of<MarketplaceProvider>(context, listen: false).fetchFavorites();
       
-      // Request location permission for better experience
-      Provider.of<LocationProvider>(context, listen: false).requestLocationPermission();
+      // Request permissions sequentially to avoid dialog overlapping
+      await Provider.of<LocationProvider>(context, listen: false).requestLocationPermission();
+      
+      // Small delay for smooth transition between prompts
+      await Future.delayed(const Duration(milliseconds: 1500));
+      
+      if (mounted) {
+        await FCMService.requestNotificationPermission();
+      }
     });
   }
 
@@ -210,18 +226,16 @@ class _HomeContentState extends State<_HomeContent> {
             },
           ),
           
-          // Search Bar
+          // Search Bar - Professional Pill Design
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade100),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
-              ],
+              color: ZippaColors.surface,
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: Colors.grey.shade200),
             ),
             child: TextField(
+              controller: _searchController,
               onSubmitted: (query) {
                 if (query.trim().isNotEmpty) {
                   marketplace.searchProducts(query);
@@ -232,14 +246,18 @@ class _HomeContentState extends State<_HomeContent> {
                 }
               },
               decoration: InputDecoration(
-                hintText: 'Search for "Bread", "Milk", "Rice"...',
+                hintText: 'Search products or shops...',
                 hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
                 prefixIcon: const Icon(Icons.search_rounded, color: ZippaColors.primary),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.clear_rounded, color: Colors.grey, size: 20),
+                  onPressed: () => _searchController.clear(),
+                ),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
-          ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.1, end: 0),
+          ),
           
           const SizedBox(height: 16),
           

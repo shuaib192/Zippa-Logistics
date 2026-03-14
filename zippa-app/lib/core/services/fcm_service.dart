@@ -5,6 +5,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../../firebase_options.dart';
 import 'package:zippa_app/data/api/api_client.dart';
@@ -29,17 +30,6 @@ class FCMService {
       debugPrint('Firebase init error: $e');
     }
 
-    // 1. Request Permission (For iOS/Android 13+)
-    NotificationSettings settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      debugPrint('✅ User granted notification permission');
-    }
-
     // 2. Setup Local Notifications (For Foreground messages)
     const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const DarwinInitializationSettings iosSettings = DarwinInitializationSettings();
@@ -56,8 +46,38 @@ class FCMService {
     // 4. Handle Notification Clicks (When app is in background/terminated)
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       debugPrint('🚀 Notification Clicked: ${message.data}');
-      // TODO: Handle navigation based on message data
     });
+  }
+
+  // ============================================
+  // Request Notification Permission (Recommended to call from UI)
+  // ============================================
+  static Future<bool> requestNotificationPermission() async {
+    try {
+      // For Android 13+ and iOS, we use permission_handler which is more reliable
+      PermissionStatus status = await Permission.notification.status;
+      
+      if (status.isDenied) {
+        status = await Permission.notification.request();
+      }
+      
+      if (status.isGranted) {
+        debugPrint('✅ User granted notification permission via permission_handler');
+        return true;
+      }
+      
+      // Fallback to FCM built-in request if permission_handler didn't get it
+      NotificationSettings settings = await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      
+      return settings.authorizationStatus == AuthorizationStatus.authorized;
+    } catch (e) {
+      debugPrint('❌ Error requesting notification permission: $e');
+      return false;
+    }
   }
 
   // ============================================
@@ -66,13 +86,9 @@ class FCMService {
   static Future<void> syncToken() async {
     try {
       // Prompt for permissions when syncing token (if not already granted)
-      NotificationSettings settings = await _messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
+      bool granted = await requestNotificationPermission();
 
-      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      if (granted) {
         String? token = await _messaging.getToken();
         if (token != null) {
           debugPrint('🎟️ FCM Token: $token');

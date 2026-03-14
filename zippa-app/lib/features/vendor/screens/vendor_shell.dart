@@ -9,6 +9,7 @@ import 'package:zippa_app/core/widgets/app_drawer.dart';
 import 'package:zippa_app/features/vendor/screens/vendor_orders_screen.dart';
 import 'package:zippa_app/features/vendor/screens/vendor_products_screen.dart';
 import 'package:zippa_app/features/vendor/screens/vendor_profile_screen.dart';
+import 'package:zippa_app/core/services/fcm_service.dart';
 
 class VendorShell extends StatefulWidget {
   const VendorShell({super.key});
@@ -18,6 +19,20 @@ class VendorShell extends StatefulWidget {
 }
 
 class _VendorShellState extends State<VendorShell> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) {
+            FCMService.requestNotificationPermission();
+          }
+        });
+      }
+    });
+  }
+
   String _getAppBarTitle(int index) {
     switch (index) {
       case 0: return 'Vendor Dashboard';
