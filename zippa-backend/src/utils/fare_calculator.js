@@ -13,7 +13,7 @@ const getSettings = async () => {
         return settings;
     } catch (error) {
         console.error('❌ Error fetching settings:', error);
-        return { base_fare: 500, per_km_fare: 150 }; // Fallback
+        return { base_fare: 1000, per_km_fare: 250 }; // Fallback
     }
 };
 

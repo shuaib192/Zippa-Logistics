@@ -174,30 +174,48 @@ const getWithdrawals = async (req, res) => {
  */
 const getSettings = async (req, res) => {
     try {
-        // We'll use a simple table or just return defaults for now if table doesn't exist
-        // For Zippa, let's assume a 'system_settings' table or just hardcode if missing
+        const result = await db.query('SELECT key, value FROM settings');
+        const settings = {};
+        result.rows.forEach(row => {
+            settings[row.key] = row.value; // Store as string, parse as needed in app
+        });
+
+        // Ensure defaults exist if table is empty
+        const finalSettings = {
+            base_fare: settings.base_fare || '1000',
+            per_km_fare: settings.per_km_fare || '250',
+            service_fee: settings.service_fee || '10',
+            min_withdrawal: settings.min_withdrawal || '2000',
+            surge_multiplier: settings.surge_multiplier || '1.0'
+        };
+
         res.status(200).json({ 
             success: true, 
-            settings: {
-                service_fee: 10,
-                base_fare: 1000,
-                min_withdrawal: 2000,
-                surge_multiplier: 1.0
-            }
+            settings: finalSettings
         });
     } catch (err) {
+        console.error('❌ Admin getSettings error:', err);
         res.status(500).json({ success: false, message: 'Failed to fetch settings' });
     }
 };
 
 const updateSettings = async (req, res) => {
     try {
-        // Destructure only for logging or validation if needed, otherwise ignore if unused
-        // In this case, the linter says they are unused, so we can just use req.body directly
-        // In a real app, we'd update a 'system_settings' table here
-        console.log('✅ Admin updated system settings:', req.body);
+        const settings = req.body; // Expecting { key: value, ... }
+        
+        for (const [key, value] of Object.entries(settings)) {
+            await db.query(`
+                INSERT INTO settings (key, value)
+                VALUES ($1, $2)
+                ON CONFLICT (key) 
+                DO UPDATE SET value = $2, updated_at = CURRENT_TIMESTAMP
+            `, [key, value.toString()]);
+        }
+
+        console.log('✅ Admin updated system settings:', settings);
         res.status(200).json({ success: true, message: 'Settings updated successfully' });
     } catch (err) {
+        console.error('❌ Admin updateSettings error:', err);
         res.status(500).json({ success: false, message: 'Failed to update settings' });
     }
 };
