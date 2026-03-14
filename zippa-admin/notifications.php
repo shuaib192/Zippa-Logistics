@@ -12,7 +12,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'&&isset($_POST['broadcast'])){
         foreach($users as $u) $stmt->execute(['uid'=>$u['id'],'t'=>$title,'b'=>$body]);
 
         // Also trigger real Firebase push notification via Node.js backend
-        $apiUrl = 'https://zippa-logistics.onrender.com/api/admin/notifications/push';
+        $apiUrl = 'https://zippa-logistics.onrender.com/api/push/broadcast';
         $pushData = json_encode(['title'=>$title, 'body'=>$body, 'target'=>$target]);
         $ch = curl_init($apiUrl);
         curl_setopt($ch, CURLOPT_POST, true);

@@ -110,9 +110,13 @@ class FCMService {
   }
 
   // ============================================
-  // Subscribe to Topic
+  // Subscribe to Topic (Not supported on web)
   // ============================================
   static Future<void> subscribeToTopic(String topic) async {
+    if (kIsWeb) {
+      debugPrint('📢 Topic subscription skipped on web (not supported)');
+      return;
+    }
     try {
       await _messaging.subscribeToTopic(topic);
       debugPrint('📢 Subscribed to topic: $topic');
@@ -122,9 +126,10 @@ class FCMService {
   }
 
   // ============================================
-  // Unsubscribe from Topic
+  // Unsubscribe from Topic (Not supported on web)
   // ============================================
   static Future<void> unsubscribeFromTopic(String topic) async {
+    if (kIsWeb) return;
     try {
       await _messaging.unsubscribeFromTopic(topic);
       debugPrint('🔇 Unsubscribed from topic: $topic');

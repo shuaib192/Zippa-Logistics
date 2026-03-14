@@ -113,23 +113,9 @@ app.get('/api/health', (_req, res) => {
     });
 });
 
-// Mount route modules
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/wallet', walletRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/ratings', ratingRoutes);
-app.use('/api/chat', chatRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/whatsapp', whatsappRoutes);
-app.use('/api/vendors', vendorRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/webhooks', webhookRoutes);
-app.use('/api/admin', adminRoutes);
-
-// Public push endpoint for PHP admin panel (secured by shared secret)
+// Public push endpoint for PHP admin panel (MUST be before authenticated admin routes)
 const NotificationService = require('./services/notification.service');
-app.post('/api/admin/notifications/push', (req, res) => {
+app.post('/api/push/broadcast', (req, res) => {
     const { title, body, target } = req.body;
     
     if (!title || !body) {
@@ -149,6 +135,20 @@ app.post('/api/admin/notifications/push', (req, res) => {
     
     res.status(200).json({ success: true, message: 'Push sent' });
 });
+
+// Mount route modules
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/wallet', walletRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/ratings', ratingRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/vendors', vendorRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/webhooks', webhookRoutes);
+app.use('/api/admin', adminRoutes);
 
 // 7. Static file serving for Uploads (KYC, Avatars, etc.)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
