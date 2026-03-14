@@ -141,7 +141,7 @@ class _HomeContentState extends State<_HomeContent> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       Provider.of<OrderProvider>(context, listen: false).fetchOrders();
       Provider.of<WalletProvider>(context, listen: false).fetchBalance();
       Provider.of<MarketplaceProvider>(context, listen: false).fetchCategories();

@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "com.zippalogistics.zippa_app"
-    compileSdk = 34
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
