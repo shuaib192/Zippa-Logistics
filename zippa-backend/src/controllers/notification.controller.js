@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const NotificationService = require('../services/notification.service');
 
 /**
  * Get notifications for current user
@@ -44,6 +45,24 @@ const createNotification = async (userId, title, body, type = 'system', relatedI
              VALUES ($1, $2, $3, $4, $5)`,
             [userId, title, body, type, relatedId ? { related_id: relatedId } : null]
         );
+
+        // Fetch user's FCM token
+        const userResult = await db.query('SELECT fcm_token FROM users WHERE id = $1', [userId]);
+        if (userResult.rows.length > 0 && userResult.rows[0].fcm_token) {
+            const fcmToken = userResult.rows[0].fcm_token;
+            // Send actual push notification via Firebase
+            NotificationService.sendToUser(fcmToken, {
+                title: title,
+                body: body,
+                data: {
+                    type: type,
+                    related_id: relatedId ? relatedId.toString() : ''
+                }
+            }).catch(pushErr => {
+                console.error(`Failed to send push notification to user ${userId}:`, pushErr);
+            });
+        }
+
         return true;
     } catch (err) {
         console.error('Internal create notification error:', err);
