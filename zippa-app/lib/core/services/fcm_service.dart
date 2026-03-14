@@ -103,6 +103,30 @@ class FCMService {
   }
 
   // ============================================
+  // Subscribe to Topic
+  // ============================================
+  static Future<void> subscribeToTopic(String topic) async {
+    try {
+      await _messaging.subscribeToTopic(topic);
+      debugPrint('📢 Subscribed to topic: $topic');
+    } catch (e) {
+      debugPrint('❌ Error subscribing to topic $topic: $e');
+    }
+  }
+
+  // ============================================
+  // Unsubscribe from Topic
+  // ============================================
+  static Future<void> unsubscribeFromTopic(String topic) async {
+    try {
+      await _messaging.unsubscribeFromTopic(topic);
+      debugPrint('🔇 Unsubscribed from topic: $topic');
+    } catch (e) {
+      debugPrint('❌ Error unsubscribing from topic $topic: $e');
+    }
+  }
+
+  // ============================================
   // Private: Show Local Notification
   // ============================================
   static void _showLocalNotification(RemoteMessage message) {

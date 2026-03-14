@@ -88,10 +88,11 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
       if (mounted) {
         Provider.of<WalletProvider>(context, listen: false).fetchBalance();
         
-        // Sequence permissions to avoid collision
+        // Sequence permissions and topic subscription
         Future.delayed(const Duration(milliseconds: 1000), () async {
           if (mounted) {
-            await FCMService.requestNotificationPermission();
+            await FCMService.syncToken();
+            await FCMService.subscribeToTopic('riders');
           }
         });
       }
