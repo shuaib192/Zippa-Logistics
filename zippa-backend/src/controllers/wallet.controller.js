@@ -142,8 +142,8 @@ const fundWallet = async (req, res) => {
         const { amount } = req.body;
         const { id: userId, email } = req.user;
         
-        if (!amount || amount < 100) {
-            return res.status(400).json({ success: false, message: 'Minimum funding amount is N100.' });
+        if (!amount || amount < 50) {
+            return res.status(400).json({ success: false, message: 'Minimum funding amount is N50.' });
         }
 
         // 1. Initialize Transaction on Paystack
