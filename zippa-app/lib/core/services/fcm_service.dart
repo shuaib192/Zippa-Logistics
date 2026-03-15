@@ -123,6 +123,16 @@ class FCMService {
     }
   }
 
+  static Future<void> unsubscribeFromTopic(String topic) async {
+    if (kIsWeb) return;
+    try {
+      await _messaging.unsubscribeFromTopic(topic);
+      debugPrint('🔇 Unsubscribed: $topic');
+    } catch (e) {
+      debugPrint('❌ Unsubscription Error: $e');
+    }
+  }
+
   static void _showLocalNotification(String title, String body, Map<String, dynamic> data) {
     try {
       const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
