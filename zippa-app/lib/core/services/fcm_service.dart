@@ -20,7 +20,7 @@ class FCMService {
   // ============================================
   static Future<void> initialize() async {
     try {
-      debugPrint('☢️ NUCLEAR FCM: Initializing...');
+      debugPrint('🔔 FCM: Initializing Hybrid System...');
       
       // 1. Initialize Firebase
       if (Firebase.apps.isEmpty) {
@@ -29,14 +29,15 @@ class FCMService {
         );
       }
 
-      // 2. Setup Notification Channel
+      // 2. Setup Notification Channel (MANDATORY for Android 8+)
       const AndroidNotificationChannel channel = AndroidNotificationChannel(
-        'zippa_alerts',
-        'Zippa Notifications',
-        description: 'Crucial delivery and order alerts.',
+        'zippa_alerts', // id
+        'High Importance Notifications', // name (User sees this)
+        description: 'Priority alerts for orders and delivery updates.',
         importance: Importance.max,
         playSound: true,
         enableVibration: true,
+        showBadge: true,
       );
 
       await _localNotifications
@@ -51,48 +52,46 @@ class FCMService {
       await _localNotifications.initialize(
         initSettings,
         onDidReceiveNotificationResponse: (details) {
-          debugPrint('🚀 Notification Action: ${details.payload}');
+          debugPrint('🚀 Notification User Action: ${details.payload}');
         },
       );
 
-      // 4. Foreground Handler
+      // 4. Listen for Foreground Messages (Manually show alert)
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        debugPrint('🔔 Nuclear Foreground Message Received');
-        handleNuclearMessage(message);
+        debugPrint('🔔 Foreground Message: ${message.notification?.title}');
+        handleIncomingMessage(message);
       });
 
-      // 5. Open App Handler
+      // 5. Handle Notification Clicks
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-        debugPrint('🚀 Nuclear Notification Clicked');
+        debugPrint('🚀 Notification Click Handler');
       });
       
-      debugPrint('✅ NUCLEAR FCM: Ready');
+      debugPrint('✅ FCM Service Ready');
     } catch (e) {
-      debugPrint('❌ NUCLEAR FCM Error: $e');
+      debugPrint('❌ FCM Init Error: $e');
     }
   }
 
   // ============================================
-  // NUCLEAR HANDLER: This is the brain of the fix
+  // UNIFIED HANDLER: Handles both data and notification
   // ============================================
-  static void handleNuclearMessage(RemoteMessage message) {
-    debugPrint('☢️ Processing Data-Only Message...');
-    
-    // We look for title and body INSIDE the data object
-    final String? title = message.data['title'] ?? message.notification?.title;
-    final String? body = message.data['body'] ?? message.notification?.body;
+  static void handleIncomingMessage(RemoteMessage message) {
+    // If we have a notification object, use it. Otherwise look in data.
+    final String? title = message.notification?.title ?? message.data['title'];
+    final String? body = message.notification?.body ?? message.data['body'];
 
     if (title != null && body != null) {
       _showLocalNotification(title, body, message.data);
-    } else {
-      debugPrint('⚠️ Nuclear Message missing content. Data: ${message.data}');
     }
   }
 
   static Future<bool> requestNotificationPermission() async {
     try {
       NotificationSettings settings = await _messaging.requestPermission(
-        alert: true, badge: true, sound: true,
+        alert: true, 
+        badge: true, 
+        sound: true,
       );
       return settings.authorizationStatus == AuthorizationStatus.authorized;
     } catch (e) {
@@ -105,11 +104,11 @@ class FCMService {
       await requestNotificationPermission();
       String? token = await _messaging.getToken();
       if (token != null) {
-        debugPrint('🎟️ Nuclear Token: $token');
+        debugPrint('🎟️ FCM Token: $token');
         await _apiClient.put('/users/fcm-token', {'token': token});
       }
     } catch (e) {
-      debugPrint('❌ Nuclear Sync Error: $e');
+      debugPrint('❌ Token Sync Error: $e');
     }
   }
 
@@ -117,7 +116,7 @@ class FCMService {
     if (kIsWeb) return;
     try {
       await _messaging.subscribeToTopic(topic);
-      debugPrint('📢 Subscribed: $topic');
+      debugPrint('📢 Subscribed to $topic');
     } catch (e) {
       debugPrint('❌ Subscription Error: $e');
     }
@@ -127,7 +126,7 @@ class FCMService {
     if (kIsWeb) return;
     try {
       await _messaging.unsubscribeFromTopic(topic);
-      debugPrint('🔇 Unsubscribed: $topic');
+      debugPrint('🔇 Unsubscribed from $topic');
     } catch (e) {
       debugPrint('❌ Unsubscription Error: $e');
     }
@@ -137,12 +136,14 @@ class FCMService {
     try {
       const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
         'zippa_alerts',
-        'Zippa Notifications',
+        'High Importance Notifications',
+        channelDescription: 'Priority alerts for orders and delivery updates.',
         importance: Importance.max,
         priority: Priority.high,
-        ticker: 'ticker',
         icon: 'ic_launcher',
         playSound: true,
+        fullScreenIntent: true, // Attempt to wake up screen
+        category: AndroidNotificationCategory.alarm,
       );
       
       const NotificationDetails details = NotificationDetails(android: androidDetails);
@@ -155,7 +156,7 @@ class FCMService {
         payload: data.toString(),
       );
     } catch (e) {
-      debugPrint('❌ Local Notification Display Error: $e');
+      debugPrint('❌ Local Notification Error: $e');
     }
   }
 }

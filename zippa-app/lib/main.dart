@@ -45,18 +45,16 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  // ☢️ NUCLEAR: Handle the data-only message even when app is killed
-  FCMService.handleNuclearMessage(message);
+  // Process incoming message even in background
+  FCMService.handleIncomingMessage(message);
 }
 
 // ============================================
 // main() — The very first function that runs
 // ============================================
 void main() async {
-  // Ensure Flutter is initialized before running
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -64,16 +62,14 @@ void main() async {
   // Set up background message handling
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   
-  // Initialize FCM Service (Permissions & Local Notifications)
+  // Initialize FCM Service
   await FCMService.initialize();
   
-  // Set the status bar style
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
   ));
   
-  // Launch the app!
   runApp(const ZippaApp());
 }
 

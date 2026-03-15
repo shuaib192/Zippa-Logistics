@@ -8,7 +8,6 @@ const fs = require('fs');
 
 let isInitialized = false;
 
-// Path to the local service account key file
 const serviceAccountPath = path.join(__dirname, '../config/firebase-service-account.json');
 const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
 
@@ -35,76 +34,88 @@ if (fs.existsSync(serviceAccountPath) || serviceAccountEnv) {
 
 const NotificationService = {
     /**
-     * NUCLEAR OPTION: Send a DATA-ONLY push notification
-     * By omitting the "notification" object, we skip the Android OS tray
-     * and force the app code to run and show the notification manually.
+     * HYBRID OPTION: Notification + Data
+     * This provides the best of both worlds:
+     * 1. OS handles the background tray (High reliability)
+     * 2. App handles the foreground popup
      */
-    _prepareNuclearMessage: (target, { title, body, data = {} }) => {
-        const baseMessage = {
-            // ☢️ NUCLEAR: We DO NOT use the "notification" key.
-            // This prevents the Android OS from intercepting and potentially hiding it.
+    _prepareHybridMessage: (target, { title, body, data = {} }) => {
+        const message = {
+            // 🔔 Standard notification object for the Android/iOS OS Tray
+            notification: {
+                title: title,
+                body: body
+            },
+            // 📦 Additional data for app-side logic
             data: {
                 ...data,
-                title: title,
-                body: body,
                 click_action: 'FLUTTER_NOTIFICATION_CLICK',
-                message_type: 'nuclear_push'
+                zippa_msg_type: 'hybrid_push'
             },
             android: {
-                priority: 'high',
-                ttl: 3600 * 1000 // 1 hour
+                priority: 'high', // Use high priority for aggressive delivery
+                notification: {
+                    channelId: 'zippa_alerts', // Must match FCMService and Manifest
+                    priority: 'max',           // Force heads-up (popup)
+                    sound: 'default',
+                    visibility: 'public',      // Show on lockscreen
+                    clickAction: 'FLUTTER_NOTIFICATION_CLICK'
+                }
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        alert: { title, body },
+                        sound: 'default'
+                    }
+                }
             }
         };
 
         if (target.startsWith('projects/') || target.includes(':')) {
-            baseMessage.token = target;
+            message.token = target;
         } else {
-            baseMessage.topic = target;
+            message.topic = target;
         }
 
-        return baseMessage;
+        return message;
     },
 
     sendToUser: async (fcmToken, payload) => {
         if (!isInitialized || !fcmToken) return;
-        const message = NotificationService._prepareNuclearMessage(fcmToken, payload);
-        
+        const message = NotificationService._prepareHybridMessage(fcmToken, payload);
         try {
             const response = await admin.messaging().send(message);
-            console.log('Successfully sent nuclear message:', response);
+            console.log('Successfully sent hybrid message:', response);
             return response;
         } catch (error) {
-            console.error('Error sending nuclear notification:', error);
+            console.error('Error sending hybrid notification:', error);
         }
     },
 
     sendToMultiple: async (tokens, payload) => {
         if (!isInitialized || !tokens || tokens.length === 0) return;
-        
         const messages = tokens
             .filter(t => t !== null)
-            .map(t => NotificationService._prepareNuclearMessage(t, payload));
-
+            .map(t => NotificationService._prepareHybridMessage(t, payload));
         try {
-            // multicasts for individual messages
             const response = await admin.messaging().sendEach(messages);
-            console.log(`${response.successCount} nuclear messages were sent successfully`);
+            console.log(`${response.successCount} hybrid messages were sent successfully`);
             return response;
         } catch (error) {
-            console.error('Error sending multicast nuclear notification:', error);
+            console.error('Error sending multicast hybrid notification:', error);
         }
     },
 
     sendToTopic: async (topic, payload) => {
         if (!isInitialized || !topic) return;
-        const message = NotificationService._prepareNuclearMessage(topic, payload);
-
+        const message = NotificationService._prepareHybridMessage(topic, payload);
         try {
             const response = await admin.messaging().send(message);
-            console.log(`Successfully sent nuclear message to topic ${topic}:`, response);
+            console.log(`Successfully sent hybrid message to topic ${topic}:`, response);
             return response;
         } catch (error) {
-            console.error(`Error sending nuclear push to topic ${topic}:`, error);
+            console.error(`Error sending hybrid push to topic ${topic}:`, error);
         }
     }
 };
