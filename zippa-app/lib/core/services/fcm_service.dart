@@ -44,7 +44,7 @@ class FCMService {
         ?.createNotificationChannel(channel);
 
     // 3. Setup Local Notifications Settings
-    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/launcher_icon');
+    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('launcher_icon');
     const DarwinInitializationSettings iosSettings = DarwinInitializationSettings();
     const InitializationSettings initSettings = InitializationSettings(android: androidSettings, iOS: iosSettings);
     
@@ -161,6 +161,7 @@ class FCMService {
       importance: Importance.max,
       priority: Priority.high,
       showWhen: true,
+      icon: 'launcher_icon',
     );
     
     const NotificationDetails details = NotificationDetails(android: androidDetails);
