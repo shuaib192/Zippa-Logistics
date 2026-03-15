@@ -68,7 +68,8 @@ const NotificationService = {
                     channelId: 'zippa_alerts',
                     priority: 'high',
                     defaultSound: true,
-                    defaultVibrateTimings: true
+                    defaultVibrateTimings: true,
+                    clickAction: 'FLUTTER_NOTIFICATION_CLICK'
                 }
             },
             apns: {
@@ -110,7 +111,8 @@ const NotificationService = {
                 priority: 'high',
                 notification: {
                     channelId: 'zippa_alerts',
-                    priority: 'high'
+                    priority: 'high',
+                    clickAction: 'FLUTTER_NOTIFICATION_CLICK'
                 }
             }
         };
