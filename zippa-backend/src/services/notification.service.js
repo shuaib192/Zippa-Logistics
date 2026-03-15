@@ -25,9 +25,11 @@ if (fs.existsSync(serviceAccountPath) || serviceAccountEnv) {
             serviceAccount = require(serviceAccountPath);
         }
 
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount)
-        });
+        if (!admin.apps.length) {
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount)
+            });
+        }
         isInitialized = true;
         console.log('✅ Firebase Admin SDK Initialized.');
     } catch (error) {
@@ -58,7 +60,25 @@ const NotificationService = {
         const message = {
             notification: { title, body },
             data: data,
-            token: fcmToken
+            token: fcmToken,
+            // 🚀 Force high priority for instant delivery on Android
+            android: {
+                priority: 'high',
+                notification: {
+                    channelId: 'zippa_alerts',
+                    priority: 'high',
+                    defaultSound: true,
+                    defaultVibrateTimings: true
+                }
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        alert: { title, body },
+                        sound: 'default'
+                    }
+                }
+            }
         };
 
         try {
@@ -67,10 +87,8 @@ const NotificationService = {
             return response;
         } catch (error) {
             console.error('Error sending push notification:', error);
-            // If the token is invalid or expired, we should probably remove it from our DB
             if (error.code === 'messaging/registration-token-not-registered') {
-                console.log('Token is no longer valid. Marking for cleanup...');
-                // TODO: Implement token cleanup in DB if needed
+                console.log('Token is no longer valid.');
             }
         }
     },
@@ -81,10 +99,20 @@ const NotificationService = {
     sendToMultiple: async (tokens, { title, body, data = {} }) => {
         if (!isInitialized || !tokens || tokens.length === 0) return;
 
+        const validTokens = tokens.filter(t => t !== null);
+        if (validTokens.length === 0) return;
+
         const message = {
             notification: { title, body },
             data: data,
-            tokens: tokens.filter(t => t !== null)
+            tokens: validTokens,
+            android: {
+                priority: 'high',
+                notification: {
+                    channelId: 'zippa_alerts',
+                    priority: 'high'
+                }
+            }
         };
 
         try {
@@ -105,7 +133,16 @@ const NotificationService = {
         const message = {
             notification: { title, body },
             data: data,
-            topic: topic
+            topic: topic,
+            // 🚀 Mandatory for background delivery on Android 8+
+            android: {
+                priority: 'high',
+                notification: {
+                    channelId: 'zippa_alerts',
+                    priority: 'high',
+                    clickAction: 'FLUTTER_NOTIFICATION_CLICK'
+                }
+            }
         };
 
         try {
