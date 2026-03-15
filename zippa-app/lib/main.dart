@@ -42,11 +42,8 @@ import 'features/vendor/screens/vendor_shell.dart';
 // ============================================
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  // Process incoming message even in background
-  FCMService.handleIncomingMessage(message);
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  debugPrint('📢 Scrubbed Background Message Landing...');
 }
 
 // ============================================
