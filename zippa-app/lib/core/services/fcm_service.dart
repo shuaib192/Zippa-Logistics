@@ -19,47 +19,53 @@ class FCMService {
   // Initialize FCM and Permissions
   // ============================================
   static Future<void> initialize() async {
-    // 1. Initialize Firebase
     try {
+      debugPrint('🔔 Initializing FCM Service...');
+      
+      // 1. Initialize Firebase
       if (Firebase.apps.isEmpty) {
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
         );
       }
+
+      // 2. Setup Notification Channel for Android (CRITICAL for background/heads-up)
+      const AndroidNotificationChannel channel = AndroidNotificationChannel(
+        'zippa_alerts', // id
+        'High Importance Notifications', // title
+        description: 'This channel is used for important zippa notifications.', // description
+        importance: Importance.max,
+      );
+
+      // Create the channel on the device
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(channel);
+
+      // 3. Setup Local Notifications Settings
+      // Using 'ic_launcher' as it is the most standard Android icon
+      const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('ic_launcher');
+      const DarwinInitializationSettings iosSettings = DarwinInitializationSettings();
+      const InitializationSettings initSettings = InitializationSettings(android: androidSettings, iOS: iosSettings);
+      
+      await _localNotifications.initialize(initSettings);
+
+      // 4. Listen for Foreground Messages
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        debugPrint('🔔 Foreground Notification Received');
+        _showLocalNotification(message);
+      });
+
+      // 5. Handle Notification Clicks
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        debugPrint('🚀 Notification Clicked: ${message.data}');
+      });
+      
+      debugPrint('✅ FCM Service Initialized successfully');
     } catch (e) {
-      debugPrint('Firebase init error: $e');
+      // 🛡️ CRITICAL: Catch errors so the app doesn't show a black screen on startup
+      debugPrint('❌ FCM Initialization Error (CATCHED): $e');
     }
-
-    // 2. Setup Notification Channel for Android (CRITICAL for background/heads-up)
-    const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'zippa_alerts', // id
-      'High Importance Notifications', // title
-      description: 'This channel is used for important zippa notifications.', // description
-      importance: Importance.max,
-    );
-
-    // Create the channel on the device
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
-
-    // 3. Setup Local Notifications Settings
-    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('launcher_icon');
-    const DarwinInitializationSettings iosSettings = DarwinInitializationSettings();
-    const InitializationSettings initSettings = InitializationSettings(android: androidSettings, iOS: iosSettings);
-    
-    await _localNotifications.initialize(initSettings);
-
-    // 4. Listen for Foreground Messages
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint('🔔 Foreground Notification: ${message.notification?.title}');
-      _showLocalNotification(message);
-    });
-
-    // 5. Handle Notification Clicks (When app is in background/terminated)
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint('🚀 Notification Clicked: ${message.data}');
-    });
   }
 
   // ============================================
@@ -155,22 +161,26 @@ class FCMService {
   // Private: Show Local Notification
   // ============================================
   static void _showLocalNotification(RemoteMessage message) {
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'zippa_alerts',
-      'Zippa Alerts',
-      importance: Importance.max,
-      priority: Priority.high,
-      showWhen: true,
-      icon: 'launcher_icon',
-    );
-    
-    const NotificationDetails details = NotificationDetails(android: androidDetails);
-    
-    _localNotifications.show(
-      message.hashCode,
-      message.notification?.title,
-      message.notification?.body,
-      details,
-    );
+    try {
+      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+        'zippa_alerts',
+        'Zippa Alerts',
+        importance: Importance.max,
+        priority: Priority.high,
+        showWhen: true,
+        icon: 'ic_launcher',
+      );
+      
+      const NotificationDetails details = NotificationDetails(android: androidDetails);
+      
+      _localNotifications.show(
+        message.hashCode,
+        message.notification?.title,
+        message.notification?.body,
+        details,
+      );
+    } catch (e) {
+      debugPrint('❌ Error showing local notification: $e');
+    }
   }
 }
