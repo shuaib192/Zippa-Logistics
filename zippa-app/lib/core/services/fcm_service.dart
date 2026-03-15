@@ -20,7 +20,7 @@ class FCMService {
   // ============================================
   static Future<void> initialize() async {
     try {
-      debugPrint('🔔 Initializing FCM Service...');
+      debugPrint('☢️ NUCLEAR FCM: Initializing...');
       
       // 1. Initialize Firebase
       if (Firebase.apps.isEmpty) {
@@ -29,158 +29,123 @@ class FCMService {
         );
       }
 
-      // 2. Setup Notification Channel for Android (CRITICAL for background/heads-up)
+      // 2. Setup Notification Channel
       const AndroidNotificationChannel channel = AndroidNotificationChannel(
-        'zippa_alerts', // id
-        'High Importance Notifications', // title
-        description: 'This channel is used for important zippa notifications.', // description
+        'zippa_alerts',
+        'Zippa Notifications',
+        description: 'Crucial delivery and order alerts.',
         importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
       );
 
-      // Create the channel on the device
       await _localNotifications
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(channel);
 
       // 3. Setup Local Notifications Settings
-      // Using 'ic_launcher' as it is the most standard Android icon
       const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('ic_launcher');
       const DarwinInitializationSettings iosSettings = DarwinInitializationSettings();
       const InitializationSettings initSettings = InitializationSettings(android: androidSettings, iOS: iosSettings);
       
-      await _localNotifications.initialize(initSettings);
+      await _localNotifications.initialize(
+        initSettings,
+        onDidReceiveNotificationResponse: (details) {
+          debugPrint('🚀 Notification Action: ${details.payload}');
+        },
+      );
 
-      // 4. Listen for Foreground Messages
+      // 4. Foreground Handler
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        debugPrint('🔔 Foreground Notification Received');
-        _showLocalNotification(message);
+        debugPrint('🔔 Nuclear Foreground Message Received');
+        handleNuclearMessage(message);
       });
 
-      // 5. Handle Notification Clicks
+      // 5. Open App Handler
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-        debugPrint('🚀 Notification Clicked: ${message.data}');
+        debugPrint('🚀 Nuclear Notification Clicked');
       });
       
-      debugPrint('✅ FCM Service Initialized successfully');
+      debugPrint('✅ NUCLEAR FCM: Ready');
     } catch (e) {
-      // 🛡️ CRITICAL: Catch errors so the app doesn't show a black screen on startup
-      debugPrint('❌ FCM Initialization Error (CATCHED): $e');
+      debugPrint('❌ NUCLEAR FCM Error: $e');
     }
   }
 
   // ============================================
-  // Request Notification Permission (Recommended to call from UI)
+  // NUCLEAR HANDLER: This is the brain of the fix
   // ============================================
+  static void handleNuclearMessage(RemoteMessage message) {
+    debugPrint('☢️ Processing Data-Only Message...');
+    
+    // We look for title and body INSIDE the data object
+    final String? title = message.data['title'] ?? message.notification?.title;
+    final String? body = message.data['body'] ?? message.notification?.body;
+
+    if (title != null && body != null) {
+      _showLocalNotification(title, body, message.data);
+    } else {
+      debugPrint('⚠️ Nuclear Message missing content. Data: ${message.data}');
+    }
+  }
+
   static Future<bool> requestNotificationPermission() async {
     try {
-      // 1. Use Firebase's native requestPermission FIRST — this is the most
-      //    reliable way to trigger the Android 13+ system dialog
       NotificationSettings settings = await _messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-        provisional: false,
+        alert: true, badge: true, sound: true,
       );
-      
-      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-        debugPrint('✅ Notification permission granted via Firebase');
-        return true;
-      }
-      
-      // 2. Fallback: try permission_handler as a secondary approach
-      PermissionStatus status = await Permission.notification.status;
-      if (status.isDenied) {
-        status = await Permission.notification.request();
-      }
-      
-      if (status.isGranted) {
-        debugPrint('✅ Notification permission granted via permission_handler');
-        return true;
-      }
-      
-      debugPrint('⚠️ Notification permission not granted. Status: ${settings.authorizationStatus}');
-      return false;
+      return settings.authorizationStatus == AuthorizationStatus.authorized;
     } catch (e) {
-      debugPrint('❌ Error requesting notification permission: $e');
       return false;
     }
   }
 
-  // ============================================
-  // Get and Update Token
-  // ============================================
   static Future<void> syncToken() async {
     try {
-      // Prompt for permissions when syncing token (if not already granted)
       await requestNotificationPermission();
-
-      // Always try to get the token — on some devices permission is
-      // granted silently and getToken() works even without explicit grant
       String? token = await _messaging.getToken();
       if (token != null) {
-        debugPrint('🎟️ FCM Token: $token');
+        debugPrint('🎟️ Nuclear Token: $token');
         await _apiClient.put('/users/fcm-token', {'token': token});
-      } else {
-        debugPrint('⚠️ Could not retrieve FCM token.');
       }
     } catch (e) {
-      debugPrint('❌ Error syncing FCM token: $e');
+      debugPrint('❌ Nuclear Sync Error: $e');
     }
   }
 
-  // ============================================
-  // Subscribe to Topic (Not supported on web)
-  // ============================================
   static Future<void> subscribeToTopic(String topic) async {
-    if (kIsWeb) {
-      debugPrint('📢 Topic subscription skipped on web (not supported)');
-      return;
-    }
-    try {
-      await _messaging.subscribeToTopic(topic);
-      debugPrint('📢 Subscribed to topic: $topic');
-    } catch (e) {
-      debugPrint('❌ Error subscribing to topic $topic: $e');
-    }
-  }
-
-  // ============================================
-  // Unsubscribe from Topic (Not supported on web)
-  // ============================================
-  static Future<void> unsubscribeFromTopic(String topic) async {
     if (kIsWeb) return;
     try {
-      await _messaging.unsubscribeFromTopic(topic);
-      debugPrint('🔇 Unsubscribed from topic: $topic');
+      await _messaging.subscribeToTopic(topic);
+      debugPrint('📢 Subscribed: $topic');
     } catch (e) {
-      debugPrint('❌ Error unsubscribing from topic $topic: $e');
+      debugPrint('❌ Subscription Error: $e');
     }
   }
 
-  // ============================================
-  // Private: Show Local Notification
-  // ============================================
-  static void _showLocalNotification(RemoteMessage message) {
+  static void _showLocalNotification(String title, String body, Map<String, dynamic> data) {
     try {
       const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
         'zippa_alerts',
-        'Zippa Alerts',
+        'Zippa Notifications',
         importance: Importance.max,
         priority: Priority.high,
-        showWhen: true,
+        ticker: 'ticker',
         icon: 'ic_launcher',
+        playSound: true,
       );
       
       const NotificationDetails details = NotificationDetails(android: androidDetails);
       
       _localNotifications.show(
-        message.hashCode,
-        message.notification?.title,
-        message.notification?.body,
+        title.hashCode ^ body.hashCode,
+        title,
+        body,
         details,
+        payload: data.toString(),
       );
     } catch (e) {
-      debugPrint('❌ Error showing local notification: $e');
+      debugPrint('❌ Local Notification Display Error: $e');
     }
   }
 }

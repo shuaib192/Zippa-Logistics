@@ -8,20 +8,16 @@ const fs = require('fs');
 
 let isInitialized = false;
 
-// Path to the local service account key file (if it exists)
+// Path to the local service account key file
 const serviceAccountPath = path.join(__dirname, '../config/firebase-service-account.json');
-
-// In production, we prefer environment variables to avoid committing secrets
 const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
 
 if (fs.existsSync(serviceAccountPath) || serviceAccountEnv) {
     try {
         let serviceAccount;
         if (serviceAccountEnv) {
-            // Read from environment variable (String -> JSON)
             serviceAccount = JSON.parse(serviceAccountEnv);
         } else {
-            // Read from local file
             serviceAccount = require(serviceAccountPath);
         }
 
@@ -35,124 +31,80 @@ if (fs.existsSync(serviceAccountPath) || serviceAccountEnv) {
     } catch (error) {
         console.error('❌ Failed to initialize Firebase Admin SDK:', error);
     }
-} else {
-    console.warn('⚠️ Firebase service account NOT FOUND (checked file and ENV).');
-    console.warn('⚠️ Push notifications will be disabled.');
 }
 
 const NotificationService = {
     /**
-     * Send a push notification to a specific user
-     * @param {string} fcmToken - The target user's FCM token
-     * @param {object} payload - { title, body, data }
+     * NUCLEAR OPTION: Send a DATA-ONLY push notification
+     * By omitting the "notification" object, we skip the Android OS tray
+     * and force the app code to run and show the notification manually.
      */
-    sendToUser: async (fcmToken, { title, body, data = {} }) => {
-        if (!isInitialized) {
-            console.warn('Push notification skipped: Firebase not initialized.');
-            return;
-        }
-
-        if (!fcmToken) {
-            console.warn('Push notification skipped: No FCM token provided.');
-            return;
-        }
-
-        const message = {
-            notification: { title, body },
-            data: data,
-            token: fcmToken,
-            // 🚀 Force high priority for instant delivery on Android
-            android: {
-                priority: 'high',
-                notification: {
-                    channelId: 'zippa_alerts',
-                    priority: 'high',
-                    defaultSound: true,
-                    defaultVibrateTimings: true,
-                    clickAction: 'FLUTTER_NOTIFICATION_CLICK'
-                }
+    _prepareNuclearMessage: (target, { title, body, data = {} }) => {
+        const baseMessage = {
+            // ☢️ NUCLEAR: We DO NOT use the "notification" key.
+            // This prevents the Android OS from intercepting and potentially hiding it.
+            data: {
+                ...data,
+                title: title,
+                body: body,
+                click_action: 'FLUTTER_NOTIFICATION_CLICK',
+                message_type: 'nuclear_push'
             },
-            apns: {
-                payload: {
-                    aps: {
-                        alert: { title, body },
-                        sound: 'default'
-                    }
-                }
+            android: {
+                priority: 'high',
+                ttl: 3600 * 1000 // 1 hour
             }
         };
 
+        if (target.startsWith('projects/') || target.includes(':')) {
+            baseMessage.token = target;
+        } else {
+            baseMessage.topic = target;
+        }
+
+        return baseMessage;
+    },
+
+    sendToUser: async (fcmToken, payload) => {
+        if (!isInitialized || !fcmToken) return;
+        const message = NotificationService._prepareNuclearMessage(fcmToken, payload);
+        
         try {
             const response = await admin.messaging().send(message);
-            console.log('Successfully sent message:', response);
+            console.log('Successfully sent nuclear message:', response);
             return response;
         } catch (error) {
-            console.error('Error sending push notification:', error);
-            if (error.code === 'messaging/registration-token-not-registered') {
-                console.log('Token is no longer valid.');
-            }
+            console.error('Error sending nuclear notification:', error);
         }
     },
 
-    /**
-     * Send notification to multiple tokens
-     */
-    sendToMultiple: async (tokens, { title, body, data = {} }) => {
+    sendToMultiple: async (tokens, payload) => {
         if (!isInitialized || !tokens || tokens.length === 0) return;
-
-        const validTokens = tokens.filter(t => t !== null);
-        if (validTokens.length === 0) return;
-
-        const message = {
-            notification: { title, body },
-            data: data,
-            tokens: validTokens,
-            android: {
-                priority: 'high',
-                notification: {
-                    channelId: 'zippa_alerts',
-                    priority: 'high',
-                    clickAction: 'FLUTTER_NOTIFICATION_CLICK'
-                }
-            }
-        };
+        
+        const messages = tokens
+            .filter(t => t !== null)
+            .map(t => NotificationService._prepareNuclearMessage(t, payload));
 
         try {
-            const response = await admin.messaging().sendEachForMulticast(message);
-            console.log(`${response.successCount} messages were sent successfully`);
+            // multicasts for individual messages
+            const response = await admin.messaging().sendEach(messages);
+            console.log(`${response.successCount} nuclear messages were sent successfully`);
             return response;
         } catch (error) {
-            console.error('Error sending multicast notification:', error);
+            console.error('Error sending multicast nuclear notification:', error);
         }
     },
 
-    /**
-     * Send notification to a specific topic (e.g., 'riders')
-     */
-    sendToTopic: async (topic, { title, body, data = {} }) => {
+    sendToTopic: async (topic, payload) => {
         if (!isInitialized || !topic) return;
-
-        const message = {
-            notification: { title, body },
-            data: data,
-            topic: topic,
-            // 🚀 Mandatory for background delivery on Android 8+
-            android: {
-                priority: 'high',
-                notification: {
-                    channelId: 'zippa_alerts',
-                    priority: 'high',
-                    clickAction: 'FLUTTER_NOTIFICATION_CLICK'
-                }
-            }
-        };
+        const message = NotificationService._prepareNuclearMessage(topic, payload);
 
         try {
             const response = await admin.messaging().send(message);
-            console.log(`Successfully sent message to topic ${topic}:`, response);
+            console.log(`Successfully sent nuclear message to topic ${topic}:`, response);
             return response;
         } catch (error) {
-            console.error(`Error sending push to topic ${topic}:`, error);
+            console.error(`Error sending nuclear push to topic ${topic}:`, error);
         }
     }
 };
