@@ -19,7 +19,7 @@ class FCMService {
   // Initialize FCM and Permissions
   // ============================================
   static Future<void> initialize() async {
-    // If not already initialized, ensure we do it with platform options
+    // 1. Initialize Firebase
     try {
       if (Firebase.apps.isEmpty) {
         await Firebase.initializeApp(
@@ -30,20 +30,33 @@ class FCMService {
       debugPrint('Firebase init error: $e');
     }
 
-    // 2. Setup Local Notifications (For Foreground messages)
-    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    // 2. Setup Notification Channel for Android (CRITICAL for background/heads-up)
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'zippa_alerts', // id
+      'High Importance Notifications', // title
+      description: 'This channel is used for important zippa notifications.', // description
+      importance: Importance.max,
+    );
+
+    // Create the channel on the device
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+
+    // 3. Setup Local Notifications Settings
+    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/launcher_icon');
     const DarwinInitializationSettings iosSettings = DarwinInitializationSettings();
     const InitializationSettings initSettings = InitializationSettings(android: androidSettings, iOS: iosSettings);
     
     await _localNotifications.initialize(initSettings);
 
-    // 3. Listen for Foreground Messages
+    // 4. Listen for Foreground Messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('🔔 Foreground Notification: ${message.notification?.title}');
       _showLocalNotification(message);
     });
 
-    // 4. Handle Notification Clicks (When app is in background/terminated)
+    // 5. Handle Notification Clicks (When app is in background/terminated)
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       debugPrint('🚀 Notification Clicked: ${message.data}');
     });
