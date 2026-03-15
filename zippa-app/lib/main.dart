@@ -1,20 +1,5 @@
 // ============================================
 // 🎓 MAIN.DART — The App Entry Point
-//
-// This is where EVERYTHING starts.
-// When you run "flutter run", Dart executes main() first.
-//
-// WHAT THIS FILE DOES:
-// 1. Wraps the app in Provider(s) for state management
-// 2. Configures the app theme (colors, fonts)
-// 3. Sets up navigation routes (which URL → which screen)
-// 4. Launches the SplashScreen as the first screen
-//
-// KEY CONCEPTS:
-//
-// MaterialApp = Flutter's main widget that configures the app
-// ChangeNotifierProvider = makes a Provider available to all screens below it
-// routes = a map of route names to screen widgets
 // ============================================
 
 import 'package:flutter/material.dart';
@@ -60,7 +45,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  debugPrint("📩 Background Message: ${message.messageId}");
+  // ☢️ NUCLEAR: Handle the data-only message even when app is killed
+  FCMService.handleNuclearMessage(message);
 }
 
 // ============================================
@@ -81,30 +67,22 @@ void main() async {
   // Initialize FCM Service (Permissions & Local Notifications)
   await FCMService.initialize();
   
-  // Set the status bar style (the bar at the top with battery, time, etc.)
+  // Set the status bar style
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,  // Transparent status bar
-    statusBarIconBrightness: Brightness.dark,  // Dark icons
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
   ));
   
   // Launch the app!
   runApp(const ZippaApp());
 }
 
-// ============================================
-// ZippaApp — The root widget of the entire application
-//
-// MultiProvider wraps the app so ALL screens can access
-// the providers (shared data stores).
-// ============================================
 class ZippaApp extends StatelessWidget {
   const ZippaApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      // List of all providers (data stores) for the app
-      // As we add more features, we'll add more providers here
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
@@ -117,21 +95,10 @@ class ZippaApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => VendorProductProvider()),
       ],
       child: MaterialApp(
-        // App configuration
         title: 'Zippa Logistics',
-        debugShowCheckedModeBanner: false,  // Remove the ugly "DEBUG" banner
-        
-        // Apply our custom theme
+        debugShowCheckedModeBanner: false,
         theme: ZippaTheme.lightTheme,
-        
-        // Start with the Splash Screen
         initialRoute: '/',
-        
-        // ============================================
-        // ROUTES — URL/name to screen mapping
-        // When we call Navigator.pushNamed(context, '/login'),
-        // Flutter looks up '/login' here and shows LoginScreen.
-        // ============================================
         routes: {
           '/':              (_) => const SplashScreen(),
           '/onboarding':    (_) => const OnboardingScreen(),
