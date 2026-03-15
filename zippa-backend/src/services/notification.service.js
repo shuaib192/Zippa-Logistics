@@ -1,5 +1,5 @@
 // ============================================
-// 🔔 NOTIFICATION SERVICE (notification.service.js)
+// 🔔 SCRUBBED NOTIFICATION SERVICE (v14)
 // ============================================
 
 const admin = require('firebase-admin');
@@ -26,39 +26,34 @@ if (fs.existsSync(serviceAccountPath) || serviceAccountEnv) {
             });
         }
         isInitialized = true;
-        console.log('✅ Firebase Admin SDK Initialized.');
+        console.log('✅ Firebase Admin SDK Initialized (Fresh Baseline).');
     } catch (error) {
-        console.error('❌ Failed to initialize Firebase Admin SDK:', error);
+        console.error('❌ Failed to initialize Firebase Admin:', error);
     }
 }
 
 const NotificationService = {
     /**
-     * HYBRID OPTION: Notification + Data
-     * This provides the best of both worlds:
-     * 1. OS handles the background tray (High reliability)
-     * 2. App handles the foreground popup
+     * FRESH HYBRID SENDER (v14)
+     * Strategy: Guaranteed Landing + Maximum Visibility
      */
-    _prepareHybridMessage: (target, { title, body, data = {} }) => {
+    _prepareScrubbedMessage: (target, { title, body, data = {} }) => {
         const message = {
-            // 🔔 Standard notification object for the Android/iOS OS Tray
             notification: {
                 title: title,
                 body: body
             },
-            // 📦 Additional data for app-side logic
             data: {
                 ...data,
-                click_action: 'FLUTTER_NOTIFICATION_CLICK',
-                zippa_msg_type: 'hybrid_push'
+                click_action: 'FLUTTER_NOTIFICATION_CLICK'
             },
             android: {
-                priority: 'high', // Use high priority for aggressive delivery
+                priority: 'high',
                 notification: {
-                    channelId: 'zippa_alerts', // Must match FCMService and Manifest
-                    priority: 'max',           // Force heads-up (popup)
+                    channelId: 'zippa_priority_alerts', // NEW ID: Force system reset
+                    priority: 'max',
                     sound: 'default',
-                    visibility: 'public',      // Show on lockscreen
+                    visibility: 'public',
                     clickAction: 'FLUTTER_NOTIFICATION_CLICK'
                 }
             },
@@ -83,13 +78,11 @@ const NotificationService = {
 
     sendToUser: async (fcmToken, payload) => {
         if (!isInitialized || !fcmToken) return;
-        const message = NotificationService._prepareHybridMessage(fcmToken, payload);
+        const message = NotificationService._prepareScrubbedMessage(fcmToken, payload);
         try {
-            const response = await admin.messaging().send(message);
-            console.log('Successfully sent hybrid message:', response);
-            return response;
+            return await admin.messaging().send(message);
         } catch (error) {
-            console.error('Error sending hybrid notification:', error);
+            console.error('Error sending scrubbed notification:', error);
         }
     },
 
@@ -97,25 +90,21 @@ const NotificationService = {
         if (!isInitialized || !tokens || tokens.length === 0) return;
         const messages = tokens
             .filter(t => t !== null)
-            .map(t => NotificationService._prepareHybridMessage(t, payload));
+            .map(t => NotificationService._prepareScrubbedMessage(t, payload));
         try {
-            const response = await admin.messaging().sendEach(messages);
-            console.log(`${response.successCount} hybrid messages were sent successfully`);
-            return response;
+            return await admin.messaging().sendEach(messages);
         } catch (error) {
-            console.error('Error sending multicast hybrid notification:', error);
+            console.error('Error sending multicast scrubbed notification:', error);
         }
     },
 
     sendToTopic: async (topic, payload) => {
         if (!isInitialized || !topic) return;
-        const message = NotificationService._prepareHybridMessage(topic, payload);
+        const message = NotificationService._prepareScrubbedMessage(topic, payload);
         try {
-            const response = await admin.messaging().send(message);
-            console.log(`Successfully sent hybrid message to topic ${topic}:`, response);
-            return response;
+            return await admin.messaging().send(message);
         } catch (error) {
-            console.error(`Error sending hybrid push to topic ${topic}:`, error);
+            console.error(`Error sending scrubbed push back to topic ${topic}:`, error);
         }
     }
 };
