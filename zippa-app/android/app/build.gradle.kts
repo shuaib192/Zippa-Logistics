@@ -18,7 +18,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        jvmTarget = "17"
     }
 
     defaultConfig {
@@ -38,8 +38,8 @@ android {
             signingConfig = signingConfigs.getByName("debug")
             
             // V18 Deep Repair: Explicitly disable shrinking to prevent FCM class stripping
-            minifyEnabled = false
-            shrinkResources = false
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
