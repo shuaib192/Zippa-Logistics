@@ -8,26 +8,21 @@ if (!admin.apps.length) {
     });
 }
 
-const registrationToken = 'cW1ZbIirSVK7AH5tjyxs8B:APA91bEX7sbUnvJ9hsHeILvk3hfqEjMz30TJt9JQwosmRGQIZS5AESQZsc--QlN2nxCBQFPsck3V22LCgV_xR5sCY_yUsL64Y3gOf7hP_FyS5VkWz_prje8';
+// User's most recent token
+const registrationToken = 'c_Wc6REGTKy-sV1XeFnCnB:APA91bHXUf_Dh4gF1KieK6J_39ySCREfiT1NTxyUPAw492MDdRUn4pd_rIQ5UJQWYoLB2CM-BmwqDdGN75bXUzrYEUTG_eksTwKNRewxOBtO5EnlExAiqGc';
 
+// DATA-ONLY Payload (Most reliable for custom Flutter layouts)
 const message = {
     token: registrationToken,
-    notification: {
-        title: '🛰️ DIRECT TEST (V18)',
-        body: 'If you see this, FCM is working perfectly on your phone!'
+    data: {
+        title: '🛰️ DIRECT DATA-ONLY (V20)',
+        body: 'End-to-end success! Total consistency achieved.',
+        type: 'test'
     },
     android: {
         priority: 'high',
-        notification: {
-            channelId: 'zippa_priority_alerts',
-            priority: 'max',
-            clickAction: 'FLUTTER_NOTIFICATION_CLICK'
-        }
-    },
-    data: {
-        title: '🛰️ DIRECT TEST (V18)',
-        body: 'If you see this, FCM is working perfectly on your phone!',
-        type: 'test'
+        // Still provide system hints if the OS tries to peek
+        ttl: 3600 * 1000, 
     }
 };
 

@@ -56,7 +56,7 @@ class FCMService {
 
       // Initialize local notifications
       const initSettings = InitializationSettings(
-        android: AndroidInitializationSettings('ic_launcher'),
+        android: AndroidInitializationSettings('@drawable/ic_notification'),
         iOS: DarwinInitializationSettings(),
       );
       
@@ -115,7 +115,7 @@ class FCMService {
           'Order & Delivery Alerts',
           importance: Importance.max,
           priority: Priority.max,
-          icon: 'ic_launcher',
+          icon: '@drawable/ic_notification',
           playSound: true,
           ticker: 'Zippa Logistics Alert',
           visibility: NotificationVisibility.public,
