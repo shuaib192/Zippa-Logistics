@@ -22,7 +22,7 @@ class ZippaImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (imageUrl == null || imageUrl!.isEmpty) {
-      return _buildError();
+      return _buildError('Empty/Null URL');
     }
 
     // Check if it's a base64 data URI
@@ -35,10 +35,10 @@ class ZippaImage extends StatelessWidget {
           width: width,
           height: height,
           fit: fit,
-          errorBuilder: (context, error, stackTrace) => _buildError(),
+          errorBuilder: (context, error, stackTrace) => _buildError('Base64 error'),
         );
       } catch (e) {
-        return _buildError();
+        return _buildError('Base64 catch');
       }
     }
 
@@ -52,7 +52,10 @@ class ZippaImage extends StatelessWidget {
         if (loadingProgress == null) return child;
         return placeholder ?? _buildPlaceholder();
       },
-      errorBuilder: (context, error, stackTrace) => _buildError(),
+      errorBuilder: (context, error, stackTrace) {
+        debugPrint('🖼️ Image Error [$imageUrl]: $error');
+        return _buildError('Native network error');
+      },
     );
   }
 
@@ -88,7 +91,8 @@ class ZippaImage extends StatelessWidget {
     );
   }
 
-  Widget _buildError() {
+  Widget _buildError([String? reason]) {
+    if (reason != null) debugPrint('❌ Image failed: $reason');
     return errorWidget ?? Container(
       width: width,
       height: height,

@@ -79,6 +79,7 @@ class _RiderHomeContent extends StatefulWidget {
 
 class _RiderHomeContentState extends State<_RiderHomeContent> {
   bool _isOnline = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -104,6 +105,7 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
     if (!mounted) return;
     setState(() {
       _isOnline = prefs.getBool('rider_online_status') ?? false;
+      _isLoading = false;
     });
     // Sync with backend on load
     if (mounted) {
@@ -135,6 +137,11 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator(color: ZippaColors.primary)),
+      );
+    }
     final user = Provider.of<AuthProvider>(context).user;
     final orderProvider = Provider.of<OrderProvider>(context);
     final currencyFormat = NumberFormat.currency(symbol: '₦', decimalDigits: 2);

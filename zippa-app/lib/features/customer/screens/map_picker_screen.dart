@@ -260,6 +260,18 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
               child: const Icon(Icons.my_location, color: ZippaColors.textPrimary),
             ),
           ),
+
+          // 5. DEBUG BUTTON (V18)
+          Positioned(
+            top: 20,
+            left: 20,
+            child: FloatingActionButton(
+              onPressed: () => Navigator.pushNamed(context, '/push-debug'),
+              backgroundColor: Colors.orange,
+              mini: true,
+              child: const Icon(Icons.bug_report, color: Colors.white),
+            ),
+          ),
         ],
       ),
     );

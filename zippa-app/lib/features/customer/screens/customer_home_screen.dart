@@ -170,6 +170,15 @@ class _HomeContentState extends State<_HomeContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // V18 Push Debugger Access
+          Align(
+            alignment: Alignment.topLeft,
+            child: IconButton(
+              icon: const Icon(Icons.bug_report, color: Colors.orange),
+              onPressed: () => Navigator.pushNamed(context, '/push-debug'),
+              tooltip: 'Push Debugger',
+            ),
+          ),
           _WalletCard(),
           const SizedBox(height: 16),
 
