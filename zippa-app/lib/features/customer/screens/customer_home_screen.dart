@@ -23,7 +23,6 @@ import 'package:zippa_app/core/utils/currency_formatter.dart';
 import 'package:zippa_app/core/widgets/app_drawer.dart';
 import 'package:zippa_app/core/providers/location_provider.dart';
 import 'package:zippa_app/core/services/fcm_service.dart';
-import 'package:zippa_app/core/services/debug_log_service.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
   const CustomerHomeScreen({super.key});
@@ -156,7 +155,6 @@ class _HomeContentState extends State<_HomeContent> {
       await Future.delayed(const Duration(milliseconds: 1500));
       
       if (mounted) {
-        DebugLogService.showDebugOverlay(context);
         await FCMService.syncToken();
         await FCMService.subscribeToTopic('customers');
       }

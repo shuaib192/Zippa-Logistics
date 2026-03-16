@@ -43,7 +43,8 @@ import 'features/vendor/screens/vendor_shell.dart';
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  debugPrint('📢 Scrubbed Background Message Landing...');
+  // v16: Data-only payloads require us to manually show the notification
+  await FCMService.handleBackgroundMessage(message);
 }
 
 // ============================================

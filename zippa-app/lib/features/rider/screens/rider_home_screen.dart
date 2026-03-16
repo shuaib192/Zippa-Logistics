@@ -83,9 +83,9 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
   @override
   void initState() {
     super.initState();
-    _loadOnlineStatus();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+        _loadOnlineStatus();
         Provider.of<WalletProvider>(context, listen: false).fetchBalance();
         
         // Sequence permissions and topic subscription
@@ -101,6 +101,7 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
 
   Future<void> _loadOnlineStatus() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     setState(() {
       _isOnline = prefs.getBool('rider_online_status') ?? false;
     });

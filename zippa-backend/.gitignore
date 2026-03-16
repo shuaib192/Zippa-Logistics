@@ -1,2 +1,4 @@
+src/config/firebase-service-account.json
+firebase-service-account.json
 node_modules/
 .env

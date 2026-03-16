@@ -180,15 +180,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 14),
 
-                // Email (optional)
+                // Email (required for verification)
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
-                    labelText: 'Email Address (Optional)',
+                    labelText: 'Email Address',
                     hintText: 'your@email.com',
                     prefixIcon: Icon(Icons.email_outlined, color: ZippaColors.primary),
                   ),
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Email is required for verification';
+                    if (!v.contains('@') || !v.contains('.')) return 'Enter a valid email address';
+                    return null;
+                  },
                 ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.05, end: 0),
 
                 const SizedBox(height: 14),

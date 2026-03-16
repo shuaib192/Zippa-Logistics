@@ -28,6 +28,7 @@ const chatWithZipBot = async (req, res) => {
             - Pricing: Based on distance and package size.
             - Support: support@zippalogistics.com
             
+            
             Keep responses concise and helpful. 
             Address the user by their name if available: ${req.user.full_name}.
         `;

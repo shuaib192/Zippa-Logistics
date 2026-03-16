@@ -1,5 +1,9 @@
 // ============================================
-// 🔔 SCRUBBED NOTIFICATION SERVICE (v14)
+// 🔔 SCRUBBED NOTIFICATION SERVICE (v16 — DATA-ONLY)
+//
+// STRATEGY: Send DATA-ONLY payloads (no "notification" key).
+// This forces the app to handle display via flutter_local_notifications
+// on ALL Android versions, giving us full control over popups.
 // ============================================
 
 const admin = require('firebase-admin');
@@ -26,7 +30,7 @@ if (fs.existsSync(serviceAccountPath) || serviceAccountEnv) {
             });
         }
         isInitialized = true;
-        console.log('✅ Firebase Admin SDK Initialized (Fresh Baseline).');
+        console.log('✅ Firebase Admin SDK Initialized (v16 Data-Only).');
     } catch (error) {
         console.error('❌ Failed to initialize Firebase Admin:', error);
     }
@@ -34,34 +38,37 @@ if (fs.existsSync(serviceAccountPath) || serviceAccountEnv) {
 
 const NotificationService = {
     /**
-     * FRESH HYBRID SENDER (v14)
-     * Strategy: Guaranteed Landing + Maximum Visibility
+     * DATA-ONLY PAYLOAD BUILDER (v16)
+     * 
+     * By NOT including a "notification" key, Android will NOT
+     * display its own notification. Instead, the onMessage /
+     * onBackgroundMessage handler in the Flutter app fires,
+     * and WE control the display via flutter_local_notifications.
+     * 
+     * This guarantees: popup, sound, vibration on ALL devices.
      */
-    _prepareScrubbedMessage: (target, { title, body, data = {} }) => {
+    _prepareDataOnlyMessage: (target, { title, body, data = {} }) => {
         const message = {
-            notification: {
-                title: title,
-                body: body
-            },
+            // NO "notification" key — this is the key difference!
             data: {
-                ...data,
-                click_action: 'FLUTTER_NOTIFICATION_CLICK'
+                title: title || 'Zippa Alert',
+                body: body || '',
+                click_action: 'FLUTTER_NOTIFICATION_CLICK',
+                ...Object.fromEntries(
+                    Object.entries(data).map(([k, v]) => [k, String(v)])
+                )
             },
             android: {
                 priority: 'high',
-                notification: {
-                    channelId: 'zippa_priority_alerts', // NEW ID: Force system reset
-                    priority: 'max',
-                    sound: 'default',
-                    visibility: 'public',
-                    clickAction: 'FLUTTER_NOTIFICATION_CLICK'
-                }
+                ttl: '86400s'
             },
             apns: {
+                headers: { 'apns-priority': '10' },
                 payload: {
                     aps: {
                         alert: { title, body },
-                        sound: 'default'
+                        sound: 'default',
+                        'content-available': 1
                     }
                 }
             }
@@ -78,11 +85,13 @@ const NotificationService = {
 
     sendToUser: async (fcmToken, payload) => {
         if (!isInitialized || !fcmToken) return;
-        const message = NotificationService._prepareScrubbedMessage(fcmToken, payload);
+        const message = NotificationService._prepareDataOnlyMessage(fcmToken, payload);
         try {
-            return await admin.messaging().send(message);
+            const result = await admin.messaging().send(message);
+            console.log('📤 Data-only notification sent:', result);
+            return result;
         } catch (error) {
-            console.error('Error sending scrubbed notification:', error);
+            console.error('❌ Error sending data-only notification:', error);
         }
     },
 
@@ -90,21 +99,23 @@ const NotificationService = {
         if (!isInitialized || !tokens || tokens.length === 0) return;
         const messages = tokens
             .filter(t => t !== null)
-            .map(t => NotificationService._prepareScrubbedMessage(t, payload));
+            .map(t => NotificationService._prepareDataOnlyMessage(t, payload));
         try {
             return await admin.messaging().sendEach(messages);
         } catch (error) {
-            console.error('Error sending multicast scrubbed notification:', error);
+            console.error('❌ Error sending multicast data-only notification:', error);
         }
     },
 
     sendToTopic: async (topic, payload) => {
         if (!isInitialized || !topic) return;
-        const message = NotificationService._prepareScrubbedMessage(topic, payload);
+        const message = NotificationService._prepareDataOnlyMessage(topic, payload);
         try {
-            return await admin.messaging().send(message);
+            const result = await admin.messaging().send(message);
+            console.log(`📤 Data-only topic push sent to ${topic}:`, result);
+            return result;
         } catch (error) {
-            console.error(`Error sending scrubbed push back to topic ${topic}:`, error);
+            console.error(`❌ Error sending data-only push to topic ${topic}:`, error);
         }
     }
 };
