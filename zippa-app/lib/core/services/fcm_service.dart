@@ -13,6 +13,7 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../../firebase_options.dart';
 import 'package:zippa_app/data/api/api_client.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class FCMService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
@@ -154,14 +155,27 @@ class FCMService {
 
   static Future<void> syncToken() async {
     try {
-      await _messaging.requestPermission(alert: true, badge: true, sound: true);
+      debugPrint('🎟️ v18: Requesting Notification Permissions...');
+      
+      // Explicit runtime permission check for Android 13+
+      final status = await Permission.notification.request();
+      debugPrint('🎟️ v18: Permission status: $status');
+
+      // Firebase internal permission request
+      await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
+
       String? token = await _messaging.getToken();
       if (token != null) {
-        debugPrint('🎟️ v16 Token: $token');
+        debugPrint('🎟️ v18 Token: $token');
         await _apiClient.put('/users/fcm-token', {'token': token});
       }
     } catch (e) {
-      debugPrint('❌ v16 Sync Error: $e');
+      debugPrint('❌ v18 Sync Error: $e');
     }
   }
 
