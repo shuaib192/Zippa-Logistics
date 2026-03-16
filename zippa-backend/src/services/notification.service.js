@@ -60,7 +60,6 @@ const NotificationService = {
             },
             android: {
                 priority: 'high',
-                ttl: '86400s'
             },
             apns: {
                 headers: { 'apns-priority': '10' },
