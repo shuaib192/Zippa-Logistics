@@ -157,13 +157,10 @@ const register = async (req, res) => {
             [newUser.id]
         );
 
-        // Step 9: Send OTP email
-        try {
-            await sendOTPEmail(email, fullName, otp);
-        } catch (emailErr) {
+        // Step 9: Send OTP email (Non-blocking V21 fix)
+        sendOTPEmail(email, fullName, otp).catch(emailErr => {
             console.error('Failed to send OTP email:', emailErr);
-            // Don't fail registration, user can resend
-        }
+        });
 
         // Step 10: Respond — but do NOT issue tokens yet (email not verified)
         res.status(201).json({
@@ -528,7 +525,10 @@ const resendOTP = async (req, res) => {
             [otp, otpExpires, userId]
         );
 
-        await sendOTPEmail(user.email, user.full_name, otp);
+        // (Non-blocking V21 fix)
+        sendOTPEmail(user.email, user.full_name, otp).catch(err => {
+            console.error('Resend OTP error:', err);
+        });
 
         res.status(200).json({
             success: true,
@@ -576,8 +576,10 @@ const forgotPassword = async (req, res) => {
             [otp, otpExpires, user.id]
         );
 
-        // Send email
-        await sendPasswordResetEmail(user.email, user.full_name, otp);
+        // Send email (Non-blocking V21 fix)
+        sendPasswordResetEmail(user.email, user.full_name, otp).catch(err => {
+            console.error('Forgot password email error:', err);
+        });
 
         res.status(200).json({
             success: true,
