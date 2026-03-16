@@ -1,9 +1,10 @@
 // ============================================
-// 🔔 SCRUBBED NOTIFICATION SERVICE (v16 — DATA-ONLY)
+// 🔔 NOTIFICATION SERVICE (v17 — HYBRID + HIGH PRIORITY)
 //
-// STRATEGY: Send DATA-ONLY payloads (no "notification" key).
-// This forces the app to handle display via flutter_local_notifications
-// on ALL Android versions, giving us full control over popups.
+// STRATEGY: Use HYBRID payload (notification + data).
+// The "notification" key ensures the OS always displays 
+// the notification natively — even when app is killed.
+// The "data" key lets the app process it when open.
 // ============================================
 
 const admin = require('firebase-admin');
@@ -30,7 +31,7 @@ if (fs.existsSync(serviceAccountPath) || serviceAccountEnv) {
             });
         }
         isInitialized = true;
-        console.log('✅ Firebase Admin SDK Initialized (v16 Data-Only).');
+        console.log('✅ Firebase Admin SDK Initialized (v17 Hybrid).');
     } catch (error) {
         console.error('❌ Failed to initialize Firebase Admin:', error);
     }
@@ -38,18 +39,19 @@ if (fs.existsSync(serviceAccountPath) || serviceAccountEnv) {
 
 const NotificationService = {
     /**
-     * DATA-ONLY PAYLOAD BUILDER (v16)
+     * HYBRID PAYLOAD (v17)
      * 
-     * By NOT including a "notification" key, Android will NOT
-     * display its own notification. Instead, the onMessage /
-     * onBackgroundMessage handler in the Flutter app fires,
-     * and WE control the display via flutter_local_notifications.
+     * "notification" key → OS displays natively (works even when app is killed)
+     * "data" key → App can process it (for click actions, navigation, etc.)
      * 
-     * This guarantees: popup, sound, vibration on ALL devices.
+     * Android channelId ensures it routes to our high-importance channel.
      */
-    _prepareDataOnlyMessage: (target, { title, body, data = {} }) => {
+    _prepareMessage: (target, { title, body, data = {} }) => {
         const message = {
-            // NO "notification" key — this is the key difference!
+            notification: {
+                title: title || 'Zippa Alert',
+                body: body || ''
+            },
             data: {
                 title: title || 'Zippa Alert',
                 body: body || '',
@@ -60,14 +62,20 @@ const NotificationService = {
             },
             android: {
                 priority: 'high',
+                notification: {
+                    channelId: 'zippa_priority_alerts',
+                    priority: 'max',
+                    defaultSound: true,
+                    visibility: 'public',
+                    clickAction: 'FLUTTER_NOTIFICATION_CLICK'
+                }
             },
             apns: {
                 headers: { 'apns-priority': '10' },
                 payload: {
                     aps: {
                         alert: { title, body },
-                        sound: 'default',
-                        'content-available': 1
+                        sound: 'default'
                     }
                 }
             }
@@ -84,13 +92,13 @@ const NotificationService = {
 
     sendToUser: async (fcmToken, payload) => {
         if (!isInitialized || !fcmToken) return;
-        const message = NotificationService._prepareDataOnlyMessage(fcmToken, payload);
+        const message = NotificationService._prepareMessage(fcmToken, payload);
         try {
             const result = await admin.messaging().send(message);
-            console.log('📤 Data-only notification sent:', result);
+            console.log('📤 Hybrid notification sent:', result);
             return result;
         } catch (error) {
-            console.error('❌ Error sending data-only notification:', error);
+            console.error('❌ Error sending notification:', error);
         }
     },
 
@@ -98,23 +106,23 @@ const NotificationService = {
         if (!isInitialized || !tokens || tokens.length === 0) return;
         const messages = tokens
             .filter(t => t !== null)
-            .map(t => NotificationService._prepareDataOnlyMessage(t, payload));
+            .map(t => NotificationService._prepareMessage(t, payload));
         try {
             return await admin.messaging().sendEach(messages);
         } catch (error) {
-            console.error('❌ Error sending multicast data-only notification:', error);
+            console.error('❌ Error sending multicast notification:', error);
         }
     },
 
     sendToTopic: async (topic, payload) => {
         if (!isInitialized || !topic) return;
-        const message = NotificationService._prepareDataOnlyMessage(topic, payload);
+        const message = NotificationService._prepareMessage(topic, payload);
         try {
             const result = await admin.messaging().send(message);
-            console.log(`📤 Data-only topic push sent to ${topic}:`, result);
+            console.log(`📤 Topic push sent to ${topic}:`, result);
             return result;
         } catch (error) {
-            console.error(`❌ Error sending data-only push to topic ${topic}:`, error);
+            console.error(`❌ Error sending push to topic ${topic}:`, error);
         }
     }
 };
