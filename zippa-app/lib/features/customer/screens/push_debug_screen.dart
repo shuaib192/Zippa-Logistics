@@ -18,7 +18,7 @@ class PushDebugScreen extends StatefulWidget {
 class _PushDebugScreenState extends State<PushDebugScreen> {
   String _token = "Fetching...";
   String _permissionStatus = "Unknown";
-  List<String> _logs = [];
+  final List<String> _logs = [];
 
   @override
   void initState() {
