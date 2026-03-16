@@ -50,12 +50,21 @@ class _PushDebugScreenState extends State<PushDebugScreen> {
   Future<void> _testLocalNotification() async {
     try {
       final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+      
+      // Fixed: Initialize with the correct resource name
+      const initSettings = InitializationSettings(
+        android: AndroidInitializationSettings('@drawable/ic_notification'),
+        iOS: DarwinInitializationSettings(),
+      );
+      await flutterLocalNotificationsPlugin.initialize(initSettings);
+
       const androidDetails = AndroidNotificationDetails(
         'zippa_priority_alerts',
         'Zippa Priority',
         importance: Importance.max,
         priority: Priority.max,
         showWhen: true,
+        icon: '@drawable/ic_notification',
       );
       const notificationDetails = NotificationDetails(android: androidDetails);
       
