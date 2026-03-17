@@ -1,17 +1,26 @@
 // ============================================
 // EMAIL SERVICE (email.service.js)
 // Uses Nodemailer with Gmail SMTP
+// V21 Fix: Lazy transporter to ensure env vars are loaded
 // ============================================
 
 const nodemailer = require('nodemailer');
 
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.SMTP_EMAIL,
-        pass: process.env.SMTP_APP_PASSWORD,
-    },
-});
+// Lazy transporter — created on first use, not at module load
+let _transporter = null;
+const getTransporter = () => {
+    if (!_transporter) {
+        console.log('[EMAIL] Creating transporter with:', process.env.SMTP_EMAIL || '❌ MISSING');
+        _transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.SMTP_EMAIL,
+                pass: process.env.SMTP_APP_PASSWORD,
+            },
+        });
+    }
+    return _transporter;
+};
 
 // Send OTP email for verification
 const sendOTPEmail = async (toEmail, fullName, otp) => {
@@ -33,7 +42,7 @@ const sendOTPEmail = async (toEmail, fullName, otp) => {
         </div>
     </div>`;
 
-    await transporter.sendMail({
+    await getTransporter().sendMail({
         from: `"Zippa Logistics" <${process.env.SMTP_EMAIL}>`,
         to: toEmail,
         subject: `${otp} — Verify Your Zippa Account`,
@@ -62,7 +71,7 @@ const sendPasswordResetEmail = async (toEmail, fullName, otp) => {
         </div>
     </div>`;
 
-    await transporter.sendMail({
+    await getTransporter().sendMail({
         from: `"Zippa Logistics" <${process.env.SMTP_EMAIL}>`,
         to: toEmail,
         subject: `${otp} — Zippa Password Reset Code`,
@@ -86,7 +95,7 @@ const sendNotificationEmail = async (toEmail, fullName, subject, body) => {
         </div>
     </div>`;
 
-    await transporter.sendMail({
+    await getTransporter().sendMail({
         from: `"Zippa Logistics" <${process.env.SMTP_EMAIL}>`,
         to: toEmail,
         subject,
