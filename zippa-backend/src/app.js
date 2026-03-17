@@ -112,7 +112,9 @@ app.use('/api/', limiter); // Apply to all API routes
 let commitHash = 'unknown';
 try {
     commitHash = require('child_process').execSync('git rev-parse HEAD').toString().trim();
-} catch (e) {}
+} catch (e) {
+    // commit hash is not critical
+}
 
 // GET /api/health — Server status check
 // Always put this before other routes so it doesn't get blocked

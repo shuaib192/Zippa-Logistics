@@ -39,8 +39,8 @@ const makeBody = (to, from, subject, html) => {
     const messageParts = [
         `From: ${from}`,
         `To: ${to}`,
-        `Content-Type: text/html; charset=utf-8`,
-        `MIME-Version: 1.0`,
+        'Content-Type: text/html; charset=utf-8',
+        'MIME-Version: 1.0',
         `Subject: ${utf8Subject}`,
         '',
         html,
