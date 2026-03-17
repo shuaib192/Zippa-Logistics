@@ -43,5 +43,47 @@ router.post('/forgot-password', forgotPassword);
 // POST /api/auth/reset-password — Reset password with code
 router.post('/reset-password', resetPassword);
 
+// TEMPORARY: Diagnostic email test endpoint (remove after debugging)
+router.get('/test-email', async (req, res) => {
+    const nodemailer = require('nodemailer');
+    const email = process.env.SMTP_EMAIL;
+    const pass = process.env.SMTP_APP_PASSWORD;
+    
+    const diag = {
+        smtp_email: email || '❌ NOT SET',
+        smtp_pass_length: pass ? pass.length : 0,
+        smtp_pass_preview: pass ? pass.substring(0, 4) + '***' : '❌ NOT SET',
+    };
+
+    try {
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: { user: email, pass: pass },
+        });
+        
+        // Test connection
+        await transporter.verify();
+        diag.connection = '✅ SMTP connected';
+        
+        // Send test email
+        const info = await transporter.sendMail({
+            from: `"Zippa Test" <${email}>`,
+            to: email,
+            subject: 'Render Email Test - ' + new Date().toISOString(),
+            html: '<h1>✅ Render email works!</h1>',
+        });
+        diag.send = '✅ SENT';
+        diag.messageId = info.messageId;
+        
+        res.json({ success: true, diag });
+    } catch (err) {
+        diag.error = err.message;
+        diag.code = err.code;
+        diag.command = err.command;
+        res.json({ success: false, diag });
+    }
+});
+
 module.exports = router;
+
 
