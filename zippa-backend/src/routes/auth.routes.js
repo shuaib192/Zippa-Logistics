@@ -50,40 +50,58 @@ router.get('/test-email', async (req, res) => {
     const pass = process.env.SMTP_APP_PASSWORD;
     
     const diag = {
+        timestamp: new Date().toISOString(),
         smtp_email: email || '❌ NOT SET',
         smtp_pass_length: pass ? pass.length : 0,
-        smtp_pass_preview: pass ? pass.substring(0, 4) + '***' : '❌ NOT SET',
+        env_node_version: process.version,
     };
+
+    console.log('[DEBUG-EMAIL] Starting diagnostic test...');
 
     try {
         const transporter = nodemailer.createTransport({
-            service: 'gmail',
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false,
             auth: { user: email, pass: pass },
+            connectionTimeout: 10000, // 10 seconds timeout for connection
+            greetingTimeout: 10000,   // 10 seconds timeout for greeting
+            socketTimeout: 10000,     // 10 seconds timeout for reading
         });
         
-        // Test connection
-        await transporter.verify();
-        diag.connection = '✅ SMTP connected';
+        console.log('[DEBUG-EMAIL] Verifying connection...');
+        diag.step = 'verifying';
+        try {
+            await transporter.verify();
+            diag.connection = '✅ SMTP connected';
+            console.log('[DEBUG-EMAIL] Connection verified.');
+        } catch (vErr) {
+            console.error('[DEBUG-EMAIL] Verification failed:', vErr.message);
+            diag.connection_error = vErr.message;
+            diag.connection_code = vErr.code;
+            return res.json({ success: false, diag });
+        }
         
-        // Send test email
+        console.log('[DEBUG-EMAIL] Sending test email...');
+        diag.step = 'sending';
         const info = await transporter.sendMail({
             from: `"Zippa Test" <${email}>`,
             to: email,
             subject: 'Render Email Test - ' + new Date().toISOString(),
             html: '<h1>✅ Render email works!</h1>',
         });
+        
         diag.send = '✅ SENT';
         diag.messageId = info.messageId;
+        console.log('[DEBUG-EMAIL] Email sent:', info.messageId);
         
         res.json({ success: true, diag });
     } catch (err) {
+        console.error('[DEBUG-EMAIL] unexpected error:', err.message);
         diag.error = err.message;
         diag.code = err.code;
-        diag.command = err.command;
         res.json({ success: false, diag });
     }
 });
-
-module.exports = router;
 
 
