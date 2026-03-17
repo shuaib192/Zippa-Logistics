@@ -1,31 +1,58 @@
 // ============================================
 // EMAIL SERVICE (email.service.js)
-// Uses Nodemailer with Gmail SMTP
-// V21 Fix: Lazy transporter to ensure env vars are loaded
+// Uses Nodemailer with Gmail API (OAuth2)
+// V21 Fix: Bypasses Render's strict SMTP firewall
 // ============================================
 
 const nodemailer = require('nodemailer');
+const { google } = require('googleapis');
 
-// Lazy transporter — created on first use, not at module load
+// Lazy transporter — created on first use to ensure async OAuth token fetch doesn't block module load
 let _transporter = null;
-const getTransporter = () => {
-    if (!_transporter) {
-        console.log('[EMAIL] Creating transporter with:', process.env.SMTP_EMAIL || '❌ MISSING');
-        _transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 587,
-            secure: false, // Use STARTTLS (port 587) instead of SSL (port 465)
-            auth: {
-                user: process.env.SMTP_EMAIL,
-                pass: process.env.SMTP_APP_PASSWORD,
-            },
-            tls: {
-                // Do not fail on invalid certs (useful for some cloud routing)
-                rejectUnauthorized: false
-            }
+
+const getTransporter = async () => {
+    if (_transporter) return _transporter;
+
+    console.log('[EMAIL] Initializing Gmail OAuth2 Transporter...');
+    
+    try {
+        const OAuth2 = google.auth.OAuth2;
+        const oauth2Client = new OAuth2(
+            process.env.GMAIL_CLIENT_ID,
+            process.env.GMAIL_CLIENT_SECRET,
+            'https://developers.google.com/oauthplayground' // Redirect URL
+        );
+
+        oauth2Client.setCredentials({
+            refresh_token: process.env.GMAIL_REFRESH_TOKEN,
         });
+
+        // Get a fresh access token
+        const accessTokenResponse = await oauth2Client.getAccessToken();
+        const accessToken = accessTokenResponse?.token;
+
+        if (!accessToken) {
+            throw new Error('Failed to create OAuth access token');
+        }
+
+        _transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                type: 'OAuth2',
+                user: process.env.SMTP_EMAIL,
+                clientId: process.env.GMAIL_CLIENT_ID,
+                clientSecret: process.env.GMAIL_CLIENT_SECRET,
+                refreshToken: process.env.GMAIL_REFRESH_TOKEN,
+                accessToken: accessToken,
+            },
+        });
+
+        console.log('[EMAIL] Gmail OAuth2 Transporter Initialized Successfully.');
+        return _transporter;
+    } catch (error) {
+        console.error('[EMAIL ERROR] Failed to initialize OAuth2:', error.message);
+        throw error;
     }
-    return _transporter;
 };
 
 // Send OTP email for verification
@@ -48,7 +75,8 @@ const sendOTPEmail = async (toEmail, fullName, otp) => {
         </div>
     </div>`;
 
-    await getTransporter().sendMail({
+    const transporter = await getTransporter();
+    await transporter.sendMail({
         from: `"Zippa Logistics" <${process.env.SMTP_EMAIL}>`,
         to: toEmail,
         subject: `${otp} — Verify Your Zippa Account`,
@@ -77,7 +105,8 @@ const sendPasswordResetEmail = async (toEmail, fullName, otp) => {
         </div>
     </div>`;
 
-    await getTransporter().sendMail({
+    const transporter = await getTransporter();
+    await transporter.sendMail({
         from: `"Zippa Logistics" <${process.env.SMTP_EMAIL}>`,
         to: toEmail,
         subject: `${otp} — Zippa Password Reset Code`,
@@ -101,7 +130,8 @@ const sendNotificationEmail = async (toEmail, fullName, subject, body) => {
         </div>
     </div>`;
 
-    await getTransporter().sendMail({
+    const transporter = await getTransporter();
+    await transporter.sendMail({
         from: `"Zippa Logistics" <${process.env.SMTP_EMAIL}>`,
         to: toEmail,
         subject,
