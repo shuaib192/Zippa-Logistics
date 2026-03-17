@@ -43,19 +43,4 @@ router.post('/forgot-password', forgotPassword);
 // POST /api/auth/reset-password — Reset password with code
 router.post('/reset-password', resetPassword);
 
-// TEMPORARY: OAuth2 Diagnostic Endpoint
-router.get('/test-oauth', async (req, res) => {
-    const { sendOTPEmail } = require('../services/email.service');
-    try {
-        await sendOTPEmail('shuaibabdul192@gmail.com', 'Test User', '123456');
-        res.json({ success: true, message: 'OAuth2 email sent successfully!' });
-    } catch (error) {
-        res.json({ 
-            success: false, 
-            error: error.message,
-            stack: error.stack
-        });
-    }
-});
-
 module.exports = router;
