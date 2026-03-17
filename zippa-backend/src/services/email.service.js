@@ -1,19 +1,16 @@
 // ============================================
 // EMAIL SERVICE (email.service.js)
-// Uses Nodemailer with Gmail API (OAuth2)
-// V21 Fix: Bypasses Render's strict SMTP firewall
+// Uses strict HTTPS Gmail REST API (Bypasses Render SMTP Block)
 // ============================================
 
-const nodemailer = require('nodemailer');
 const { google } = require('googleapis');
 
-// Lazy transporter — created on first use to ensure async OAuth token fetch doesn't block module load
-let _transporter = null;
+let _gmailClient = null;
 
-const getTransporter = async () => {
-    if (_transporter) return _transporter;
+const getGmailClient = async () => {
+    if (_gmailClient) return _gmailClient;
 
-    console.log('[EMAIL] Initializing Gmail OAuth2 Transporter...');
+    console.log('[EMAIL] Initializing Gmail REST API Client...');
     
     try {
         const OAuth2 = google.auth.OAuth2;
@@ -27,31 +24,56 @@ const getTransporter = async () => {
             refresh_token: process.env.GMAIL_REFRESH_TOKEN,
         });
 
-        // Get a fresh access token
-        const accessTokenResponse = await oauth2Client.getAccessToken();
-        const accessToken = accessTokenResponse?.token;
-
-        if (!accessToken) {
-            throw new Error('Failed to create OAuth access token');
-        }
-
-        _transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                type: 'OAuth2',
-                user: process.env.SMTP_EMAIL,
-                clientId: process.env.GMAIL_CLIENT_ID,
-                clientSecret: process.env.GMAIL_CLIENT_SECRET,
-                refreshToken: process.env.GMAIL_REFRESH_TOKEN,
-                accessToken: accessToken,
-            },
-        });
-
-        console.log('[EMAIL] Gmail OAuth2 Transporter Initialized Successfully.');
-        return _transporter;
+        _gmailClient = google.gmail({ version: 'v1', auth: oauth2Client });
+        console.log('[EMAIL] Gmail REST Client Initialized Successfully.');
+        return _gmailClient;
     } catch (error) {
-        console.error('[EMAIL ERROR] Failed to initialize OAuth2:', error.message);
+        console.error('[EMAIL ERROR] Failed to initialize Gmail API:', error.message);
         throw error;
+    }
+};
+
+// Helper: encode string to base64url format required by Gmail API
+const makeBody = (to, from, subject, html) => {
+    const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
+    const messageParts = [
+        `From: ${from}`,
+        `To: ${to}`,
+        `Content-Type: text/html; charset=utf-8`,
+        `MIME-Version: 1.0`,
+        `Subject: ${utf8Subject}`,
+        '',
+        html,
+    ];
+    const message = messageParts.join('\r\n');
+    
+    // The Gmail API requires base64url encoding
+    return Buffer.from(message).toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+};
+
+// Generic sender function
+const sendViaGmailApi = async (toEmail, subject, html) => {
+    const gmail = await getGmailClient();
+    const raw = makeBody(
+        toEmail,
+        `"Zippa Logistics" <${process.env.SMTP_EMAIL}>`,
+        subject,
+        html
+    );
+    
+    try {
+        const res = await gmail.users.messages.send({
+            userId: 'me',
+            requestBody: { raw },
+        });
+        console.log(`[EMAIL] Sent over HTTPS (Message ID: ${res.data.id})`);
+        return res.data;
+    } catch (err) {
+        console.error('[EMAIL ERROR] Gmail API failed:', err.message);
+        throw err;
     }
 };
 
@@ -75,13 +97,7 @@ const sendOTPEmail = async (toEmail, fullName, otp) => {
         </div>
     </div>`;
 
-    const transporter = await getTransporter();
-    await transporter.sendMail({
-        from: `"Zippa Logistics" <${process.env.SMTP_EMAIL}>`,
-        to: toEmail,
-        subject: `${otp} — Verify Your Zippa Account`,
-        html,
-    });
+    await sendViaGmailApi(toEmail, `${otp} — Verify Your Zippa Account`, html);
 };
 
 // Send Password Reset OTP email
@@ -105,13 +121,7 @@ const sendPasswordResetEmail = async (toEmail, fullName, otp) => {
         </div>
     </div>`;
 
-    const transporter = await getTransporter();
-    await transporter.sendMail({
-        from: `"Zippa Logistics" <${process.env.SMTP_EMAIL}>`,
-        to: toEmail,
-        subject: `${otp} — Zippa Password Reset Code`,
-        html,
-    });
+    await sendViaGmailApi(toEmail, `${otp} — Zippa Password Reset Code`, html);
 };
 
 // Send generic notification email
@@ -130,14 +140,9 @@ const sendNotificationEmail = async (toEmail, fullName, subject, body) => {
         </div>
     </div>`;
 
-    const transporter = await getTransporter();
-    await transporter.sendMail({
-        from: `"Zippa Logistics" <${process.env.SMTP_EMAIL}>`,
-        to: toEmail,
-        subject,
-        html,
-    });
+    await sendViaGmailApi(toEmail, subject, html);
 };
+
 
 // Generate 6-digit OTP
 const generateOTP = () => {
