@@ -43,65 +43,68 @@ router.post('/forgot-password', forgotPassword);
 // POST /api/auth/reset-password — Reset password with code
 router.post('/reset-password', resetPassword);
 
-// TEMPORARY: Diagnostic email test endpoint (remove after debugging)
-router.get('/test-email', async (req, res) => {
-    const nodemailer = require('nodemailer');
-    const email = process.env.SMTP_EMAIL;
-    const pass = process.env.SMTP_APP_PASSWORD;
+// TEMPORARY: Low-level Network Diagnostic (remove after debugging)
+router.get('/net-test', async (req, res) => {
+    const net = require('net');
+    const tls = require('tls');
     
-    const diag = {
-        timestamp: new Date().toISOString(),
-        smtp_email: email || '❌ NOT SET',
-        smtp_pass_length: pass ? pass.length : 0,
-        env_node_version: process.version,
+    const results = { timestamp: new Date().toISOString() };
+    
+    const checkPort = (port, host, useTls) => {
+        return new Promise((resolve) => {
+            const result = { port, host, status: 'pending', timeMs: 0 };
+            const start = Date.now();
+            
+            const timer = setTimeout(() => {
+                if (!result.done) {
+                    result.done = true;
+                    result.status = 'timeout (10s)';
+                    if (socket) socket.destroy();
+                    resolve(result);
+                }
+            }, 10000);
+
+            const options = { host, port, family: 4 }; // Force IPv4
+            const socket = useTls ? tls.connect(options) : net.connect(options);
+
+            socket.on('secureConnect', () => {
+                result.status = 'tls_connected';
+                result.timeMs = Date.now() - start;
+                result.done = true;
+                clearTimeout(timer);
+                socket.end();
+                resolve(result);
+            });
+
+            socket.on('connect', () => {
+                if (!useTls) {
+                    result.status = 'connected';
+                    result.timeMs = Date.now() - start;
+                    result.done = true;
+                    clearTimeout(timer);
+                    socket.end();
+                    resolve(result);
+                }
+            });
+
+            socket.on('error', (err) => {
+                if (!result.done) {
+                    result.status = 'error: ' + err.message;
+                    result.done = true;
+                    clearTimeout(timer);
+                    resolve(result);
+                }
+            });
+        });
     };
 
-    console.log('[DEBUG-EMAIL] Starting diagnostic test...');
-
     try {
-        const transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 587,
-            secure: false,
-            auth: { user: email, pass: pass },
-            connectionTimeout: 10000, // 10 seconds timeout for connection
-            greetingTimeout: 10000,   // 10 seconds timeout for greeting
-            socketTimeout: 10000,     // 10 seconds timeout for reading
-        });
-        
-        console.log('[DEBUG-EMAIL] Verifying connection...');
-        diag.step = 'verifying';
-        try {
-            await transporter.verify();
-            diag.connection = '✅ SMTP connected';
-            console.log('[DEBUG-EMAIL] Connection verified.');
-        } catch (vErr) {
-            console.error('[DEBUG-EMAIL] Verification failed:', vErr.message);
-            diag.connection_error = vErr.message;
-            diag.connection_code = vErr.code;
-            return res.json({ success: false, diag });
-        }
-        
-        console.log('[DEBUG-EMAIL] Sending test email...');
-        diag.step = 'sending';
-        const info = await transporter.sendMail({
-            from: `"Zippa Test" <${email}>`,
-            to: email,
-            subject: 'Render Email Test - ' + new Date().toISOString(),
-            html: '<h1>✅ Render email works!</h1>',
-        });
-        
-        diag.send = '✅ SENT';
-        diag.messageId = info.messageId;
-        console.log('[DEBUG-EMAIL] Email sent:', info.messageId);
-        
-        res.json({ success: true, diag });
+        results.port465_tls = await checkPort(465, 'smtp.gmail.com', true);
+        results.port587_plain = await checkPort(587, 'smtp.gmail.com', false);
+        res.json({ success: true, results });
     } catch (err) {
-        console.error('[DEBUG-EMAIL] unexpected error:', err.message);
-        diag.error = err.message;
-        diag.code = err.code;
-        res.json({ success: false, diag });
+        res.json({ success: false, error: err.message });
     }
 });
 
-
+module.exports = router;
