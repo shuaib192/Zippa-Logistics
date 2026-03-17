@@ -23,6 +23,11 @@
 // Load environment variables FIRST (before anything else)
 require('dotenv').config();
 
+const dns = require('dns');
+if (dns.setDefaultResultOrder) {
+    dns.setDefaultResultOrder('ipv4first');
+}
+
 // Import required packages
 const express = require('express');     // Web framework
 const cors = require('cors');           // Cross-Origin Resource Sharing

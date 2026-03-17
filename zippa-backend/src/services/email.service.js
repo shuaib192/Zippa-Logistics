@@ -12,11 +12,17 @@ const getTransporter = () => {
     if (!_transporter) {
         console.log('[EMAIL] Creating transporter with:', process.env.SMTP_EMAIL || '❌ MISSING');
         _transporter = nodemailer.createTransport({
-            service: 'gmail',
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false, // Use STARTTLS (port 587) instead of SSL (port 465)
             auth: {
                 user: process.env.SMTP_EMAIL,
                 pass: process.env.SMTP_APP_PASSWORD,
             },
+            tls: {
+                // Do not fail on invalid certs (useful for some cloud routing)
+                rejectUnauthorized: false
+            }
         });
     }
     return _transporter;
