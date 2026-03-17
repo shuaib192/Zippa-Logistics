@@ -7,6 +7,7 @@ const { authenticate, authorize } = require('../middleware/auth.middleware');
 router.use(authenticate);
 router.use(authorize('admin'));
 
+
 // Dashboard Stats
 router.get('/stats', adminController.getDashboardStats);
 

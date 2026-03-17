@@ -108,13 +108,20 @@ app.use('/api/', limiter); // Apply to all API routes
 // ============================================
 
 // Health check endpoint — used by CI/CD and monitoring
-// If this returns 200, the server is alive and well.
-app.get('/api/health', (_req, res) => {
-    res.status(200).json({
+let commitHash = 'unknown';
+try {
+    commitHash = require('child_process').execSync('git rev-parse HEAD').toString().trim();
+} catch (e) {}
+
+// GET /api/health — Server status check
+// Always put this before other routes so it doesn't get blocked
+app.get('/api/health', (req, res) => {
+    res.json({
         success: true,
         message: 'Zippa Logistics API is running',
         version: '1.0.0',
-        timestamp: new Date().toISOString(),
+        commit: commitHash,
+        timestamp: new Date().toISOString() // Let the app know what time the server thinks it is
     });
 });
 
