@@ -108,6 +108,7 @@ app.use('/api/', limiter); // Apply to all API routes
 // ============================================
 
 // Health check endpoint — used by CI/CD and monitoring
+// V21 Deploy Tracker: 21:23:00
 let commitHash = 'unknown';
 try {
     commitHash = require('child_process').execSync('git rev-parse HEAD').toString().trim();
