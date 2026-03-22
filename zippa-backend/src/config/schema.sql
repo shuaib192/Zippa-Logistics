@@ -178,8 +178,6 @@ CREATE TABLE IF NOT EXISTS orders (
     package_description TEXT,
     customer_notes      TEXT,
     is_marketplace      BOOLEAN DEFAULT FALSE,
-    scheduled_at        TIMESTAMP,
-    -- If null, it's an immediate delivery. If set, it's scheduled.
     
     -- Pricing
     distance_km      DECIMAL(10, 2),  -- Distance in kilometers
