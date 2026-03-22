@@ -66,7 +66,7 @@ class AppDrawer extends StatelessWidget {
                     }
                   },
                 ),
-                if (user?.kycStatus != 'verified')
+                if ((isRider || isVendor) && user?.kycStatus != 'verified')
                   _DrawerTile(
                     icon: Icons.verified_user_outlined,
                     label: 'Verify Identity',

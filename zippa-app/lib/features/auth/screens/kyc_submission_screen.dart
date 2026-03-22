@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/data/api/api_client.dart';
 import 'package:zippa_app/features/auth/providers/auth_provider.dart';
+import 'package:zippa_app/core/services/face_verification_service.dart';
 
 class KYCSubmissionScreen extends StatefulWidget {
   const KYCSubmissionScreen({super.key});
@@ -24,6 +25,8 @@ class _KYCSubmissionScreenState extends State<KYCSubmissionScreen> {
   final ApiClient _api = ApiClient();
   String? _selectedDocType;
   File? _documentImage;
+  File? _selfieImage;
+  bool _isFaceVerified = false;
   bool _isLoading = false;
   String? _error;
   String? _success;
@@ -92,6 +95,25 @@ class _KYCSubmissionScreenState extends State<KYCSubmissionScreen> {
     }
   }
 
+  Future<void> _verifyFace() async {
+    setState(() { _isLoading = true; _error = null; });
+    
+    final selfiePath = await FaceVerificationService.verifyLiveness(context);
+    
+    if (selfiePath != null) {
+      setState(() {
+        _selfieImage = File(selfiePath);
+        _isFaceVerified = true;
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _error = 'Face verification failed or cancelled. Please try again.';
+        _isLoading = false;
+      });
+    }
+  }
+
   Future<void> _submitKYC() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedDocType == null) {
@@ -105,7 +127,10 @@ class _KYCSubmissionScreenState extends State<KYCSubmissionScreen> {
       final response = await _api.postMultipart('/users/kyc', {
         'documentType': _selectedDocType!,
         'documentNumber': _docNumberController.text.trim(),
-      }, filePath: _documentImage?.path, fileField: 'document');
+      }, files: {
+        'document': _documentImage!.path,
+        if (_selfieImage != null) 'selfie': _selfieImage!.path,
+      });
 
       if (!mounted) return;
 
@@ -248,6 +273,12 @@ class _KYCSubmissionScreenState extends State<KYCSubmissionScreen> {
           ).animate().fadeIn(delay: 150.ms),
 
           const SizedBox(height: 24),
+          
+          _buildFaceVerificationCard().animate().fadeIn(delay: 200.ms),
+          
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 16),
 
           // Document Type Selection
           ...List.generate(_docTypes.length, (i) {
@@ -373,14 +404,82 @@ class _KYCSubmissionScreenState extends State<KYCSubmissionScreen> {
             width: double.infinity,
             height: 56,
             child: ElevatedButton.icon(
-              onPressed: _isLoading ? null : _submitKYC,
+              onPressed: (_isLoading || !_isFaceVerified || _documentImage == null) ? null : _submitKYC,
               icon: _isLoading
                   ? const SizedBox(width: 20, height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
                   : const Icon(Icons.send_rounded),
-              label: Text(_isLoading ? 'Submitting...' : 'Submit for Verification'),
+              label: Text(_isLoading ? 'Submitting...' : 'Submit reachedVerification'),
             ),
           ).animate().fadeIn(delay: 550.ms),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFaceVerificationCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: _isFaceVerified ? ZippaColors.success.withOpacity(0.05) : ZippaColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _isFaceVerified ? ZippaColors.success : Colors.grey.shade200,
+          width: _isFaceVerified ? 2 : 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: (_isFaceVerified ? ZippaColors.success : ZippaColors.primary).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  _isFaceVerified ? Icons.face_retouching_natural : Icons.face,
+                  color: _isFaceVerified ? ZippaColors.success : ZippaColors.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Face Verification', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text('Perform a quick liveness check', style: TextStyle(fontSize: 12, color: ZippaColors.textSecondary)),
+                  ],
+                ),
+              ),
+              if (_isFaceVerified)
+                const Icon(Icons.check_circle, color: ZippaColors.success),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (_selfieImage != null)
+            Center(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.file(_selfieImage!, width: 100, height: 100, fit: BoxFit.cover),
+              ),
+            ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _isLoading ? null : _verifyFace,
+              icon: Icon(_isFaceVerified ? Icons.refresh : Icons.camera_front),
+              label: Text(_isFaceVerified ? 'Redo Verification' : 'Start Face Verification'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _isFaceVerified ? ZippaColors.success : ZippaColors.primary,
+                side: BorderSide(color: _isFaceVerified ? ZippaColors.success : ZippaColors.primary),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
         ],
       ),
     );

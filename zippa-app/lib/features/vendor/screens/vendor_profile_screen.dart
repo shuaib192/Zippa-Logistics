@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:zippa_app/core/widgets/profile_switch_item.dart';
 
 class VendorProfileScreen extends StatelessWidget {
   const VendorProfileScreen({super.key});
@@ -102,6 +103,15 @@ class VendorProfileScreen extends StatelessWidget {
               );
             },
           ),
+          if (Provider.of<AuthProvider>(context).isBiometricAvailable)
+            ProfileSwitchItem(
+              icon: Icons.fingerprint_rounded,
+              label: 'Biometric Unlock',
+              value: Provider.of<AuthProvider>(context).isBiometricEnabled,
+              onChanged: (val) {
+                Provider.of<AuthProvider>(context, listen: false).toggleBiometric(val);
+              },
+            ),
           
           const SizedBox(height: 16),
           _buildSectionHeader('Payout Settings'),

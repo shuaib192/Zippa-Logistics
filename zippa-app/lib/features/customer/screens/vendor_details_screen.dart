@@ -23,6 +23,14 @@ class VendorDetailsScreen extends StatefulWidget {
 class _VendorDetailsScreenState extends State<VendorDetailsScreen> {
   Map<String, dynamic>? _vendorData;
   bool _isLoading = true;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -170,35 +178,72 @@ class _VendorDetailsScreenState extends State<VendorDetailsScreen> {
                 ),
               ),
 
+              // In-Store Search bar
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                sliver: SliverToBoxAdapter(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade100),
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (value) => setState(() => _searchQuery = value.toLowerCase()),
+                      decoration: InputDecoration(
+                        hintText: 'Search in this shop...',
+                        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                        icon: const Icon(Icons.search_rounded, color: ZippaColors.primary),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
               // Product List Section
               SliverPadding(
                 padding: const EdgeInsets.all(20),
                 sliver: SliverToBoxAdapter(
                   child: Text(
-                    'Products (${products.length})',
+                    _searchQuery.isEmpty 
+                      ? 'Products (${products.length})'
+                      : 'Results for "$_searchQuery"',
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary),
                   ),
                 ),
               ),
 
-              products.isEmpty
-                  ? const SliverFillRemaining(
-                      child: Center(
-                        child: Text('This shop has no products yet', style: TextStyle(color: ZippaColors.textLight)),
-                      ),
-                    )
-                  : SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final product = products[index];
-                            return _ProductTile(product: product);
-                          },
-                          childCount: products.length,
-                        ),
-                      ),
+              () {
+                final filteredProducts = products.where((p) {
+                  final name = p.name.toLowerCase();
+                  final desc = (p.description ?? '').toLowerCase();
+                  return name.contains(_searchQuery) || desc.contains(_searchQuery);
+                }).toList();
+
+                if (filteredProducts.isEmpty) {
+                  return const SliverFillRemaining(
+                    child: Center(
+                      child: Text('No matching products found', style: TextStyle(color: ZippaColors.textLight)),
                     ),
+                  );
+                }
+
+                return SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final product = filteredProducts[index];
+                        return _ProductTile(product: product);
+                      },
+                      childCount: filteredProducts.length,
+                    ),
+                  ),
+                );
+              }(),
               
               const SliverToBoxAdapter(child: SizedBox(height: 120)),
             ],

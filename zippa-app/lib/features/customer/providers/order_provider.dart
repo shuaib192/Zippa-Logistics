@@ -59,6 +59,9 @@ class OrderProvider with ChangeNotifier {
   
   String _recipientName = '';
   String _recipientPhone = '';
+  DateTime? _scheduledAt;
+  
+  DateTime? get scheduledAt => _scheduledAt;
   
   // Setters for Order State
   void setPickup(String address, double lat, double lng) {
@@ -80,12 +83,18 @@ class OrderProvider with ChangeNotifier {
     _recipientName = name; _recipientPhone = phone;
     notifyListeners();
   }
+
+  void setScheduledAt(DateTime? dt) {
+    _scheduledAt = dt;
+    notifyListeners();
+  }
   
   void clearState() {
     _pickupAddress = ''; _pickupLat = 0.0; _pickupLng = 0.0;
     _dropoffAddress = ''; _dropoffLat = 0.0; _dropoffLng = 0.0;
     _packageSize = 'small'; _packageType = 'document'; _packageDescription = '';
     _recipientName = ''; _recipientPhone = '';
+    _scheduledAt = null;
     _lastEstimate = null;
     notifyListeners();
   }
@@ -108,6 +117,7 @@ class OrderProvider with ChangeNotifier {
         'dropoff_lng': _dropoffLng,
         'package_size': _packageSize,
         'package_type': _packageType,
+        'scheduled_at': _scheduledAt?.toIso8601String(),
       });
 
       if (response['success'] != false && response['data'] != null) {
@@ -151,6 +161,7 @@ class OrderProvider with ChangeNotifier {
         'recipient_name': _recipientName,
         'recipient_phone': _recipientPhone,
         'payment_method': 'wallet', // Strictly Escrow now
+        'scheduled_at': _scheduledAt?.toIso8601String(),
       });
 
       if (response['success'] != false && response['order'] != null) {
@@ -466,5 +477,38 @@ class OrderProvider with ChangeNotifier {
   void clearRoute() {
     _currentRoute = [];
     notifyListeners();
+  }
+
+  // ============================================
+  // API CALL: Raise Dispute
+  // ============================================
+  Future<bool> raiseDispute(String orderId, String reason, String description) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.post('/disputes', {
+        'order_id': orderId,
+        'reason': reason,
+        'description': description,
+      });
+
+      if (response['success'] != false) {
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _error = response['message'];
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = 'Failed to raise dispute';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 }

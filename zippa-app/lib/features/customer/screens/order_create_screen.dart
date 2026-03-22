@@ -152,6 +152,12 @@ class _OrderCreateScreenState extends State<OrderCreateScreen> {
                 validator: (val) => val == null || val.length < 10 ? 'Invalid number' : null,
               ),
               
+              const SizedBox(height: 32),
+
+              // 4. Scheduling Section
+              _SectionHeader(number: '4', title: 'Scheduling'),
+              _buildSchedulingCard(context),
+              
               const SizedBox(height: 40),
             ],
           ),
@@ -179,6 +185,108 @@ class _OrderCreateScreenState extends State<OrderCreateScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildSchedulingCard(BuildContext context) {
+    final provider = context.watch<OrderProvider>();
+    final isScheduled = provider.scheduledAt != null;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: ZippaColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isScheduled ? ZippaColors.primary.withOpacity(0.3) : Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(
+                isScheduled ? Icons.event_available_rounded : Icons.bolt_rounded,
+                color: isScheduled ? ZippaColors.primary : ZippaColors.textLight,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isScheduled ? 'Scheduled Delivery' : 'Instant Delivery',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      isScheduled 
+                        ? 'Pickup at ${provider.scheduledAt!.toString().substring(0, 16)}'
+                        : 'As soon as possible',
+                      style: TextStyle(fontSize: 12, color: isScheduled ? ZippaColors.primary : ZippaColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: isScheduled,
+                activeColor: ZippaColors.primary,
+                onChanged: (val) {
+                  if (val) {
+                    _pickSchedule(context);
+                  } else {
+                    provider.setScheduledAt(null);
+                  }
+                },
+              ),
+            ],
+          ),
+          if (isScheduled) ...[
+            const Divider(height: 24),
+            TextButton.icon(
+              onPressed: () => _pickSchedule(context),
+              icon: const Icon(Icons.edit_calendar_rounded, size: 18),
+              label: const Text('Change Date/Time'),
+              style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickSchedule(BuildContext context) async {
+    final provider = context.read<OrderProvider>();
+    
+    final date = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(minutes: 30)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 7)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(primary: ZippaColors.secondary),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (date == null) return;
+    if (!context.mounted) return;
+
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(DateTime.now().add(const Duration(hours: 1))),
+    );
+
+    if (time != null && context.mounted) {
+      final scheduled = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+      if (scheduled.isBefore(DateTime.now())) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a future time')),
+        );
+        return;
+      }
+      provider.setScheduledAt(scheduled);
+    }
   }
 
   void _handleProceed() async {

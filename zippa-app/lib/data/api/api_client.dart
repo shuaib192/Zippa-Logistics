@@ -129,13 +129,12 @@ class ApiClient {
   }
   
   // ============================================
-  // Multipart POST — Send files to the server
+  // Multipart POST — Send multiple files to the server
   // ============================================
   Future<Map<String, dynamic>> postMultipart(
     String endpoint,
     Map<String, String> fields, {
-    String? filePath,
-    String fileField = 'file',
+    Map<String, String>? files, // Use a map for multiple files: {'document': 'path/to/doc.jpg', 'selfie': 'path/to/selfie.jpg'}
     bool auth = true,
   }) async {
     try {
@@ -150,8 +149,12 @@ class ApiClient {
       
       request.fields.addAll(fields);
       
-      if (filePath != null && File(filePath).existsSync()) {
-        request.files.add(await http.MultipartFile.fromPath(fileField, filePath));
+      if (files != null) {
+        for (var entry in files.entries) {
+          if (File(entry.value).existsSync()) {
+            request.files.add(await http.MultipartFile.fromPath(entry.key, entry.value));
+          }
+        }
       }
       
       final streamedResponse = await request.send();

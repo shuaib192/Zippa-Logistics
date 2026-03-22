@@ -53,34 +53,55 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final role = ModalRoute.of(context)?.settings.arguments as String? ?? 'customer';
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    final verificationData = await authProvider.register(
-      fullName: _nameController.text.trim(),
-      phone: _phoneController.text.trim(),
-      email: _emailController.text.trim().isNotEmpty ? _emailController.text.trim() : null,
-      password: _passwordController.text,
-      role: role,
-    );
+    try {
+      // V21 Safety Timeout (15 seconds) for registration
+      final verificationData = await authProvider.register(
+        fullName: _nameController.text.trim(),
+        phone: _phoneController.text.trim(),
+        email: _emailController.text.trim().isNotEmpty ? _emailController.text.trim() : null,
+        password: _passwordController.text,
+        role: role,
+      ).timeout(const Duration(seconds: 15));
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    if (verificationData != null) {
-      // Go to Email Verification screen
-      Navigator.pushNamed(
-        context, 
-        '/verify-email', 
-        arguments: {
-          'userId': verificationData['userId'],
-          'email': verificationData['email'],
-          'role': role,
-        }
-      );
-    } else {
+      if (verificationData != null) {
+        // Go to Email Verification screen
+        Navigator.pushNamed(
+          context, 
+          '/verify-email', 
+          arguments: {
+            'userId': verificationData['userId'],
+            'email': verificationData['email'],
+            'role': role,
+          }
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.error ?? 'Registration failed. Check if account already exists.'),
+            backgroundColor: ZippaColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      // In case of timeout or other error
+      authProvider.setLoaded(); // Force reset loading state (V21)
+      authProvider.clearError(); // Reset provider error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authProvider.error ?? 'Registration failed. Please try again.'),
-          backgroundColor: ZippaColors.error,
+          content: const Text('Registration timed out. If your account was created, please try to login.'),
+          backgroundColor: ZippaColors.warning,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          action: SnackBarAction(
+            label: 'LOGIN',
+            textColor: Colors.white,
+            onPressed: () => Navigator.pushNamed(context, '/login'),
+          ),
         ),
       );
     }

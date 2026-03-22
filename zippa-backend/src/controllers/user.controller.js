@@ -315,7 +315,7 @@ const updateFcmToken = async (req, res) => {
 // ============================================
 // CONTROLLER: submitKYC
 // POST /api/users/kyc
-// Submit KYC documents for verification
+// Submit KYC documents for verification (including face verification selfie)
 // ============================================
 const submitKYC = async (req, res) => {
     try {
@@ -349,17 +349,24 @@ const submitKYC = async (req, res) => {
             });
         }
 
-        // Handle file upload path
+        // Handle file upload paths from req.files (using kycUpload.fields)
         let documentUrl = 'no-file-uploaded';
-        if (req.file) {
-            documentUrl = `/uploads/kyc/${req.file.filename}`;
+        let selfieUrl = null;
+
+        if (req.files) {
+            if (req.files.document && req.files.document[0]) {
+                documentUrl = `/uploads/kyc/${req.files.document[0].filename}`;
+            }
+            if (req.files.selfie && req.files.selfie[0]) {
+                selfieUrl = `/uploads/kyc/${req.files.selfie[0].filename}`;
+            }
         }
 
         // Insert KYC document
         await db.query(
-            `INSERT INTO kyc_documents (user_id, document_type, document_url, document_number) 
-             VALUES ($1, $2, $3, $4)`,
-            [userId, documentType, documentUrl, documentNumber]
+            `INSERT INTO kyc_documents (user_id, document_type, document_url, selfie_url, document_number) 
+             VALUES ($1, $2, $3, $4, $5)`,
+            [userId, documentType, documentUrl, selfieUrl, documentNumber]
         );
 
         // Update user's KYC status to pending
@@ -373,7 +380,7 @@ const submitKYC = async (req, res) => {
             message: 'KYC documents submitted successfully. You will be notified once verified.',
         });
 
-        console.log(`📋 KYC submitted by user ${userId} (${documentType})`);
+        console.log(`📋 KYC submitted by user ${userId} (${documentType}) with face verification: ${!!selfieUrl}`);
     } catch (err) {
         console.error('Submit KYC error:', err);
         res.status(500).json({ success: false, message: 'Failed to submit KYC documents.' });

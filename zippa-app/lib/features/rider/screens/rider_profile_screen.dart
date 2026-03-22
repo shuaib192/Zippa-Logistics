@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/features/auth/providers/auth_provider.dart';
 import 'package:zippa_app/features/rider/screens/rider_edit_profile_screen.dart';
+import 'package:zippa_app/core/widgets/profile_switch_item.dart';
 
 class RiderProfileScreen extends StatelessWidget {
   const RiderProfileScreen({super.key});
@@ -132,6 +133,15 @@ class RiderProfileScreen extends StatelessWidget {
                       title: 'Notifications',
                       onTap: () {},
                     ),
+                    if (Provider.of<AuthProvider>(context).isBiometricAvailable)
+                      ProfileSwitchItem(
+                        icon: Icons.fingerprint_rounded,
+                        label: 'Biometric Unlock',
+                        value: Provider.of<AuthProvider>(context).isBiometricEnabled,
+                        onChanged: (val) {
+                          Provider.of<AuthProvider>(context, listen: false).toggleBiometric(val);
+                        },
+                      ),
                   ]),
 
                   const SizedBox(height: 20),

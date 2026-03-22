@@ -9,9 +9,9 @@ import 'package:zippa_app/features/customer/screens/vendor_details_screen.dart';
 /// Displays a list of vendors in a specific category (The "Mall" View)
 
 class VendorListScreen extends StatefulWidget {
-  final Category category;
+  final Category? category;
 
-  const VendorListScreen({super.key, required this.category});
+  const VendorListScreen({super.key, this.category});
 
   @override
   State<VendorListScreen> createState() => _VendorListScreenState();
@@ -23,7 +23,7 @@ class _VendorListScreenState extends State<VendorListScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<MarketplaceProvider>(context, listen: false)
-          .searchVendors(categoryId: widget.category.id);
+          .searchVendors(categoryId: widget.category?.id);
     });
   }
 
@@ -34,7 +34,7 @@ class _VendorListScreenState extends State<VendorListScreen> {
     return Scaffold(
       backgroundColor: ZippaColors.background,
       appBar: AppBar(
-        title: Text(widget.category.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(widget.category?.name ?? 'All Shops', style: const TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: ZippaColors.textPrimary,
@@ -42,7 +42,7 @@ class _VendorListScreenState extends State<VendorListScreen> {
       body: marketplace.isLoading
           ? const Center(child: CircularProgressIndicator())
           : marketplace.searchResults.isEmpty
-              ? _NoVendorsPlaceholder(categoryName: widget.category.name)
+              ? _NoVendorsPlaceholder(categoryName: widget.category?.name ?? 'shops')
               : ListView.builder(
                   padding: const EdgeInsets.all(20),
                   itemCount: marketplace.searchResults.length,

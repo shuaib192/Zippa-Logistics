@@ -17,6 +17,7 @@ const db = require('../config/database');
 const { calculateFare } = require('../utils/fare_calculator');
 const { createNotification } = require('./notification.controller');
 const NotificationService = require('../services/notification.service');
+const { sendOrderPlacedEmail, sendOrderDeliveredEmail } = require('../services/email.service');
 
 
 // ============================================
@@ -100,6 +101,8 @@ const createOrder = async (req, res) => {
             customer_notes
         } = req.body;
 
+        const scheduledAt = req.body.scheduled_at || null;
+
         // Validate required fields
         const required = { pickup_address, dropoff_address, recipient_name, recipient_phone, package_type, package_size };
         for (const [field, value] of Object.entries(required)) {
@@ -164,7 +167,7 @@ const createOrder = async (req, res) => {
                 package_type, package_size, package_description,
                 base_fare, distance_fare, platform_fee, subtotal, total_fare, rider_earning,
                 distance_km, payment_method, status, payment_status, customer_notes,
-                is_marketplace
+                is_marketplace, scheduled_at, surge_multiplier
             ) VALUES (
                 $1, $2, $3, $4,
                 $5, $6, $7,
@@ -172,7 +175,7 @@ const createOrder = async (req, res) => {
                 $11, $12,
                 $13, $14, $15,
                 $16, $17, $18, $19, $20, $21,
-                $22, $23, 'pending', 'held', $24, $25
+                $22, $23, 'pending', 'held', $24, $25, $26, $27
             ) RETURNING *, 
                 pickup_latitude as pickup_lat, pickup_longitude as pickup_lng, 
                 dropoff_latitude as dropoff_lat, dropoff_longitude as dropoff_lng,
@@ -190,6 +193,8 @@ const createOrder = async (req, res) => {
                 fare.distance_km, payment_method || 'wallet',
                 customer_notes || null,
                 vendor_id ? true : false,
+                scheduledAt || null,
+                fare.surge_multiplier || 1.0
             ],
         );
 
@@ -215,6 +220,12 @@ const createOrder = async (req, res) => {
                 related_id: order.id.toString()
             }
         });
+
+        // Send order confirmation email (fire-and-forget)
+        if (req.user.email) {
+            sendOrderPlacedEmail(req.user.email, req.user.fullName, order)
+                .catch(e => console.error('[EMAIL] Order placed email failed:', e.message));
+        }
 
         res.status(201).json({
             success: true,
@@ -699,6 +710,13 @@ const confirmOrderDelivery = async (req, res) => {
         }
         if (order.vendor_id) {
             await createNotification(order.vendor_id, 'Payment Received!', `Item cost for order #${order.order_number} has been released to your wallet.`, 'wallet', order.id);
+        }
+
+        // Send delivery receipt email to customer (fire-and-forget)
+        const customerRes = await db.query('SELECT email, full_name FROM users WHERE id = $1', [order.customer_id]);
+        if (customerRes.rows.length > 0 && customerRes.rows[0].email) {
+            sendOrderDeliveredEmail(customerRes.rows[0].email, customerRes.rows[0].full_name, order)
+                .catch(e => console.error('[EMAIL] Delivery receipt email failed:', e.message));
         }
 
         res.status(200).json({

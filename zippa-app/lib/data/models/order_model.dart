@@ -46,6 +46,8 @@ class OrderModel {
   final String? paymentMethod;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final DateTime? scheduledAt;
+  final double surgeMultiplier;
   
   // Rider Info (Loaded in details)
   final String? riderName;
@@ -89,6 +91,8 @@ class OrderModel {
     this.customerNotes,
     this.isMarketplace = false,
     this.vendorName,
+    this.scheduledAt,
+    this.surgeMultiplier = 1.0,
   });
 
   // Convert JSON to Order object
@@ -128,6 +132,8 @@ class OrderModel {
       customerNotes: json['customer_notes'],
       isMarketplace: json['is_marketplace'] == true,
       vendorName: json['vendor_name'] ?? json['pickup_contact_name'],
+      scheduledAt: json['scheduled_at'] != null ? DateTime.parse(json['scheduled_at']) : null,
+      surgeMultiplier: double.tryParse(json['surge_multiplier']?.toString() ?? '1.0') ?? 1.0,
     );
   }
 
@@ -143,9 +149,9 @@ class OrderModel {
       'package_size': packageSize,
       'package_type': packageType,
       'package_description': packageDescription,
-      'recipient_name': recipientName,
       'recipient_phone': recipientPhone,
       'payment_method': paymentMethod,
+      'scheduled_at': scheduledAt?.toIso8601String(),
     };
   }
 }

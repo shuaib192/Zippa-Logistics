@@ -53,6 +53,13 @@ dependencies:
   # --- Navigation ---
   go_router: ^14.0.0          # Advanced routing/navigation
 
+  # --- Payment & Security ---
+  webview_flutter: ^4.10.0    # In-app Paystack payment WebView
+  local_auth: ^2.3.0          # Biometric authentication (fingerprint/face)
+
+  # --- KYC & Liveness ---
+  flutter_liveness_detection: ^1.0.0 # Face verification liveness check
+
   # --- Firebase & Notifications ---
   firebase_core: ^3.11.0
   firebase_messaging: ^15.2.10

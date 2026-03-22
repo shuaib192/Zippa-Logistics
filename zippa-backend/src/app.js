@@ -48,6 +48,7 @@ const vendorRoutes = require('./routes/vendor.routes');
 const productRoutes = require('./routes/product.routes');
 const webhookRoutes = require('./routes/webhook.routes');
 const adminRoutes = require('./routes/admin.routes');
+const disputeRoutes = require('./routes/dispute.routes');
 const path = require('path');
 
 // Create the Express application
@@ -164,6 +165,7 @@ app.use('/api/vendors', vendorRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/disputes', disputeRoutes);
 
 // 7. Static file serving for Uploads (KYC, Avatars, etc.)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));

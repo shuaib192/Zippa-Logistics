@@ -80,15 +80,40 @@ class _RiderHomeContent extends StatefulWidget {
 class _RiderHomeContentState extends State<_RiderHomeContent> {
   bool _isOnline = false;
   bool _isLoading = true;
+  bool _hasError = false;
+  String _errorMessage = '';
 
   @override
   void initState() {
     super.initState();
+    _startInitialLoad();
+  }
+
+  void _startInitialLoad() {
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+      _errorMessage = '';
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _loadOnlineStatus();
-        Provider.of<WalletProvider>(context, listen: false).fetchBalance();
+        Provider.of<WalletProvider>(context, listen: false).fetchBalance().catchError((e) {
+          debugPrint('Error fetching balance: $e');
+        });
         
+        // V21 Safety Timeout (7 seconds)
+        Future.delayed(const Duration(seconds: 7), () {
+          if (mounted && _isLoading) {
+            setState(() {
+              _isLoading = false;
+              // We don't necessarily show an error here, just stop the spinner
+              // so the user can at least see the offline state or retry.
+            });
+          }
+        });
+
         // Sequence permissions and topic subscription
         Future.delayed(const Duration(milliseconds: 1000), () async {
           if (mounted) {
@@ -101,23 +126,44 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
   }
 
   Future<void> _loadOnlineStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      _isOnline = prefs.getBool('rider_online_status') ?? false;
-      _isLoading = false;
-    });
-    // Sync with backend on load
-    if (mounted) {
-      Provider.of<OrderProvider>(context, listen: false).toggleOnline(_isOnline);
-      if (_isOnline) {
-        Provider.of<OrderProvider>(context, listen: false).fetchOrders();
-        Provider.of<LocationProvider>(context, listen: false).startRiderTracking();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (!mounted) return;
+      setState(() {
+        _isOnline = prefs.getBool('rider_online_status') ?? false;
+        _isLoading = false;
+      });
+      // Sync with backend on load
+      if (mounted) {
+        Provider.of<OrderProvider>(context, listen: false).toggleOnline(_isOnline);
+        if (_isOnline && Provider.of<AuthProvider>(context, listen: false).user?.kycStatus == 'verified') {
+          Provider.of<OrderProvider>(context, listen: false).fetchOrders();
+          Provider.of<LocationProvider>(context, listen: false).startRiderTracking();
+        } else if (_isOnline) {
+          // If they were saved as online but aren't verified, force offline
+          _toggleOnline(false);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+          _errorMessage = 'Failed to load status';
+        });
       }
     }
   }
 
   Future<void> _toggleOnline(bool value) async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    if (value && auth.user?.kycStatus != 'verified') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please verify your identity to go online.')),
+      );
+      return;
+    }
+    
     final prefs = await SharedPreferences.getInstance();
     setState(() => _isOnline = value);
     await prefs.setBool('rider_online_status', value);
@@ -139,7 +185,41 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: ZippaColors.primary)),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(color: ZippaColors.primary),
+              SizedBox(height: 16),
+              Text('Starting up...', style: TextStyle(color: ZippaColors.textSecondary, fontSize: 13)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_hasError) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(40),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline_rounded, size: 64, color: ZippaColors.error),
+                const SizedBox(height: 16),
+                const Text('Something went wrong', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                const SizedBox(height: 8),
+                Text(_errorMessage, textAlign: TextAlign.center, style: const TextStyle(color: ZippaColors.textSecondary)),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: _startInitialLoad,
+                  child: const Text('Try Again'),
+                ),
+              ],
+            ),
+          ),
+        ),
       );
     }
     final user = Provider.of<AuthProvider>(context).user;
@@ -232,7 +312,7 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
                     scale: 1.2,
                     child: Switch(
                       value: _isOnline,
-                      onChanged: _toggleOnline,
+                      onChanged: (user?.kycStatus == 'verified') ? _toggleOnline : (val) => _toggleOnline(val),
                       activeThumbColor: Colors.white,
                       activeTrackColor: ZippaColors.primaryLight,
                       inactiveThumbColor: Colors.white,
@@ -242,6 +322,11 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
                 ],
               ),
             ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.08, end: 0),
+
+            if (user?.kycStatus != 'verified') ...[
+              const SizedBox(height: 24),
+              _buildKYCRequiredBanner(context, user?.kycStatus ?? 'unverified'),
+            ],
 
             const SizedBox(height: 24),
 
@@ -351,7 +436,9 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
             Text('Available Orders', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
             const SizedBox(height: 14),
 
-            if (_isOnline)
+            if (user?.kycStatus != 'verified')
+               _buildKYCBlockedState()
+            else if (_isOnline)
               orderProvider.isLoading 
                 ? const Center(child: Padding(padding: EdgeInsets.only(top: 40), child: CircularProgressIndicator()))
                 : orderProvider.orders.where((o) => o.status == 'pending').isEmpty
@@ -398,6 +485,76 @@ class _RiderHomeContentState extends State<_RiderHomeContent> {
           const Text('You are offline', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: ZippaColors.textSecondary)),
           const SizedBox(height: 6),
           const Text('Go online to start receiving delivery requests and earning', textAlign: TextAlign.center, style: TextStyle(color: ZippaColors.textLight, fontSize: 13)),
+        ],
+      ),
+    ).animate().fadeIn(duration: 400.ms);
+  }
+
+  Widget _buildKYCRequiredBanner(BuildContext context, String status) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.orange.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.orange.withOpacity(0.2)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: const BoxDecoration(color: Colors.orange, shape: BoxShape.circle),
+                child: const Icon(Icons.security_rounded, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Verification Required', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.orange)),
+                    Text(
+                      status == 'pending' 
+                        ? 'Your documents are currently under review.' 
+                        : 'Complete your KYC to start receiving orders.',
+                      style: TextStyle(fontSize: 12, color: Colors.orange.shade800),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (status != 'pending') ...[
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pushNamed(context, '/kyc'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Verify Identity Now'),
+              ),
+            ),
+          ],
+        ],
+      ),
+    ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1, end: 0);
+  }
+
+  Widget _buildKYCBlockedState() {
+    return Center(
+      child: Column(
+        children: [
+          const SizedBox(height: 40),
+          Icon(Icons.lock_person_outlined, size: 72, color: ZippaColors.textLight),
+          const SizedBox(height: 14),
+          const Text('Orders Blocked', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: ZippaColors.textSecondary)),
+          const SizedBox(height: 6),
+          const Text('You must be a verified rider to view and accept orders.', textAlign: TextAlign.center, style: TextStyle(color: ZippaColors.textLight, fontSize: 13)),
         ],
       ),
     ).animate().fadeIn(duration: 400.ms);

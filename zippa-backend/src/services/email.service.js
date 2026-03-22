@@ -144,9 +144,123 @@ const sendNotificationEmail = async (toEmail, fullName, subject, body) => {
 };
 
 
+// Send Order Placed confirmation email
+const sendOrderPlacedEmail = async (toEmail, fullName, order) => {
+    const html = `
+    <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:480px;margin:0 auto;background:#0B0F19;border-radius:12px;overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#10B981,#059669);padding:32px;text-align:center;">
+            <h1 style="color:#fff;margin:0;font-size:24px;font-weight:800;">⚡ Zippa Logistics</h1>
+            <p style="color:rgba(255,255,255,0.8);margin:8px 0 0;font-size:13px;">Order Confirmed</p>
+        </div>
+        <div style="padding:32px;color:#E5E7EB;">
+            <p style="margin:0 0 16px;font-size:15px;">Hi <strong style="color:#fff;">${fullName}</strong>,</p>
+            <p style="margin:0 0 24px;font-size:14px;color:#9CA3AF;">Your delivery order has been placed successfully. A rider will accept it shortly.</p>
+            <div style="background:#1F2937;border-radius:12px;padding:20px;margin:16px 0;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
+                    <span style="color:#6B7280;font-size:12px;">Order Number</span>
+                    <span style="color:#10B981;font-weight:bold;font-size:14px;">${order.order_number}</span>
+                </div>
+                <hr style="border:none;border-top:1px solid #374151;margin:12px 0;">
+                <div style="margin-bottom:8px;">
+                    <span style="color:#6B7280;font-size:11px;">PICKUP</span>
+                    <p style="color:#fff;margin:4px 0 0;font-size:13px;">${order.pickup_address}</p>
+                </div>
+                <div style="margin-bottom:12px;">
+                    <span style="color:#6B7280;font-size:11px;">DROPOFF</span>
+                    <p style="color:#fff;margin:4px 0 0;font-size:13px;">${order.dropoff_address}</p>
+                </div>
+                <hr style="border:none;border-top:1px solid #374151;margin:12px 0;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                    <span style="color:#6B7280;font-size:12px;">Base Fare</span>
+                    <span style="color:#D1D5DB;font-size:12px;">₦${parseFloat(order.base_fare || 0).toLocaleString()}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                    <span style="color:#6B7280;font-size:12px;">Distance Fare</span>
+                    <span style="color:#D1D5DB;font-size:12px;">₦${parseFloat(order.distance_fare || 0).toLocaleString()}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                    <span style="color:#6B7280;font-size:12px;">Platform Fee</span>
+                    <span style="color:#D1D5DB;font-size:12px;">₦${parseFloat(order.platform_fee || 0).toLocaleString()}</span>
+                </div>
+                ${parseFloat(order.item_price || 0) > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                    <span style="color:#6B7280;font-size:12px;">Item Cost</span>
+                    <span style="color:#D1D5DB;font-size:12px;">₦${parseFloat(order.item_price).toLocaleString()}</span>
+                </div>` : ''}
+                <hr style="border:none;border-top:1px solid #374151;margin:12px 0;">
+                <div style="display:flex;justify-content:space-between;">
+                    <span style="color:#fff;font-weight:bold;font-size:14px;">Total</span>
+                    <span style="color:#10B981;font-weight:bold;font-size:16px;">₦${parseFloat(order.total_fare || 0).toLocaleString()}</span>
+                </div>
+            </div>
+            <p style="margin:16px 0 0;font-size:12px;color:#6B7280;text-align:center;">You can track your order status in the Zippa app.</p>
+            <hr style="border:none;border-top:1px solid #1F2937;margin:24px 0;">
+            <p style="margin:0;font-size:12px;color:#4B5563;text-align:center;">— Zippa Logistics Team</p>
+        </div>
+    </div>`;
+
+    await sendViaGmailApi(toEmail, `Order #${order.order_number} — Confirmed`, html);
+};
+
+// Send Delivery Receipt email
+const sendOrderDeliveredEmail = async (toEmail, fullName, order) => {
+    const html = `
+    <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:480px;margin:0 auto;background:#0B0F19;border-radius:12px;overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#8B5CF6,#7C3AED);padding:32px;text-align:center;">
+            <h1 style="color:#fff;margin:0;font-size:24px;font-weight:800;">⚡ Zippa Logistics</h1>
+            <p style="color:rgba(255,255,255,0.8);margin:8px 0 0;font-size:13px;">Delivery Receipt</p>
+        </div>
+        <div style="padding:32px;color:#E5E7EB;">
+            <p style="margin:0 0 16px;font-size:15px;">Hi <strong style="color:#fff;">${fullName}</strong>,</p>
+            <p style="margin:0 0 24px;font-size:14px;color:#9CA3AF;">Your delivery has been completed and confirmed. Here is your receipt:</p>
+            <div style="background:#1F2937;border-radius:12px;padding:20px;margin:16px 0;">
+                <div style="text-align:center;margin-bottom:16px;">
+                    <div style="display:inline-block;background:#10B981;border-radius:50%;width:48px;height:48px;line-height:48px;text-align:center;font-size:24px;">✓</div>
+                    <p style="color:#10B981;font-weight:bold;font-size:14px;margin:8px 0 0;">Delivered Successfully</p>
+                </div>
+                <hr style="border:none;border-top:1px solid #374151;margin:12px 0;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                    <span style="color:#6B7280;font-size:12px;">Order</span>
+                    <span style="color:#8B5CF6;font-weight:bold;font-size:13px;">${order.order_number}</span>
+                </div>
+                <div style="margin-bottom:8px;">
+                    <span style="color:#6B7280;font-size:11px;">FROM</span>
+                    <p style="color:#D1D5DB;margin:4px 0 0;font-size:12px;">${order.pickup_address}</p>
+                </div>
+                <div style="margin-bottom:12px;">
+                    <span style="color:#6B7280;font-size:11px;">TO</span>
+                    <p style="color:#D1D5DB;margin:4px 0 0;font-size:12px;">${order.dropoff_address}</p>
+                </div>
+                <hr style="border:none;border-top:1px solid #374151;margin:12px 0;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                    <span style="color:#6B7280;font-size:12px;">Delivery Fee</span>
+                    <span style="color:#D1D5DB;font-size:12px;">₦${parseFloat(order.total_fare || 0).toLocaleString()}</span>
+                </div>
+                ${parseFloat(order.item_price || 0) > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                    <span style="color:#6B7280;font-size:12px;">Item Cost</span>
+                    <span style="color:#D1D5DB;font-size:12px;">₦${parseFloat(order.item_price).toLocaleString()}</span>
+                </div>` : ''}
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                    <span style="color:#6B7280;font-size:12px;">Payment</span>
+                    <span style="color:#D1D5DB;font-size:12px;">${(order.payment_method || 'wallet').toUpperCase()}</span>
+                </div>
+                <hr style="border:none;border-top:1px solid #374151;margin:12px 0;">
+                <div style="display:flex;justify-content:space-between;">
+                    <span style="color:#fff;font-weight:bold;font-size:14px;">Total Paid</span>
+                    <span style="color:#8B5CF6;font-weight:bold;font-size:16px;">₦${(parseFloat(order.total_fare || 0) + parseFloat(order.item_price || 0)).toLocaleString()}</span>
+                </div>
+            </div>
+            <p style="margin:16px 0 0;font-size:12px;color:#6B7280;text-align:center;">Thank you for choosing Zippa Logistics!</p>
+            <hr style="border:none;border-top:1px solid #1F2937;margin:24px 0;">
+            <p style="margin:0;font-size:12px;color:#4B5563;text-align:center;">— Zippa Logistics Team</p>
+        </div>
+    </div>`;
+
+    await sendViaGmailApi(toEmail, `Receipt — Order #${order.order_number} Delivered`, html);
+};
+
 // Generate 6-digit OTP
 const generateOTP = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-module.exports = { sendOTPEmail, sendPasswordResetEmail, sendNotificationEmail, generateOTP };
+module.exports = { sendOTPEmail, sendPasswordResetEmail, sendNotificationEmail, sendOrderPlacedEmail, sendOrderDeliveredEmail, generateOTP };

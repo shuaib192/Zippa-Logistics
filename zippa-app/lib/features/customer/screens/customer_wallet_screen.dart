@@ -5,9 +5,9 @@ import 'package:provider/provider.dart';
 import 'package:zippa_app/features/customer/providers/wallet_provider.dart';
 import 'package:zippa_app/core/utils/currency_formatter.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:zippa_app/features/auth/providers/auth_provider.dart' as zippa_auth;
 import 'package:zippa_app/core/providers/navigation_provider.dart';
+import 'package:zippa_app/features/customer/screens/paystack_webview_screen.dart';
 
 class CustomerWalletScreen extends StatefulWidget {
   const CustomerWalletScreen({super.key});
@@ -502,18 +502,29 @@ class _CustomerWalletScreenState extends State<CustomerWalletScreen> {
                   final amount = double.tryParse(controller.text);
                   if (amount != null && amount > 0) {
                     final scaffoldMessenger = ScaffoldMessenger.of(context);
-                    Navigator.pop(context);
+                    final navigator = Navigator.of(context);
+                    navigator.pop(); // Close bottom sheet
                     final data = await wallet.fundWallet(amount);
                     if (data != null && data['authorization_url'] != null) {
-                      final url = Uri.parse(data['authorization_url']);
-                      if (await canLaunchUrl(url)) {
-                        await launchUrl(url, mode: LaunchMode.externalApplication);
+                      // Open Paystack in in-app WebView
+                      final result = await navigator.push<bool>(
+                        MaterialPageRoute(
+                          builder: (_) => PaystackWebViewScreen(
+                            paymentUrl: data['authorization_url'],
+                          ),
+                        ),
+                      );
+
+                      // Auto-refresh balance after payment
+                      if (result == true) {
+                        await wallet.fetchBalance();
+                        await wallet.fetchTransactions();
                         scaffoldMessenger.showSnackBar(
-                          const SnackBar(content: Text('Redirecting to secure payment...')),
+                          const SnackBar(content: Text('Payment successful! Balance updated.')),
                         );
                       } else {
                         scaffoldMessenger.showSnackBar(
-                          const SnackBar(content: Text('Could not launch payment URL.')),
+                          const SnackBar(content: Text('Payment was cancelled.')),
                         );
                       }
                     } else {

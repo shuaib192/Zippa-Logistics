@@ -31,11 +31,26 @@ const calculateFare = async (distanceKm, packageSize = 'small') => {
 
     const multiplier = sizeMultipliers[packageSize] || 1.0;
     const distanceFare = Math.max(0, distanceKm - 1) * PER_KM; // first km already in base
-    const rawFare = (BASE_FARE + distanceFare) * multiplier;
+    
+    // SURGE PRICING LOGIC
+    // 1. Time-based surge (e.g., late night 9 PM - 6 AM)
+    const hour = new Date().getHours();
+    let surgeFactor = 1.0;
+    if (hour >= 21 || hour <= 6) {
+        surgeFactor = 1.2; // 20% increase at night
+    }
+    
+    // 2. Settings-based override (if admin sets global surge)
+    if (settings.surge_multiplier && settings.surge_multiplier > 1) {
+        surgeFactor = Math.max(surgeFactor, settings.surge_multiplier);
+    }
+
+    const rawFare = (BASE_FARE + distanceFare) * multiplier * surgeFactor;
 
     return {
         base_fare: BASE_FARE,
         distance_fare: Math.round(distanceFare),
+        surge_factor: surgeFactor,
         subtotal: Math.round(rawFare),
         platform_fee: Math.round(rawFare * 0.10), // 10% platform cut
         total_fare: Math.round(rawFare * 1.10),   // customer pays

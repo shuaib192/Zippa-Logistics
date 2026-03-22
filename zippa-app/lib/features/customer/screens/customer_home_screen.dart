@@ -170,73 +170,10 @@ class _HomeContentState extends State<_HomeContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // V18 Push Debugger Access
-          Align(
-            alignment: Alignment.topLeft,
-            child: IconButton(
-              icon: const Icon(Icons.bug_report, color: Colors.orange),
-              onPressed: () => Navigator.pushNamed(context, '/push-debug'),
-              tooltip: 'Push Debugger',
-            ),
-          ),
           _WalletCard(),
           const SizedBox(height: 16),
 
-          // KYC Banner
-          Consumer<AuthProvider>(
-            builder: (context, auth, _) {
-              final status = auth.user?.kycStatus ?? 'unverified';
-              if (status == 'verified') return const SizedBox.shrink();
-              
-              final isPending = status == 'pending';
-              final isRejected = status == 'rejected';
-              
-              return Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: (isRejected ? Colors.red : ZippaColors.primary).withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: (isRejected ? Colors.red : ZippaColors.primary).withOpacity(0.1)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      isPending ? Icons.hourglass_top_rounded : (isRejected ? Icons.error_outline : Icons.info_outline), 
-                      color: isRejected ? Colors.red : ZippaColors.primary, 
-                      size: 24
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            isPending ? 'Identity Verification Pending' : (isRejected ? 'Identification Rejected' : 'Verify Your Identity'),
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: isRejected ? Colors.red : ZippaColors.textPrimary),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            isPending 
-                              ? 'Your documents are currently being reviewed by our team.' 
-                              : (isRejected ? 'There was an issue with your documents. Please resubmit.' : 'Complete your KYC verification to access all features.'),
-                            style: const TextStyle(fontSize: 11, color: ZippaColors.textSecondary),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (!isPending)
-                      TextButton(
-                        onPressed: () => Navigator.pushNamed(context, '/kyc-submit'),
-                        child: Text(isRejected ? 'Resubmit' : 'Verify', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                  ],
-                ),
-              ).animate().fadeIn(delay: 50.ms).slideX(begin: 0.1, end: 0);
-            },
-          ),
-          
-          const SizedBox(height: 16),
+          const SizedBox(height: 4),
           
           // Safety & Escrow Banner
           Container(
@@ -297,7 +234,10 @@ class _HomeContentState extends State<_HomeContent> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Your Favorites', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
-                TextButton(onPressed: () {}, child: const Text('See All')),
+                TextButton(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const VendorListScreen())),
+                  child: const Text('See All'),
+                ),
               ],
             ),
             const SizedBox(height: 10),
@@ -358,7 +298,10 @@ class _HomeContentState extends State<_HomeContent> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Top Shops', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: ZippaColors.textPrimary)),
-              TextButton(onPressed: () {}, child: const Text('See All')),
+              TextButton(
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const VendorListScreen())),
+                child: const Text('See All'),
+              ),
             ],
           ),
           const SizedBox(height: 10),

@@ -26,6 +26,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zippa_app/data/api/api_client.dart';
 import 'package:zippa_app/core/constants/app_constants.dart';
 import 'package:zippa_app/core/services/fcm_service.dart';
+import 'package:zippa_app/core/services/biometric_service.dart';
 
 // User model — represents a logged-in user
 class User {
@@ -135,6 +136,8 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;    // Is an auth operation in progress?
   String? _error;             // Error message to display
   bool _isAuthenticated = false;
+  bool _isBiometricEnabled = false;
+  bool _isBiometricAvailable = false;
   
   // Getters — public read-only access to private state
   // In Dart, _ prefix means private, so we need getters
@@ -142,6 +145,8 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isAuthenticated => _isAuthenticated;
+  bool get isBiometricEnabled => _isBiometricEnabled;
+  bool get isBiometricAvailable => _isBiometricAvailable;
   
   // ============================================
   // Check if user is already logged in (on app start)
@@ -160,9 +165,17 @@ class AuthProvider extends ChangeNotifier {
         // Sync FCM Token
         FCMService.syncToken();
         
+        // Check Biometric Status
+        _isBiometricAvailable = await BiometricService.isAvailable();
+        _isBiometricEnabled = await BiometricService.isBiometricEnabled();
+        
         notifyListeners();  // Tell all listeners "auth status changed!"
         return true;
       }
+      
+      // Still check biometric hardware even if not logged in
+      _isBiometricAvailable = await BiometricService.isAvailable();
+      notifyListeners();
       return false;
     } catch (e) {
       return false;
@@ -449,5 +462,27 @@ class AuthProvider extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  // Force reset loading state (V21 Safety)
+  void setLoaded() {
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  // ============================================
+  // Biometric Methods
+  // ============================================
+  Future<void> toggleBiometric(bool enabled) async {
+    await BiometricService.setBiometricEnabled(enabled);
+    _isBiometricEnabled = enabled;
+    notifyListeners();
+  }
+
+  Future<bool> authenticateWithBiometrics() async {
+    if (!_isBiometricEnabled) return true;
+    
+    final authenticated = await BiometricService.authenticate();
+    return authenticated;
   }
 }

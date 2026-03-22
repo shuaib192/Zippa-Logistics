@@ -8,8 +8,8 @@ if (!admin.apps.length) {
     });
 }
 
-// User's most recent token
-const registrationToken = 'c_Wc6REGTKy-sV1XeFnCnB:APA91bHXUf_Dh4gF1KieK6J_39ySCREfiT1NTxyUPAw492MDdRUn4pd_rIQ5UJQWYoLB2CM-BmwqDdGN75bXUzrYEUTG_eksTwKNRewxOBtO5EnlExAiqGc';
+// User's most recent token (V20)
+const registrationToken = 'fpmqb7ikRh2dpiMnGVIB6g:APA91bFF7Ke7ou7GpkcqVNOVkr4Ct4vVwyQdjsY6V9xgXMtaREi5OJjwcv7Dz6fbKaVn18vtaA7DVLiQ9PHgZwkr7ydBVhOPZ_vdQLir5EIHXZHYtZjJlBI';
 
 // DATA-ONLY Payload (Most reliable for custom Flutter layouts)
 const message = {

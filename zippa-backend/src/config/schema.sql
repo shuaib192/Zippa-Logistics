@@ -178,6 +178,8 @@ CREATE TABLE IF NOT EXISTS orders (
     package_description TEXT,
     customer_notes      TEXT,
     is_marketplace      BOOLEAN DEFAULT FALSE,
+    scheduled_at        TIMESTAMP,
+    -- If null, it's an immediate delivery. If set, it's scheduled.
     
     -- Pricing
     distance_km      DECIMAL(10, 2),  -- Distance in kilometers
@@ -301,7 +303,8 @@ CREATE TABLE IF NOT EXISTS kyc_documents (
     -- 'passport', 'business_reg', 'utility_bill', 'guarantor_form'
     
     document_url    TEXT NOT NULL,
-    -- URL to the uploaded image (stored in cloud storage)
+    selfie_url      TEXT,
+    -- URL to the uploaded images (stored in cloud storage)
     
     document_number VARCHAR(100),
     -- The ID number on the document (for verification)
@@ -518,5 +521,25 @@ CREATE TABLE IF NOT EXISTS withdrawals (
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- =============================================
+-- TABLE 17: disputes
+-- Allows customers to report issues with orders.
+-- =============================================
+CREATE TABLE IF NOT EXISTS disputes (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id        UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    reason          VARCHAR(100) NOT NULL, -- 'item_not_received', 'damaged_item', 'rider_behavior', 'other'
+    description     TEXT NOT NULL,
+    status          VARCHAR(20) DEFAULT 'open', -- 'open', 'under_review', 'resolved', 'closed'
+    admin_notes     TEXT,
+    resolved_at     TIMESTAMP,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_dispute_order ON disputes(order_id);
+CREATE INDEX IF NOT EXISTS idx_dispute_user ON disputes(user_id);
 
 CREATE INDEX IF NOT EXISTS idx_withdrawals_user ON withdrawals(user_id);

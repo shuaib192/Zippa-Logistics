@@ -8,6 +8,7 @@ import 'package:zippa_app/core/theme/app_theme.dart';
 import 'package:zippa_app/data/models/order_model.dart';
 import 'package:zippa_app/features/customer/providers/order_provider.dart';
 import 'package:zippa_app/features/chat/screens/chat_screen.dart';
+import 'package:zippa_app/features/customer/screens/dispute_screen.dart';
 
 class OrderTrackingScreen extends StatefulWidget {
   final String orderId;
@@ -371,6 +372,26 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                                     elevation: 0,
                                   ),
                                   child: const Text('Confirm & Release Payment', style: TextStyle(fontWeight: FontWeight.bold)),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Center(
+                                child: TextButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => DisputeScreen(
+                                          orderId: widget.orderId,
+                                          orderNumber: _order!.orderNumber ?? widget.orderId.substring(0, 8),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: const Text(
+                                    'Report an Issue / Dispute',
+                                    style: TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.w600),
+                                  ),
                                 ),
                               ),
                             ],

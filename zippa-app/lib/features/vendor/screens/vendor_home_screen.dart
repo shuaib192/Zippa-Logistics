@@ -108,11 +108,11 @@ class _VendorHomeScreenState extends State<VendorHomeScreen> {
                   const SizedBox(height: 24),
                   Row(
                     children: [
-                      Expanded(child: _OverviewItem(value: wallet.transactions.length.toString(), label: 'Transactions')),
+                      Expanded(child: _overviewItem(value: wallet.transactions.length.toString(), label: 'Transactions')),
                       Container(height: 36, width: 1, color: Colors.white24),
                       Expanded(
                         child: Consumer<OrderProvider>(
-                          builder: (context, orders, _) => _OverviewItem(
+                          builder: (context, orders, _) => _overviewItem(
                             value: orders.orders.where((o) => o.status == 'delivered').length.toString(), 
                             label: 'Total Sales'
                           ),
@@ -182,6 +182,11 @@ class _VendorHomeScreenState extends State<VendorHomeScreen> {
             ),
           ).animate().fadeIn(delay: 200.ms),
 
+          if (user?.kycStatus != 'verified') ...[
+            const SizedBox(height: 24),
+            _buildKYCRequiredBanner(context, user?.kycStatus ?? 'unverified'),
+          ],
+
           const SizedBox(height: 24),
 
           // Store Status Toggle
@@ -211,14 +216,20 @@ class _VendorHomeScreenState extends State<VendorHomeScreen> {
                 Switch.adaptive(
                   value: user?.isOnline ?? false,
                   activeColor: ZippaColors.primary,
-                  onChanged: (val) async {
-                    final orderProvider = Provider.of<OrderProvider>(context, listen: false);
-                    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                    final success = await orderProvider.toggleOnline(val);
-                    if (success && mounted) {
-                      await authProvider.fetchProfile(); // Refresh local user state
-                    }
-                  },
+                  onChanged: (user?.kycStatus == 'verified') 
+                    ? (val) async {
+                        final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+                        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                        final success = await orderProvider.toggleOnline(val);
+                        if (success && mounted) {
+                          await authProvider.fetchProfile(); // Refresh local user state
+                        }
+                      }
+                    : (val) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Please verify your identity to open your store.')),
+                        );
+                      },
                 ),
               ],
             ),
@@ -235,7 +246,11 @@ class _VendorHomeScreenState extends State<VendorHomeScreen> {
                 icon: Icons.add_box_outlined, 
                 label: 'New Order', 
                 color: ZippaColors.primary, 
-                onTap: () => Navigator.pushNamed(context, '/order-create'),
+                onTap: (user?.kycStatus == 'verified') 
+                  ? () => Navigator.pushNamed(context, '/order-create')
+                  : () => ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Verification required to create orders.')),
+                    ),
               )),
               const SizedBox(width: 12),
               Expanded(child: _VendorAction(
@@ -422,15 +437,45 @@ class _VendorHomeScreenState extends State<VendorHomeScreen> {
       ),
     );
   }
-}
+  Widget _buildKYCRequiredBanner(BuildContext context, String status) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.orange.shade100),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Verification Required',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
+                ),
+              ),
+              status == 'pending'
+                ? const Text('Reviewing...', style: TextStyle(fontSize: 12, color: Colors.orange))
+                : TextButton(
+                    onPressed: () => Navigator.pushNamed(context, '/kyc'),
+                    child: const Text('Complete KYC'),
+                  ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'You must complete your identity verification before you can open your store or receive orders.',
+            style: TextStyle(fontSize: 12, color: ZippaColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
 
-class _OverviewItem extends StatelessWidget {
-  final String value;
-  final String label;
-  const _OverviewItem({required this.value, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _overviewItem({required String value, required String label}) {
     return Column(
       children: [
         Text(value, style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),

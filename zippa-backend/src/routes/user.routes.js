@@ -13,7 +13,7 @@ router.put('/location', authenticate, updateLocation),
 router.put('/fcm-token', authenticate, updateFcmToken),
 
 // KYC Routes
-router.post('/kyc', authenticate, kycUpload.single('document'), submitKYC);
+router.post('/kyc', authenticate, kycUpload.fields([{ name: 'document', maxCount: 1 }, { name: 'selfie', maxCount: 1 }]), submitKYC);
 router.get('/kyc', authenticate, getKYCStatus);
 
 module.exports = router;
