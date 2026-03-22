@@ -212,13 +212,13 @@ const PORT = process.env.PORT || 3000;
 
 // Only start listening if this file is run directly (not imported for testing)
 if (process.env.NODE_ENV !== 'test') {
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
         console.log('============================================');
-        console.log('  Zippa Logistics API Server');
+        console.log('  ⚡ Zippa Logistics API Server');
         console.log('============================================');
-        console.log(`  Server: http://localhost:${PORT}`);
+        console.log(`  Status: Running on 0.0.0.0:${PORT}`);
         console.log(`  Health: http://localhost:${PORT}/api/health`);
-        console.log(`  Env:    ${process.env.NODE_ENV || 'development'}`);
+        console.log(`  Env:    ${process.env.NODE_ENV || 'production'}`);
         console.log('============================================');
     });
 }
